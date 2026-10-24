@@ -1,0 +1,494 @@
+/* Containers */
+
+.index-container {
+  margin-top: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.menu-button-container {
+  margin-top: -4px;
+  margin-left: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.content-border-container {
+  width: 1030px;
+  min-height: 650px;
+  margin: 0 auto;
+  border-radius: 20px;
+  background-color: var(--contentbox);
+  padding: 35px;
+  box-sizing: border-box;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 60px;
+}
+
+.content-border-container-menu {
+  position: relative;
+  width: 1030px;
+  margin: 0 auto;
+  border-radius: 20px;
+  background-color: var(--contentbox);
+  padding: 35px;
+  box-sizing: border-box;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 120px;
+}
+
+.cards-hub-link {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  color: var(--lightpink);
+  font-size: 28px;
+  line-height: 1;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.cards-hub-link:hover {
+  color: var(--hoverpink);
+}
+
+.cards-hub-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.title-container {
+  display: flex;
+  flex-direction: column;
+  height: 130px;
+  width: 90vw;
+}
+
+.title-container > div {
+  margin-top: -95px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  user-select: none;
+}
+
+.title-container h1 {
+  margin-top: -153px;
+}
+
+.page-content {
+  margin-top: 140px;
+}
+
+.page-body {
+  margin-top: 24px;
+}
+
+/* Rules */
+
+.rules-body-container {
+  margin-top: 40px;
+  display: flex;
+  width: 900px;
+  gap: 30px;
+}
+
+.rules-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  align-self: stretch;
+  min-width: 240px;
+  padding: 14px 10px;
+  background-color: var(--mediumpink);
+  border-radius: 20px;
+  gap: 6px;
+}
+
+.rules-text-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  margin-left: 10px;
+  gap: 0;
+}
+
+.rules-text-body > h2 {
+  text-align: center;
+}
+
+/* Create Game */
+
+.create-button-container {
+  display: flex;
+  font-family: "appFont";
+  color: var(--header);
+  letter-spacing: 3pt;
+  text-transform: capitalize;
+  font-variant-caps: small-caps;
+  font-weight: 600;
+  background-color: var(--mediumpink);
+  padding: 20px;
+  padding-left: 40px;
+  padding-right: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  gap: 20px;
+}
+
+.create-button-container label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 27px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.create-button-container input[type="radio"] {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.create-button-container label > span {
+  display: block;
+  transform: translateY(-0.12em);
+}
+
+@supports (text-box-trim: trim-both) {
+  .create-button-container label > span {
+    /* Center the capital letters without the font's extra leading. */
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
+    transform: none;
+  }
+}
+
+.create-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.create-toggle-label {
+  flex: 1;
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-align: right;
+}
+
+.create-toggle-label-short {
+  display: none;
+}
+
+@media only screen and (max-width: 768px) {
+  .create-toggle-label-long {
+    display: none;
+  }
+
+  .create-toggle-label-short {
+    display: inline;
+  }
+}
+
+.create-select-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.create-select-label {
+  flex: 1;
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-align: right;
+}
+
+/* Responsive helpers */
+
+.desktop-only {
+  display: inline;
+}
+
+.mobile-only {
+  display: none;
+}
+
+/* Stats Tabs */
+
+.stats-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-top: 8px;
+  margin-bottom: 0;
+  width: fit-content;
+}
+
+.stats-tab {
+  font-family: "appFont";
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--stats-header);
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.stats-tab:hover {
+  color: var(--header);
+}
+
+.stats-tab-active {
+  color: var(--header);
+  border-bottom-color: var(--hoverpink);
+}
+
+.stats-empty {
+  font-family: "appFont";
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--hoverpink);
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* Stats Card */
+
+.stats-card {
+  background-color: var(--mediumpink);
+  border-radius: 20px;
+  padding: 24px 32px;
+  margin-top: 12px;
+  width: fit-content;
+}
+
+.stats-card-title {
+  font-family: "appFont";
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--header);
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+.stats-grid {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+}
+
+.stats-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.stats-label {
+  font-family: "appFont";
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--stats-label);
+}
+
+.stats-value {
+  font-family: "appFont";
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--header);
+  min-width: 36px;
+  text-align: right;
+}
+
+.stats-divider {
+  border: none;
+  border-left: 1px solid var(--statsdivider);
+  width: 0;
+  margin: 0 24px;
+  align-self: stretch;
+}
+
+/* for re-sized desktop */
+@media only screen and (min-width: 769px) and (max-width: 1085px) {
+  .content-border-container {
+    width: 95vw;
+  }
+
+  .content-border-container-menu {
+    width: 95vw;
+  }
+
+  .rules-body-container {
+    width: 85vw;
+  }
+}
+
+/* for mobile and mobile-sized windows */
+@media only screen and (max-width: 768px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: inline;
+  }
+
+  .index-container {
+    margin-top: 25vh;
+  }
+
+  .menu-button-container {
+    margin-top: 0;
+    padding-top: 10px;
+    margin-left: min(130px, 22vw);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .title-container {
+    padding-top: 15px;
+  }
+
+  .page-layout {
+    --page-title-gap: 28px;
+    font-size: 16px;
+  }
+
+  .page-content,
+  .page-body {
+    margin-top: var(--page-title-gap);
+  }
+
+  .page-title-container {
+    --page-logo-size: 106px;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 106px;
+    padding: 0;
+  }
+
+  .page-title-container > div {
+    grid-area: 1 / 1;
+    margin: 0;
+  }
+
+  .page-title-container h1 {
+    grid-area: 1 / 1;
+    max-width: 100%;
+    margin: 0;
+    font-size: clamp(32px, 10vw, 40px);
+    letter-spacing: 0.19em;
+    text-indent: 0.19em;
+  }
+
+  .page-title-container h1.long-title {
+    font-size: clamp(24px, 6vw, 38px);
+    letter-spacing: 0.1em;
+    text-indent: 0.1em;
+  }
+
+  .rules-body-container {
+    margin-top: 25px;
+    width: 90vw;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .rules-button-container {
+    width: 260px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .rules-text-body {
+    margin: 20px;
+    margin-top: 0px;
+    text-align: center;
+  }
+
+  .content-border-container {
+    width: 100%;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 20px 20px 32px;
+    border-radius: 0;
+  }
+
+  .content-border-container-menu {
+    width: 100%;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 20px 20px 120px;
+    border-radius: 0;
+  }
+
+  .create-button-container {
+    flex-direction: column;
+  }
+
+  .stats-card {
+    width: 225px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px 24px;
+  }
+
+  .stats-grid {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .stats-col {
+    min-width: 0;
+  }
+
+  .stats-divider {
+    border-left: none;
+    border-top: 1px solid var(--statsdivider);
+    width: auto;
+    height: 0;
+    margin: 4px 0;
+    align-self: auto;
+  }
+}

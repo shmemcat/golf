@@ -1,0 +1,13 @@
+{
+  "name": "golf-site",
+  "private": true,
+  "scripts": {
+    "web:install": "node scripts/install-web.mjs",
+    "dev": "node ../cards/scripts/dev-split.mjs",
+    "dev:web": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "test": "npm --prefix web run test:run",
+    "test:accounts": "node --test scripts/shared-accounts.test.mjs",
+    "preview": "npm --prefix web run preview"
+  }
+}

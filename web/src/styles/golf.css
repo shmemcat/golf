@@ -1,0 +1,682 @@
+@font-face {
+  font-family: "appFont";
+  src: url("/fonts/Fraunces-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+html {
+  --background: #dfe6da;
+  --contentbox: #f0f3e9;
+  --mediumpink: #e2e9dc;
+  --lightpink: #cf9f9c;
+  --hoverpink: #bd8b88;
+  --heartslogo: #a8bea4;
+  --header: #304339;
+  --text: #304339;
+  --buttontext: #293f35;
+  --darkpink: #925d60;
+  --tan: #925d60;
+  --rulesbuttontext: #304339;
+  --rulesbuttonselected: #925d60;
+  --link: #895659;
+  --linkbox: #cf9f9c4a;
+  --selectionbgcolor: #e4b4ad;
+  --texthighlight: #293f35;
+  --inputbox: #fafbf5;
+  --inputboxborder: #a0b19b;
+  --radiobutton: #925d60;
+  --buttontextdisabled: #647465;
+  --buttonshine: #f4d6cb;
+  --buttonshinehover: #e4b4ad;
+  --buttonshinedisabled: #e4b4ad55;
+  --buttonboxshadow: #885a6045;
+  --buttonboxshadowhover: #78505455;
+  --buttonboxshadowdisabled: #885a6020;
+  --button-secondary-background: #d6e0ce;
+  --button-secondary-hover: #c6d5be;
+  --button-secondary-active: #c6d5be;
+  --button-secondary-shadow: #30433930;
+  --button-secondary-shine: #ffffff99;
+  --cardface: #faf6ee;
+  --cardborder: #a5af9c;
+  --cardblacksuit: #293f35;
+  --cardredsuit: #a24e59;
+  --cardhighlight: #925d60;
+  --infopillbg: #e2e9dc;
+  --infopillborder: #c0ceba;
+  --infopilltext: #304339;
+  --volumesliderbg: #f0f3e9;
+  --volumesliderbase: #e2e9dc;
+  --warningicon: #925d60;
+  --color-warning: #925d60;
+  --button-label-size: 16px;
+  --button-label-weight: 700;
+  --button-label-spacing: 1px;
+  font-optical-sizing: auto;
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  --background: #1e302b;
+  --contentbox: #344c40;
+  --mediumpink: #405c4e;
+  --lightpink: #cf9f9c;
+  --hoverpink: #ddb0a8;
+  --heartslogo: #7c9885;
+  --header: #f0eee1;
+  --text: #f0eee1;
+  --buttontext: #293f35;
+  --darkpink: #e4b4ad;
+  --tan: #e4b4ad;
+  --rulesbuttontext: #f0eee1;
+  --rulesbuttonselected: #e4b4ad;
+  --link: #e4b4ad;
+  --linkbox: #cf9f9c26;
+  --inputbox: #293f35;
+  --inputboxborder: #849d87;
+  --radiobutton: #cf9f9c;
+  --buttontextdisabled: #b5c4b0;
+  --buttonshine: #f4d6cb;
+  --buttonshinehover: #f7ded4;
+  --buttonboxshadow: #593b3b55;
+  --button-secondary-background: #506d5c;
+  --button-secondary-hover: #5b7a65;
+  --button-secondary-active: #5b7a65;
+  --button-secondary-shadow: #1e302b55;
+  --button-secondary-shine: #e4b4ad66;
+  --cardhighlight: #cf9f9c;
+  --infopillbg: #405c4e;
+  --infopillborder: #607e68;
+  --infopilltext: #f0eee1;
+  --volumesliderbg: #405c4e;
+  --volumesliderbase: #344c40;
+  --warningicon: #e4b4ad;
+  --color-warning: #e4b4ad;
+  color-scheme: dark;
+}
+body {
+  font-size: 18px;
+  line-height: 1.5;
+  letter-spacing: 0.65px;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+.menu-link {
+  font-weight: 700;
+  font-variant-caps: normal;
+  text-transform: none;
+  letter-spacing: 1px;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}
+a {
+  color: inherit;
+}
+p {
+  margin: 0 0 14px;
+  line-height: 1.5;
+  letter-spacing: 0.4px;
+}
+h1 {
+  position: relative;
+  line-height: 1.2;
+}
+h2 {
+  line-height: 1.3;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  min-height: 44px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--header);
+  outline-offset: 4px;
+}
+.golf-logo {
+  color: var(--heartslogo);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+[class*="page-title-container"] h1[class*="long-title"] {
+  font-size: clamp(36px, 5.2vw, 58px);
+  letter-spacing: 0.12em;
+}
+.site-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 28px;
+  gap: 12px;
+  position: relative;
+  z-index: 5;
+}
+.nav-home {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  text-decoration: none;
+}
+.nav-home .golf-logo {
+  color: var(--lightpink);
+}
+.nav-home .navhearts {
+  line-height: 1;
+}
+.nav-home:is(:hover, :focus-visible) :is(.golf-logo, .navhearts) {
+  color: var(--tan);
+}
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  max-width: 230px;
+}
+.nav-user span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-user svg {
+  color: var(--lightpink);
+  height: 18px;
+  flex-shrink: 0;
+}
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lightpink);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.icon-button:hover,
+.nav-user:hover {
+  color: var(--tan);
+}
+.menu-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+.menu-link:hover {
+  background: var(--hoverpink);
+  box-shadow: inset -3px -3px 0 var(--buttonboxshadowhover);
+}
+.button-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0 16px;
+}
+.quiet-text {
+  font-size: 16px;
+  margin: 20px 0;
+  opacity: 0.85;
+}
+.inline-error {
+  max-width: 440px;
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border: 1px solid var(--tan);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 20px;
+  z-index: 1000;
+  padding: 10px 16px;
+  background: var(--contentbox);
+}
+.skip-link:focus {
+  top: 10px;
+}
+.loading-page {
+  text-align: center;
+  padding: 80px 20px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.account-settings {
+  position: absolute;
+  right: 40px;
+  top: 85px;
+  z-index: 4;
+}
+.account-body {
+  max-width: 400px;
+  width: 100%;
+}
+.account-intro {
+  margin-bottom: 24px;
+}
+.signin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.signin-form label {
+  font-size: 16px;
+  font-weight: 600;
+}
+.signin-form input {
+  margin-bottom: 6px;
+}
+.signin-form button {
+  margin: 12px auto 0;
+}
+.account-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  font-size: 16px;
+  margin-top: 24px;
+}
+.account-avatar {
+  background: var(--mediumpink);
+  color: var(--tan);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  margin: 0 auto 20px;
+}
+.account-name {
+  overflow-wrap: anywhere;
+  letter-spacing: 2px;
+}
+.setup-body {
+  width: 100%;
+  max-width: 520px;
+}
+legend {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin: 0 auto 18px;
+}
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.segmented button {
+  min-height: 44px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 8px 16px;
+  background: var(--mediumpink);
+  color: var(--text);
+}
+.segmented button[aria-pressed="true"] {
+  border-color: var(--tan);
+  background: var(--lightpink);
+  color: var(--buttontext);
+}
+.segmented button:hover {
+  border-color: var(--tan);
+}
+.setup-detail {
+  font-size: 16px;
+  margin: 24px 0;
+}
+.notice {
+  background: var(--mediumpink);
+  padding: 20px 24px;
+  border-radius: 16px;
+  margin: 24px auto;
+  font-size: 17px;
+}
+.field-label {
+  display: block;
+  margin: 16px 0 8px;
+  font-weight: 600;
+}
+input.lobby-code {
+  max-width: 260px;
+  text-align: center;
+}
+.options-body {
+  max-width: 440px;
+  width: 100%;
+}
+.options-body section {
+  margin-bottom: 32px;
+}
+.audio-settings {
+  max-width: 330px;
+  margin: 0 auto;
+}
+.check-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  text-align: left;
+}
+.check-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--radiobutton);
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 15px;
+  min-height: 44px;
+  margin-bottom: 8px;
+}
+.slider-row input {
+  max-width: 130px;
+  width: 45%;
+  accent-color: var(--radiobutton);
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.prose {
+  max-width: 620px;
+}
+.prose h2 {
+  font-size: 25px;
+  letter-spacing: 1.5px;
+  margin-bottom: 20px;
+}
+.prose p {
+  margin-bottom: 20px;
+}
+.playing-card {
+  --card-width: 80px;
+  width: var(--card-width);
+  height: calc(var(--card-width) * 1.4);
+  border-radius: 7px;
+  border: 1px solid var(--cardborder);
+  box-shadow: 0 2px 3px #1e302b12;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.card-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: var(--cardface);
+  color: var(--cardblacksuit);
+}
+.red-suit {
+  color: var(--cardredsuit);
+}
+.card-back {
+  display: block;
+  object-fit: cover;
+}
+.card-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: 0;
+}
+.card-label svg {
+  width: 24px;
+  height: 24px;
+}
+.deck-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 24px 0;
+}
+.golf-rules {
+  margin-top: 8px;
+  text-align: left;
+}
+.rule-content {
+  min-height: 325px;
+}
+.rule-content h2 {
+  text-align: left;
+}
+.rule-content p,
+.turn-steps {
+  font-size: 17px;
+  letter-spacing: 0.3px;
+  line-height: 1.55;
+}
+.turn-steps {
+  list-style: decimal;
+  padding-left: 24px;
+  margin: 0 0 16px;
+}
+.turn-steps li {
+  padding-left: 6px;
+  margin-bottom: 10px;
+}
+.rule-pair {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 8px 24px;
+  width: fit-content;
+  margin: 20px auto 0;
+}
+.rule-pair .playing-card {
+  grid-column: 1;
+  --card-width: 62px;
+}
+.score-badge {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  border: 1px solid var(--infopillborder);
+  border-radius: 50px;
+  padding: 8px 16px;
+  background: var(--mediumpink);
+  font-weight: 700;
+}
+.deal-figure {
+  width: fit-content;
+  margin: 24px auto 0;
+}
+.six-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 10px;
+  width: fit-content;
+  margin: 0 auto;
+}
+.six-card-grid .playing-card {
+  --card-width: 66px;
+}
+figcaption {
+  text-align: center;
+  font-size: 14px;
+  margin-top: 12px;
+}
+.pile-label {
+  font-size: 16px;
+}
+.score-list {
+  display: grid;
+  margin: 0 0 20px;
+  border-radius: 12px;
+  padding: 10px 20px;
+  background: var(--mediumpink);
+}
+.score-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--infopillborder);
+  font-size: 17px;
+}
+.score-list div:last-child {
+  border: 0;
+}
+.score-list dd {
+  margin: 0;
+  font-weight: 700;
+}
+.rules-source {
+  margin: 32px 0 0;
+  font-size: 14px;
+}
+@media (max-width: 768px) {
+  html {
+    overflow-y: auto;
+  }
+  [class*="index-container"] {
+    margin-top: 160px;
+  }
+  [class*="index-container"] .golf-logo {
+    max-width: 200px;
+    max-height: 200px;
+  }
+  [class*="index-container"] h1 {
+    font-size: 45px;
+    letter-spacing: 12px;
+    margin-top: -165px !important;
+  }
+  [class*="menu-button-container"] {
+    margin-left: 110px;
+  }
+  [class*="title-container"] {
+    width: 100%;
+  }
+  [class*="page-title-container"] h1[class*="long-title"] {
+    font-size: clamp(24px, 6vw, 38px);
+    letter-spacing: 0.1em;
+  }
+  [class*="rules-body-container"] {
+    width: 100%;
+    margin-top: 0;
+    gap: 30px;
+  }
+  [class*="rules-button-container"] {
+    width: 260px;
+    max-width: 100%;
+    min-width: 0;
+    align-self: center;
+    box-sizing: border-box;
+  }
+  [class*="rules-text-body"] {
+    margin: 0 0 20px;
+  }
+  body {
+    font-size: 17px;
+  }
+  .nav-actions {
+    gap: 16px;
+  }
+  .nav-user {
+    max-width: min(160px, 39vw);
+  }
+  .nav-user span {
+    font-size: 16px;
+  }
+  .icon-button,
+  .nav-user {
+    min-height: 44px;
+  }
+  .account-settings {
+    right: 24px;
+    top: 84px;
+  }
+  .rule-content {
+    text-align: left;
+    min-height: 360px;
+    width: 100%;
+  }
+  .rule-content h2 {
+    text-align: center;
+  }
+  .rules-source {
+    max-width: 300px;
+  }
+  .segmented {
+    gap: 6px;
+  }
+  .segmented button {
+    padding: 8px 10px;
+    font-size: 16px;
+  }
+  .notice {
+    padding: 18px;
+  }
+}
+@media (max-width: 360px) {
+  [class*="menu-button-container"] {
+    margin-left: 75px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

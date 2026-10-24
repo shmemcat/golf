@@ -1,0 +1,554 @@
+/* Menu Buttons */
+.menu-button {
+  background-color: var(--lightpink);
+  position: relative;
+  border-style: none;
+  color: var(--buttontext);
+  font-family: "appFont";
+  font-weight: var(--button-label-weight);
+  font-size: var(--button-label-size);
+  letter-spacing: var(--button-label-spacing);
+  text-indent: 0;
+  text-align: center;
+  text-transform: none;
+  border-radius: 8px;
+  width: 225px;
+  height: 35px;
+  box-shadow: inset -3px -3px 0px var(--buttonboxshadow);
+}
+
+.menu-button:not(:disabled):hover {
+  background-color: var(--hoverpink);
+  cursor: pointer;
+  box-shadow: inset -3px -3px 0px var(--buttonboxshadowhover);
+}
+
+.menu-button:disabled {
+  color: var(--buttontextdisabled);
+  box-shadow: inset -3px -3px 0px var(--buttonboxshadowdisabled);
+  cursor: not-allowed;
+}
+
+.menu-button:not(.button-secondary):disabled {
+  background-color: color-mix(in srgb, var(--lightpink) 62%, var(--contentbox));
+  color: color-mix(in srgb, var(--buttontext) 85%, var(--lightpink));
+  box-shadow: none;
+}
+
+.menu-button:not(:disabled):hover:active {
+  background-color: var(--hoverpink);
+  box-shadow: inset 3px 3px 0px var(--buttonboxshadowhover);
+}
+
+/* Button Shine */
+.button-shine {
+  position: absolute;
+  top: 2.5px;
+  left: 2px;
+  transform: rotate(-25deg);
+  width: 12px;
+  height: 7px;
+  border-radius: 100%;
+  background-color: var(--buttonshine);
+}
+
+.menu-button:not(:disabled):hover .button-shine {
+  background-color: var(--buttonshinehover);
+}
+
+button:disabled .button-shine {
+  background-color: var(--buttonshinedisabled);
+}
+
+.menu-button:not(.button-secondary):disabled .button-shine {
+  display: none;
+}
+
+.menu-button:not(:disabled):hover:active .button-shine {
+  transition: 0ms;
+  background-color: var(--transparent);
+}
+
+/* Size and appearance variants extend the existing button and its shine. */
+.button-compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  height: auto;
+  min-width: 68px;
+  min-height: 44px;
+  padding: 10px 18px;
+  box-sizing: border-box;
+  font-size: calc(var(--button-label-size) + 2px);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.button-compact .button-shine {
+  top: 4px;
+  left: 5px;
+  width: 11px;
+  height: 5px;
+  pointer-events: none;
+}
+.menu-button.button-secondary {
+  background-color: var(--button-secondary-background);
+  color: var(--text);
+  box-shadow: inset -3px -3px 0 var(--button-secondary-shadow);
+}
+.menu-button.button-secondary:not(:disabled):hover {
+  background-color: var(--button-secondary-hover);
+  box-shadow: inset -3px -3px 0 var(--button-secondary-shadow);
+}
+.menu-button.button-secondary:not(:disabled):active {
+  background-color: var(--button-secondary-active);
+  box-shadow: inset 3px 3px 0 var(--button-secondary-shadow);
+}
+.menu-button.button-secondary:disabled {
+  background-color: color-mix(
+    in srgb,
+    var(--button-secondary-background) 62%,
+    var(--contentbox)
+  );
+  color: var(--buttontextdisabled);
+  box-shadow: none;
+}
+.button-secondary:disabled .button-shine {
+  display: none;
+}
+.button-secondary .button-shine,
+.button-secondary:not(:disabled):hover .button-shine {
+  background-color: var(--button-secondary-shine);
+}
+
+/* Toggle Button Group */
+
+.toggle-group {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.toggle-button {
+  background-color: var(--lightpink);
+  position: relative;
+  border-style: none;
+  color: var(--buttontext);
+  font-family: "appFont";
+  font-weight: var(--button-label-weight);
+  font-size: var(--button-label-size);
+  letter-spacing: var(--button-label-spacing);
+  text-indent: 0;
+  text-align: center;
+  text-transform: none;
+  border-radius: 8px;
+  padding: 0 20px;
+  height: 32px;
+  box-shadow: inset -3px -3px 0px var(--buttonboxshadow);
+  cursor: pointer;
+}
+
+.toggle-button:not(.toggle-button-active):hover {
+  background-color: var(--hoverpink);
+  box-shadow: inset -3px -3px 0px var(--buttonboxshadowhover);
+}
+
+.toggle-button-active {
+  background-color: var(--hoverpink);
+  box-shadow: inset 3px 3px 0px var(--buttonboxshadowhover);
+  cursor: default;
+}
+
+/* Rules Buttons */
+.rules-button {
+  background-color: transparent;
+  width: 200px;
+  border-style: none;
+  color: var(--rulesbuttontext);
+  font-family: "appFont";
+  font-weight: var(--button-label-weight);
+  font-size: var(--button-label-size);
+  letter-spacing: var(--button-label-spacing);
+  text-indent: 0;
+  text-align: right;
+  text-transform: none;
+}
+
+.rules-button-selected {
+  background-color: transparent;
+  width: 200px;
+  border-style: none;
+  color: var(--rulesbuttonselected);
+  font-family: "appFont";
+  font-weight: var(--button-label-weight);
+  font-size: var(--button-label-size);
+  letter-spacing: var(--button-label-spacing);
+  text-indent: 0;
+  text-align: right;
+  text-transform: none;
+}
+
+.rules-button:hover {
+  color: var(--tan);
+}
+
+/* Piping Bag */
+.piping-bag {
+  fill: var(--rulesbuttonselected);
+  position: absolute;
+  transform: scaleY(0.8);
+  margin-top: -1px;
+  margin-left: -40px;
+}
+
+.piping-bag-right {
+  fill: var(--rulesbuttonselected);
+  visibility: hidden;
+  position: absolute;
+  transform: scaleX(-1) scaleY(0.8);
+  margin-top: -1px;
+  margin-left: 1.5px;
+}
+
+button[data-selected="false"]:not(:disabled):hover .piping-bag {
+  fill: var(--tan);
+  animation: hover-bounce 1s linear infinite;
+}
+
+button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
+  fill: var(--tan);
+  animation: hover-bounce-right 1s linear infinite;
+}
+
+@keyframes hover-bounce {
+  0% {
+    transform: translateX(-2px) scaleY(0.8);
+  }
+
+  50% {
+    transform: translateX(2px) scaleY(0.8);
+  }
+
+  100% {
+    transform: translateX(-2px) scaleY(0.8);
+  }
+}
+
+@keyframes hover-bounce-right {
+  0% {
+    transform: translateX(2px) scaleX(-1) scaleY(0.8);
+  }
+
+  50% {
+    transform: translateX(-2px) scaleX(-1) scaleY(0.8);
+  }
+
+  100% {
+    transform: translateX(2px) scaleX(-1) scaleY(0.8);
+  }
+}
+
+/* Icons */
+
+.icon {
+  color: var(--lightpink);
+  width: 18px;
+  height: 18px;
+}
+
+#nav-home:hover .icon {
+  color: var(--hoverpink);
+}
+
+.icon:hover {
+  color: var(--hoverpink);
+}
+
+.icon[clicked="1"] {
+  animation: icon-select-bounce 0.4s linear;
+}
+
+.navIconBounce[data-bouncing="true"] {
+  animation: icon-select-bounce 0.4s linear;
+}
+
+@keyframes icon-select-bounce {
+  0% {
+    transform: scaleY(1) scaleX(1);
+    transform-origin: center;
+  }
+
+  10% {
+    transform: scaleY(0.7) scaleX(0.7);
+    transform-origin: center;
+  }
+
+  60% {
+    transform: scaleY(1.1) scaleX(1.1);
+    transform-origin: center;
+  }
+
+  100% {
+    transform: scaleY(1) scaleX(1);
+    transform-origin: center;
+  }
+}
+
+/* Sound button + volume modal */
+
+.soundButtonWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.volumeModalDrop {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) scale(0.92);
+  transform-origin: top center;
+  padding-top: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 50;
+}
+
+.soundButtonWrap[data-modal-open="true"] .volumeModalDrop {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) scale(1);
+}
+
+.volumeModalInner {
+  font-size: 9px;
+  background: var(--volumesliderbg);
+  border-radius: 1.4em;
+  box-shadow: 0 0 1em #0002, 0 0.25em 0.5em #0002;
+  padding: 0.8em 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.volumeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+}
+
+.volumeRowIcon {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lightpink);
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.volumeRowIcon:hover {
+  color: var(--hoverpink);
+}
+
+.volumeSlider {
+  --vs-base: var(--lightpink);
+  --vs-light: color-mix(in sRGB, var(--vs-base) 60%, #fff);
+  --vs-lighter: color-mix(in sRGB, var(--vs-base) 30%, #fff);
+  --vs-dark: color-mix(in sRGB, var(--vs-base) 95%, #000);
+  --vs-tp: color-mix(in sRGB, var(--vs-base) 0%, #0000);
+  appearance: none;
+  -webkit-appearance: none;
+  font-size: inherit;
+  width: 130px;
+  height: 2em;
+  border: none;
+  border-radius: 2em;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  display: block;
+  background: transparent;
+  outline: none;
+}
+
+.volumeSlider::-webkit-slider-runnable-track {
+  background: radial-gradient(
+      circle at 0.75em 0.6em,
+      var(--vs-light) calc(0.2em - 1px),
+      #0000 0.2em
+    ),
+    radial-gradient(
+      circle at 1.25em 0.6em,
+      var(--vs-light) calc(0.2em - 1px),
+      #0000 0.2em
+    ),
+    radial-gradient(
+      circle at 5em 0.6em,
+      var(--vs-light) calc(0.2em - 1px),
+      #0000 0.2em
+    ),
+    linear-gradient(var(--vs-light) 0 0) 1.25em 0.4em / 3.75em
+      calc(0.4em - 0.5px) no-repeat,
+    linear-gradient(90deg, var(--vs-base), var(--vs-tp) 1em),
+    linear-gradient(#0000 70%, var(--vs-dark) 80%), var(--vs-base);
+  height: 100%;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 2em;
+  width: 2em;
+  color: var(--volumesliderbase);
+  background: radial-gradient(
+      circle at 0.75em 0.6em,
+      var(--vs-light) calc(0.2em - 1px),
+      #0000 0.2em
+    ),
+    linear-gradient(90deg, #0000 0.75em, var(--vs-base) 0) 0 0 / 100% 50%
+      no-repeat;
+  border-radius: 50%;
+  box-shadow: inset -0.5em 0 0.5em -0.25em var(--vs-base), 1em 0 0 0.25em,
+    2em 0 0 0.25em, 3em 0 0 0.25em, 4em 0 0 0.25em, 5em 0 0 0.25em,
+    6em 0 0 0.25em, 7em 0 0 0.25em, 8em 0 0 0.25em, 9em 0 0 0.25em,
+    10em 0 0 0.25em, 11em 0 0 0.25em, 12em 0 0 0.25em, 13em 0 0 0.25em,
+    14em 0 0 0.25em, 15em 0 0 0.25em, 16em 0 0 0.25em;
+}
+
+.volumeSlider::-moz-range-track {
+  background: radial-gradient(
+      circle at 0.75em 30%,
+      var(--vs-light) calc(0.2em - 1px),
+      #0000 0.2em
+    ),
+    radial-gradient(
+      circle at 1.5em 30%,
+      var(--vs-light) calc(0.2em - 1px),
+      #0000 0.2em
+    ),
+    radial-gradient(
+      circle at 5.5em 30%,
+      var(--vs-light) calc(0.2em - 1px),
+      #0000 0.2em
+    ),
+    linear-gradient(var(--vs-light) 0 0) 1.5em calc(15% + 0.18em) / 4em
+      calc(0.4em - 0.5px) no-repeat,
+    linear-gradient(90deg, var(--vs-base), var(--vs-tp) 1em),
+    linear-gradient(var(--vs-tp) 70%, var(--vs-dark) 80%), var(--vs-base);
+  height: 100%;
+}
+
+.volumeSlider::-moz-range-thumb {
+  appearance: none;
+  height: 2em;
+  width: 2em;
+  border: 0;
+  color: var(--vs-lighter);
+  background: radial-gradient(
+      circle at 0.75em 0.6em,
+      var(--vs-light) calc(0.2em - 1px),
+      #0000 0.2em
+    ),
+    linear-gradient(90deg, var(--vs-tp) 0.75em, var(--vs-base) 0) 0 0 / 100% 50%
+      no-repeat;
+  border-radius: 50%;
+  box-shadow: inset -0.5em 0 0.5em -0.25em var(--vs-base), 1em 0 0 0.25em,
+    2em 0 0 0.25em, 3em 0 0 0.25em, 4em 0 0 0.25em, 5em 0 0 0.25em,
+    6em 0 0 0.25em, 7em 0 0 0.25em, 8em 0 0 0.25em, 9em 0 0 0.25em,
+    10em 0 0 0.25em, 11em 0 0 0.25em, 12em 0 0 0.25em, 13em 0 0 0.25em,
+    14em 0 0 0.25em, 15em 0 0 0.25em, 16em 0 0 0.25em;
+}
+
+/* for mobile and mobile-sized windows */
+@media only screen and (max-width: 768px) {
+  .menu-button:not(.button-compact) {
+    width: 190px;
+    height: 44px;
+  }
+
+  .rules-button {
+    min-height: 36px;
+    text-align: center;
+  }
+
+  .rules-button-selected {
+    min-height: 36px;
+    text-align: center;
+  }
+
+  .button-shine {
+    top: 3px;
+  }
+
+  .piping-bag-right {
+    visibility: visible;
+  }
+
+  .icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .toggle-group {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .toggle-button {
+    font-size: calc(var(--button-label-size) - 2px);
+    height: 38px;
+    width: 190px;
+  }
+}
+
+/* for touch screens */
+@media (hover: none) {
+  .icon:hover {
+    color: var(--lightpink);
+  }
+
+  button[data-selected="false"]:not(:disabled):hover .piping-bag {
+    fill: var(--rulesbuttonselected);
+    animation: none;
+  }
+
+  button[data-selected="false"]:not(:disabled):hover .piping-bag-right {
+    fill: var(--rulesbuttonselected);
+    animation: none;
+  }
+
+  .menu-button:not(:disabled):hover {
+    background-color: var(--lightpink);
+    cursor: default;
+    box-shadow: inset -3px -3px 0px var(--buttonboxshadow);
+  }
+
+  .menu-button:not(:disabled):hover .button-shine {
+    background-color: var(--buttonshine);
+  }
+
+  .rules-button:hover {
+    color: var(--hoverpink);
+  }
+
+  .volumeRowIcon:hover {
+    color: var(--lightpink);
+  }
+
+  .toggle-button:not(.toggle-button-active):hover {
+    background-color: var(--lightpink);
+    box-shadow: inset -3px -3px 0px var(--buttonboxshadow);
+  }
+}

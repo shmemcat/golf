@@ -1,0 +1,281 @@
+/* Shared typography and links from Euchre. Golf tokens live in golf.css. */
+html {
+  overflow-y: scroll;
+  font-family: "appFont", Georgia, serif;
+  color: var(--text);
+}
+body {
+  font-family: "appFont";
+  background-color: var(--background);
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  transition: background-color 0.3s ease;
+}
+
+/* Smooth theme transition when switching light/dark mode */
+*,
+*::before,
+*::after {
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease, box-shadow 0.3s ease, fill 0.3s ease;
+}
+
+::selection {
+  background-color: var(--selectionbgcolor);
+  color: var(--texthighlight);
+}
+
+::placeholder {
+  color: var(--text);
+  opacity: 0.5;
+}
+
+/* Scrollbar CSS */
+/* Firefox */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: var(--heartslogo) var(--background);
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 14px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--heartslogo);
+  border-radius: 10px;
+  border: 3px solid var(--background);
+}
+
+.link {
+  font-family: "appFont";
+  position: relative;
+  overflow: hidden;
+  color: var(--link);
+  font-weight: 700;
+  text-decoration: none;
+  z-index: 1;
+  cursor: pointer;
+}
+
+.link::after {
+  content: "";
+  background: var(--linkbox);
+  position: absolute;
+  left: 8px;
+  bottom: -3px;
+  border-radius: 5px;
+  width: calc(100% - 6px);
+  height: calc(100% - 8px);
+  z-index: -1;
+  transition: 0.35s cubic-bezier(0.25, 0.1, 0, 2.05);
+  pointer-events: none;
+}
+
+.link:hover:after {
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 100%;
+}
+
+.navhearts {
+  font-family: "appFont";
+  color: var(--header);
+  letter-spacing: 5pt;
+  font-weight: 700;
+  text-decoration: none;
+  user-select: none;
+}
+
+#nav-home:hover .navhearts {
+  color: var(--hoverpink);
+}
+
+.navtext {
+  font-family: "appFont";
+  color: var(--header);
+  user-select: none;
+}
+
+#nav-home:hover .navtext {
+  color: var(--hoverpink);
+}
+
+input {
+  color: var(--text);
+  font-family: "appFont";
+  background-color: var(--inputbox);
+  border-radius: 4px;
+  border: 1px solid var(--inputboxborder);
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+input:focus {
+  outline: none;
+}
+
+.radio {
+  accent-color: var(--radiobutton);
+}
+
+.icon {
+  color: var(--lightpink);
+  width: 18px;
+  height: 18px;
+}
+
+#nav-home:hover .icon {
+  color: var(--hoverpink);
+}
+
+.bold {
+  display: inline;
+  font-family: "appFont";
+  font-size: 16px;
+  margin: 0px;
+  font-weight: 700;
+  color: var(--tan);
+}
+
+h1 {
+  font-family: "appFont";
+  margin-right: -0.2em;
+  text-align: center;
+  color: var(--header);
+  font-size: 50pt;
+  letter-spacing: 15pt;
+  font-weight: 700;
+  user-select: none;
+}
+
+h2 {
+  font-family: "appFont";
+  font-size: 24px;
+  letter-spacing: 4pt;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+h3 {
+  font-family: "appFont";
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0px;
+  margin-bottom: 16px;
+}
+
+.sparkle-container {
+  position: relative;
+  display: inline-block;
+}
+
+.sparkle {
+  position: relative;
+  display: inline-block;
+}
+
+.sparkle-svg {
+  position: absolute;
+  z-index: 3;
+  fill: var(--sparkle);
+  width: 20px;
+  height: 20px;
+  aspect-ratio: 1;
+  animation: sparkle 5s calc((var(--delay-step) * var(--d)) * 1s) infinite both;
+  --delay-step: 0.15;
+  top: calc(var(--y, 50) * 1%);
+  left: calc(var(--x, 0) * 1%);
+  transform: translate(-50%, -50%) scale(0);
+}
+
+@keyframes sparkle {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+  }
+  10% {
+    transform: translate(-50%, -50%) scale(var(--s, 1));
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(0);
+  }
+}
+
+.sparkle-svg:nth-of-type(1) {
+  --x: 10;
+  --y: 10;
+  --s: 0.4;
+  --d: 1;
+}
+.sparkle-svg:nth-of-type(2) {
+  --x: 30;
+  --y: 80;
+  --s: 0.4;
+  --d: 2;
+}
+.sparkle-svg:nth-of-type(3) {
+  --x: 50;
+  --y: 50;
+  --s: 0.4;
+  --d: 3;
+}
+.sparkle-svg:nth-of-type(4) {
+  --x: 70;
+  --y: 20;
+  --s: 0.4;
+  --d: 4;
+}
+.sparkle-svg:nth-of-type(5) {
+  --x: 90;
+  --y: 70;
+  --s: 0.4;
+  --d: 5;
+}
+
+/* for mobile and mobile-sized windows */
+@media only screen and (max-width: 768px) {
+  html {
+    overflow-y: none;
+  }
+
+  ::selection {
+    background-color: var(--selectionbgcolor);
+    color: var(--texthighlight);
+  }
+
+  /* Scrollbar CSS */
+  /* Firefox */
+  * {
+    scrollbar-color: var(--heartslogo) var(--contentbox);
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--contentbox);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 3px solid var(--contentbox);
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 40pt;
+    letter-spacing: 13pt;
+  }
+
+  body {
+    background-color: var(--contentbox);
+  }
+
+  .navhearts {
+    display: none;
+  }
+}
