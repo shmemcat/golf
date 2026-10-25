@@ -276,7 +276,7 @@ def test_results_are_account_owned_once_separated_global_and_durable(app, client
         save_results(data, terminal=True); db.session.commit()
         assert Result.query.count() == 3
         assert Event.query.filter_by(game_id=data['game']['id'], kind='arrival').count() == 1
-        assert set(db.inspect(db.engine).get_table_names()) == {'golf_rooms', 'golf_results', 'golf_events', 'golf_deleted_users'}
+        assert set(db.inspect(db.engine).get_table_names()) == {'golf_rooms', 'golf_results', 'golf_events', 'golf_deleted_users', 'golf_schema_version'}
     own = a.get('/api/golf/stats?user_id=2').json['statistics']
     assert own['all_time']['games_played'] == 2 and own['all_time']['games_won'] == 2
     assert own['bot']['games_played'] == own['multiplayer']['games_played'] == 1

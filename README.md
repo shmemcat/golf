@@ -162,8 +162,14 @@ offers a retry in the final-score dialog. Results do not sync between devices.
 Production should host Golf on `cards.shmem.dev/golf/` alongside its sister
 sites, keeping the shared account cookie on the same host. A new subdomain
 alone does not share the existing host-only cookie. The Cards gateway must
-continue to route `/api/account/` to the accounts service. No production
-deployment, gateway configuration, or public hub listing is included here.
+continue to route `/api/account/` to the accounts service.
+
+Component tags (`game-v*` and `web-v*`) publish the production images. After the
+reviewed infrastructure activation, `/deploy golf` tests and publishes affected
+components and promotes immutable digests through Cards' release journal, with
+readiness checks, backups and rollback. Runtime startup never runs migrations.
+See Infra's `docs/golf-deployment.md` for the one-time activation and
+`scripts/rehearse-release.mjs` for disposable production-image checks.
 
 ## Design and credits
 

@@ -28,7 +28,7 @@ directory; it does not read production environment files or send email.
 Required environment:
 
 - `GOLF_SECRET_KEY`: independent random secret of at least 32 characters.
-- `GOLF_DATABASE_URL`: Golf-only PostgreSQL database, or persistent SQLite path.
+- `GOLF_DATABASE_URL`: PostgreSQL connection scoped to Golf's tables, or persistent SQLite path.
 - `CARDS_PUBLIC_URL`: public HTTPS origin, HTTP allowed for local development.
 - `CORS_ORIGINS`: comma-separated exact allowed browser origins.
 - `CARDS_ACCOUNTS_URL`: private Cards account service origin.
@@ -49,7 +49,12 @@ and are not supported. Persist the database across restarts. The included
 Dockerfile uses the same command. `/health` identifies `golf-game`; `/ready`
 checks Golf's schema. Private `/_internal/*` routes must be blocked at every
 public proxy. The Cards rehearsal proxy contains the separate Golf routes;
-production activation is a separate deployment step.
+production activation is a separate reviewed deployment step. Component tags
+publish immutable images. Production uses a dedicated `golf_runtime` role in the
+existing backed-up Cards schema; it cannot read shared account or other game
+tables. Explicit `python -m golf_server.schema upgrade` adopts `golf_001`;
+`python -m golf_server.schema check` verifies readiness. Image startup never runs
+the migration. `/health` reports the published version and source revision.
 
 ## Results and recovery
 

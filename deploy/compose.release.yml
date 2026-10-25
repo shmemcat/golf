@@ -1,0 +1,47 @@
+# Overlay for Cards' disposable pinned-image PostgreSQL rehearsal.
+x-golf-env: &golf-env
+  GOLF_DATABASE_URL: postgresql://golf_runtime:split-golf-local@db:5432/${SPLIT_DATABASE_NAME}${SPLIT_DATABASE_OPTIONS:-}
+  GOLF_SECRET_KEY: ${SPLIT_GOLF_SECRET:?}
+  CARDS_PUBLIC_URL: ${SPLIT_PUBLIC_URL:?}
+  CORS_ORIGINS: ${SPLIT_PUBLIC_URL:?}
+  CARDS_ACCOUNTS_URL: http://accounts:5001
+  CARDS_SERVICE_TOKEN: ${SPLIT_GOLF_READ:?}
+  CARDS_GAME_ACCOUNT_TOKENS: '{"golf":"${SPLIT_GOLF_CALLBACK:?}"}'
+services:
+  db:
+    volumes:
+      - ${SPLIT_GOLF_DIR}/roles.sql:/docker-entrypoint-initdb.d/02-golf.sql:ro
+  accounts:
+    environment:
+      CARDS_INTERNAL_CLIENTS: >-
+        {"hearts-game":{"token":"${SPLIT_HEARTS_READ}","scopes":["sessions.validate","profiles.read"]},"euchre-game":{"token":"${SPLIT_EUCHRE_READ}","scopes":["sessions.validate","profiles.read"]},"golf-game":{"token":"${SPLIT_GOLF_READ}","scopes":["sessions.validate","profiles.read"]}}
+      CARDS_GAME_SERVICES: >-
+        {"hearts":{"url":"http://hearts:5001","token":"${SPLIT_HEARTS_CALLBACK}"},"euchre":{"url":"http://euchre:5002","token":"${SPLIT_EUCHRE_CALLBACK}"},"golf":{"url":"http://golf:5003","token":"${SPLIT_GOLF_CALLBACK}"}}
+  golf-migrate:
+    image: ${GOLF_IMAGE:?}
+    environment:
+      <<: *golf-env
+      GOLF_DATABASE_URL: postgresql://migrator:split-migration-local@db:5432/${SPLIT_DATABASE_NAME}${SPLIT_DATABASE_OPTIONS:-}
+    command: [python, -m, golf_server.schema, upgrade]
+    depends_on:
+      grants: {condition: service_completed_successfully}
+  golf-grants:
+    image: postgres:18-alpine
+    environment:
+      PGPASSWORD: split-migration-local
+      PGOPTIONS: ${SPLIT_PGOPTIONS:-}
+    volumes: ["${SPLIT_GOLF_DIR}/grants.sql:/golf-grants.sql:ro"]
+    command: [psql, -h, db, -U, migrator, -d, "${SPLIT_DATABASE_NAME}", -f, /golf-grants.sql]
+    depends_on:
+      golf-migrate: {condition: service_completed_successfully}
+  golf:
+    image: ${GOLF_IMAGE:?}
+    environment: *golf-env
+    depends_on:
+      golf-grants: {condition: service_completed_successfully}
+  golf-web:
+    image: ${GOLF_WEB_IMAGE:?}
+  gateway:
+    depends_on:
+      golf: {condition: service_healthy}
+      golf-web: {condition: service_healthy}

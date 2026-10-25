@@ -1,0 +1,6 @@
+{
+  "component": "golf-web",
+  "image": "ghcr.io/shmemcat/golf-web",
+  "tagPrefix": "web-v",
+  "schemaRevision": null
+}

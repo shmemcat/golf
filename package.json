@@ -15,6 +15,7 @@
     "test:api": "uv run --directory api python -m pytest",
     "test:online": "node --test scripts/online.test.mjs",
     "test:accounts": "node --test scripts/shared-accounts.test.mjs",
-    "preview": "npm --prefix web run preview"
+    "preview": "npm --prefix web run preview",
+    "test:release": "node --test scripts/component-release.test.mjs"
   }
 }

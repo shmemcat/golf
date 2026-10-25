@@ -115,7 +115,9 @@ def create_app(config=None, *, accounts=None):
 
     @app.get("/health")
     def health():
-        return jsonify(status="ok", component="golf-game", socket_path="/golf/socket.io", namespace=NAMESPACE)
+        return jsonify(status="ok", component="golf-game", socket_path="/golf/socket.io", namespace=NAMESPACE,
+                       version=os.environ.get("GOLF_SERVER_VERSION", "development"),
+                       revision=os.environ.get("GOLF_SOURCE_REVISION", "unknown"))
 
     @app.get("/ready")
     def ready():
