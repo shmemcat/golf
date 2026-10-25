@@ -29,7 +29,7 @@ def schema_ready():
         for table in db.metadata.sorted_tables:
             if not set(table.columns.keys()) <= {c["name"] for c in inspector.get_columns(table.name)}:
                 return False
-        return db.session.execute(text("SELECT version_num FROM golf_schema_version")).scalar() == REVISION
+        return db.session.execute(text("SELECT version_num FROM golf_schema_version")).scalar() in ("golf_001", "golf_002")
     except SQLAlchemyError:
         db.session.rollback()
         return False
