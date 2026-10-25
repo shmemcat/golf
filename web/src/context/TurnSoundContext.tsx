@@ -9,11 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faChevronDown,
-  faPlay,
-  faStop,
-} from "@fortawesome/pro-solid-svg-icons";
+import { faChevronDown, faPlay } from "@fortawesome/pro-solid-svg-icons";
 import { useAuth } from "@/context/AuthContext";
 
 import {
@@ -32,7 +28,6 @@ type TurnSoundState = Options & {
   saving: boolean;
   error: string;
   available: boolean;
-  previewing: boolean;
   update: (value: TurnSoundUpdate) => Promise<void>;
   preview: (volume: number) => void;
   setPlaybackVolume: (volume: number) => void;
@@ -44,7 +39,6 @@ const Context = createContext<TurnSoundState>({
   saving: false,
   error: "",
   available: false,
-  previewing: false,
   update: async () => {},
   preview: () => {},
   setPlaybackVolume: () => {},
@@ -90,7 +84,6 @@ function AccountTurnSound({
     error: "",
   });
   const [player] = useState(createTurnSoundPlayer);
-  const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState("");
   const pending = useRef<{ accountId: string } | null>(null);
   const currentAccount = useRef(accountId);
@@ -107,13 +100,11 @@ function AccountTurnSound({
   }, [accountId, value.enabled, value.sound, value.volume]);
   useEffect(() => {
     player.stop();
-    setPreviewing(false);
     setPreviewError("");
   }, [accountId, player]);
   useEffect(() => {
     if (!enabled) {
       player.stop();
-      setPreviewing(false);
     }
   }, [enabled, player]);
   useEffect(() => () => player.stop(), [player]);
@@ -147,18 +138,11 @@ function AccountTurnSound({
   };
   const preview = (volume: number) => {
     if (!enabled) return;
-    if (previewing) {
-      player.stop();
-      return;
-    }
     setPreviewError("");
-    setPreviewing(true);
     player.play(
       options.sound,
       volume,
-      () => {
-        if (currentAccount.current === accountId) setPreviewing(false);
-      },
+      undefined,
       () => {
         if (currentAccount.current === accountId)
           setPreviewError("Unable to preview this sound. Please try again.");
@@ -177,7 +161,6 @@ function AccountTurnSound({
         available,
         saving,
         error,
-        previewing,
         update,
         preview,
         playIndicator,
@@ -197,7 +180,6 @@ export function TurnSoundOption() {
     available,
     saving,
     error,
-    previewing,
     update,
     preview,
     setPlaybackVolume,
@@ -249,11 +231,11 @@ export function TurnSoundOption() {
               type="button"
               className={`${buttons["menu-button"]} ${styles.preview}`}
               onClick={() => preview(draftVolume)}
-              aria-label={previewing ? "Stop preview" : "Preview sound"}
+              aria-label="Preview sound"
             >
               <span className={buttons["button-shine"]} aria-hidden="true" />
-              <FontAwesomeIcon icon={previewing ? faStop : faPlay} />
-              <span>{previewing ? "Stop" : "Preview"}</span>
+              <FontAwesomeIcon icon={faPlay} />
+              <span>Preview</span>
             </button>
           </div>
           <div className={styles.volume}>

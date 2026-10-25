@@ -52,7 +52,7 @@
   padding: 11px 48px 11px 14px;
   font: inherit;
   font-size: 16px;
-  letter-spacing: 0.3px;
+  letter-spacing: inherit;
   cursor: pointer;
 }
 .chevron {
@@ -132,6 +132,9 @@
   }
 }
 @media (max-width: 350px) {
+  .selectorRow {
+    gap: 6px;
+  }
   .preview svg {
     display: none;
   }
