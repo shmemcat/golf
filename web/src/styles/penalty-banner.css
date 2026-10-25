@@ -1,0 +1,31 @@
+.golf-penalty-banner {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 15px;
+  border-left: 3px solid var(--darkpink);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--lightpink) 18%, var(--contentbox));
+  color: var(--text);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.golf-round-summary .golf-penalty-banner { margin-bottom: 22px; }
+.golf-penalty-banner .golf-penalty-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 .4em;
+  margin: 0;
+  color: var(--darkpink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.golf-penalty-heading > span { min-width: 0; }
+.golf-penalty-heading > span:last-child { white-space: nowrap; }
+.golf-penalty-banner .golf-penalty-description {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+}

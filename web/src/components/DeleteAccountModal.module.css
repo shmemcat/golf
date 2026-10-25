@@ -1,0 +1,51 @@
+.modal {
+  position: fixed;
+  margin: auto;
+  width: min(396px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  box-sizing: border-box;
+  padding: 24px 28px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--contentbox);
+  color: var(--text);
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .25);
+  overflow-y: auto;
+}
+.modal[open] { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.modal::backdrop { background: rgba(0, 0, 0, .4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.title { margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--header); }
+.message { margin: 0; font-size: 1rem; }
+.buttons, .form { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+.form input { width: 100%; }
+.form p { margin: 0; }
+.dangerButton {
+  position: relative;
+  background-color: hsl(0, 55%, 58%);
+  border-style: none;
+  color: white;
+  font-family: "appFont";
+  font-weight: var(--button-label-weight);
+  font-size: var(--button-label-size);
+  letter-spacing: var(--button-label-spacing);
+  text-align: center;
+  text-transform: capitalize;
+  border-radius: 8px;
+  width: 225px;
+  max-width: 100%;
+  height: 35px;
+  box-shadow: inset -3px -3px 0 hsla(0, 50%, 40%, .4);
+}
+.dangerButton:not(:disabled):hover { background-color: hsl(0, 60%, 48%); cursor: pointer; box-shadow: inset -3px -3px 0 hsla(0, 55%, 32%, .5); }
+.dangerButton:disabled { opacity: .5; cursor: not-allowed; box-shadow: inset -3px -3px 0 hsla(0, 50%, 40%, .2); }
+.dangerButton:not(:disabled):hover:active { box-shadow: inset 3px 3px 0 hsla(0, 55%, 32%, .5); }
+.dangerShine { position: absolute; top: 2.5px; left: 2px; transform: rotate(-25deg); width: 12px; height: 7px; border-radius: 100%; background: hsla(0, 100%, 90%, .5); }
+.dangerButton:not(:disabled):hover .dangerShine { background: hsla(0, 80%, 80%, .5); }
+.dangerButton:disabled .dangerShine { background: hsla(0, 100%, 90%, .25); }
+.dangerButton:not(:disabled):hover:active .dangerShine { transition: 0ms; background: transparent; }
+@media (max-width: 768px) { .dangerButton { width: 190px; height: 44px; } }
+@media (hover: none) {
+  .dangerButton:not(:disabled):hover { background-color: hsl(0, 55%, 58%); box-shadow: inset -3px -3px 0 hsla(0, 50%, 40%, .4); }
+  .dangerButton:not(:disabled):hover .dangerShine { background: hsla(0, 100%, 90%, .5); }
+}

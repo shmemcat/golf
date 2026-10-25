@@ -10,10 +10,13 @@ html {
   --contentbox: #f0f3e9;
   --mediumpink: #e2e9dc;
   --lightpink: #cf9f9c;
+  --sparkle: #cf9f9c;
   --hoverpink: #bd8b88;
   --heartslogo: #a8bea4;
   --header: #304339;
   --text: #304339;
+  --tooltipbackground: #e4b4ad;
+  --tooltiptext: #304339;
   --buttontext: #293f35;
   --darkpink: #925d60;
   --tan: #925d60;
@@ -61,10 +64,13 @@ html[data-theme="dark"] {
   --contentbox: #344c40;
   --mediumpink: #405c4e;
   --lightpink: #cf9f9c;
+  --sparkle: #faf6ee;
   --hoverpink: #ddb0a8;
   --heartslogo: #7c9885;
   --header: #f0eee1;
   --text: #f0eee1;
+  --tooltipbackground: #1e302b;
+  --tooltiptext: #f0eee1;
   --buttontext: #293f35;
   --darkpink: #e4b4ad;
   --tan: #e4b4ad;
@@ -144,14 +150,13 @@ fieldset {
   min-width: 0;
 }
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
-  min-height: 44px;
+  min-height: var(--form-input-height, 44px);
   width: 100%;
   box-sizing: border-box;
-  padding: 8px 12px;
+  padding: var(--form-input-padding, 8px 12px);
 }
 button:focus-visible,
 a:focus-visible,
-input:focus-visible,
 [tabindex="0"]:focus-visible {
   outline: 2px solid var(--header);
   outline-offset: 4px;
@@ -162,8 +167,8 @@ input:focus-visible,
   flex-shrink: 0;
 }
 [class*="page-title-container"] h1[class*="long-title"] {
-  font-size: clamp(36px, 5.2vw, 58px);
-  letter-spacing: 0.12em;
+  font-size: 64px;
+  letter-spacing: 0.3em;
 }
 .site-nav {
   display: flex;
@@ -285,12 +290,6 @@ input:focus-visible,
   white-space: nowrap;
   border: 0;
 }
-.account-settings {
-  position: absolute;
-  right: 40px;
-  top: 85px;
-  z-index: 4;
-}
 .account-body {
   max-width: 400px;
   width: 100%;
@@ -299,30 +298,51 @@ input:focus-visible,
   margin-bottom: 24px;
 }
 .signin-form {
+  --form-input-height: 35px;
+  --form-input-padding: 6px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: 18px;
   text-align: left;
-  max-width: 320px;
+  width: 340px;
+  max-width: 100%;
   margin: 0 auto;
 }
 .signin-form label {
-  font-size: 16px;
-  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
 }
 .signin-form input {
-  margin-bottom: 6px;
+  font-size: 16px;
+  line-height: 20px;
 }
-.signin-form button {
-  margin: 12px auto 0;
+input:is(:focus, :focus-visible, :active) {
+  outline: none;
+  box-shadow: none;
+}
+.signin-form button[type="submit"] {
+  width: 225px;
+  max-width: 100%;
+}
+.signin-form .inline-error {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 16px;
+  letter-spacing: 0.5px;
 }
 .account-links {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 2px;
   align-items: center;
   font-size: 16px;
-  margin-top: 24px;
+  margin-top: 16px;
 }
 .account-avatar {
   background: var(--mediumpink);
@@ -391,13 +411,6 @@ input.lobby-code {
   max-width: 260px;
   text-align: center;
 }
-.options-body {
-  max-width: 440px;
-  width: 100%;
-}
-.options-body section {
-  margin-bottom: 32px;
-}
 .audio-settings {
   max-width: 330px;
   margin: 0 auto;
@@ -443,6 +456,9 @@ input.lobby-code {
 .prose p {
   margin-bottom: 20px;
 }
+.about-body .bold {
+  font-size: inherit;
+}
 .playing-card {
   --card-width: 80px;
   width: var(--card-width);
@@ -467,20 +483,23 @@ input.lobby-code {
   display: block;
   object-fit: cover;
 }
-.card-label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.1;
+.card-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  font-family: inherit;
   font-variant-numeric: lining-nums tabular-nums;
   letter-spacing: 0;
 }
-.card-label svg {
-  width: 24px;
-  height: 24px;
+.card-art text {
+  font-size: 28px;
+  font-weight: 700;
+}
+/* Suit changes are card identity changes, so never interpolate their colors. */
+.playing-card,
+.playing-card * {
+  transition: none;
 }
 .deck-preview {
   display: flex;
@@ -514,24 +533,11 @@ input.lobby-code {
   padding-left: 6px;
   margin-bottom: 10px;
 }
-.rule-pair {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  gap: 8px 24px;
-  width: fit-content;
-  margin: 20px auto 0;
-}
-.rule-pair .playing-card {
-  grid-column: 1;
-  --card-width: 62px;
-}
 .score-badge {
-  grid-column: 2;
-  grid-row: 1 / 3;
+  display: inline-block;
   border: 1px solid var(--infopillborder);
   border-radius: 50px;
-  padding: 8px 16px;
+  padding: 4px 12px;
   background: var(--mediumpink);
   font-weight: 700;
 }
@@ -639,10 +645,6 @@ figcaption {
   .icon-button,
   .nav-user {
     min-height: 44px;
-  }
-  .account-settings {
-    right: 24px;
-    top: 84px;
   }
   .rule-content {
     text-align: left;

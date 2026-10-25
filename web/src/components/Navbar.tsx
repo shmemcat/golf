@@ -182,7 +182,7 @@ function NavActions() {
         />
       </button>
       <Link
-        to="/user"
+        to={user ? "/profile" : "/user"}
         className="nav-user"
         aria-label={user ? "Your account" : "Guest account"}
       >

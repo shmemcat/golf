@@ -8,6 +8,8 @@ import { privateBoundary } from "./dev/private-boundary";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const proxy = {
+    "/api/golf": { target: env.GOLF_API_TARGET || "http://127.0.0.1:5103" },
+    "/golf/socket.io": { target: env.GOLF_API_TARGET || "http://127.0.0.1:5103", ws: true },
     "/api/account": {
       target: env.ACCOUNT_PROXY_TARGET || "http://127.0.0.1:5100",
       changeOrigin: true,

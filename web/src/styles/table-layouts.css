@@ -1,0 +1,74 @@
+.layout-page {
+  width: min(1250px, calc(100% - 48px));
+  margin: 24px auto;
+  color: var(--text);
+}
+.layout-page-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 34px 0 26px; }
+.layout-eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--link); }
+.layout-page-heading h1 { margin: 8px 0 10px; font-size: 34px; letter-spacing: .5px; }
+.layout-page-heading p { margin: 0; font-size: 15px; }
+.layout-page-heading a { color: var(--link); font-size: 13px; white-space: nowrap; }
+.layout-controls { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding: 18px 0; border-top: 1px solid var(--infopillborder); border-bottom: 1px solid var(--infopillborder); }
+.layout-count, .layout-presets { display: flex; gap: 6px; }
+.layout-count button, .layout-presets button { border: 1px solid var(--infopillborder); background: transparent; color: var(--text); border-radius: 8px; padding: 8px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.layout-count button[aria-pressed="true"], .layout-presets button[aria-pressed="true"] { background: var(--infopillbg); border-color: var(--lightpink); color: var(--header); }
+.layout-count button[aria-pressed="true"] { font-weight: 700; }
+.layout-width { display: flex; flex-direction: column; gap: 4px; width: 190px; font-size: 12px; }
+.layout-width > span { display: flex; justify-content: space-between; }
+.layout-width output { font-variant-numeric: tabular-nums; }
+.layout-width input { accent-color: var(--lightpink); width: 100%; margin: 0; }
+.layout-actor { display: flex; gap: 7px; align-items: center; margin-left: auto; font-size: 12px; }
+.layout-actor input { accent-color: var(--lightpink); }
+.layout-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin: 24px 0 28px; }
+.layout-option { display: block; padding: 14px 10px 10px; min-width: 0; border: 1px solid var(--infopillborder); border-radius: 12px; background: var(--contentbox); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.layout-option[aria-pressed="true"] { outline: 2px solid var(--lightpink); outline-offset: 2px; }
+.layout-option:is(:hover, :focus-visible) { border-color: var(--lightpink); }
+.layout-option-title { display: flex; align-items: baseline; gap: 9px; font-size: 13px; }
+.layout-option-title b { color: var(--link); font-size: 15px; }
+.layout-option-position { display: block; text-align: center; font-size: 11px; margin-top: 5px; opacity: .75; }
+.layout-mini { width: 100%; height: 145px; display: block; margin-top: 10px; }
+.layout-mini-divider { stroke: var(--infopillborder); stroke-width: 3px; }
+.layout-mini-back { fill: var(--infopillbg); stroke: var(--cardborder); stroke-width: 3px; }
+.layout-mini-human { fill: var(--infopillbg); stroke: var(--lightpink); stroke-width: 5px; }
+.layout-mini-front { fill: var(--cardface); stroke: var(--cardborder); stroke-width: 2px; }
+.layout-mini-draw-backing { fill: var(--lightpink); opacity: .7; }
+.layout-mini text { fill: var(--text); font-size: 34px; font-family: inherit; }
+.layout-mini .layout-mini-q { fill: var(--cardblacksuit); font-size: 35px; font-weight: 700; }
+.layout-detail-heading { display: flex; justify-content: space-between; gap: 30px; align-items: center; margin: 0 0 20px; }
+.layout-detail-heading h2 { font-size: 24px; margin: 0 0 7px; }
+.layout-detail-heading p { font-size: 14px; line-height: 1.5; margin: 0; }
+.layout-detail-heading .layout-tradeoff { max-width: 310px; font-size: 12px; opacity: .8; }
+.layout-board-scroll { overflow-x: auto; padding: 6px; margin: -6px; }
+.layout-board { --tableau-gap: 10px; --tableau-row-gap: 14px; background: var(--contentbox); border-radius: 18px; margin: 0 auto; padding: 20px 22px; box-sizing: border-box; }
+.layout-board-header { height: 128px; position: relative; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--infopillborder); box-sizing: border-box; }
+.layout-preview-label { font-size: 11px; letter-spacing: .7px; opacity: .6; }
+.layout-piles { display: flex; gap: 30px; position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
+.layout-piles .golf-pile-button { --card-width: 58px; }
+.layout-piles .playing-card { --card-width: inherit; width: 100%; height: 100%; }
+.layout-header-placeholder { width: 58px; }
+.layout-field { position: relative; margin: 0 -22px; }
+.golf-seat.layout-seat { display: block; transform: none; }
+.layout-seat .layout-name { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(100% + 24px); white-space: nowrap; }
+.layout-seat[data-label="below"] .layout-name { top: calc(100% + 24px); bottom: auto; }
+.layout-card { --golf-backing-inset: -4px; width: var(--card-width); height: calc(var(--card-width) * 1.4); border-radius: 7px; }
+.layout-card .playing-card { --card-width: inherit; width: 100%; height: 100%; }
+.layout-board .golf-selection-indicator::after { animation: none; }
+.layout-drawn { position: absolute; width: var(--card-width); text-align: center; }
+.layout-drawn > span { display: block; white-space: nowrap; font-size: 11px; margin-top: 8px; position: relative; left: 50%; transform: translateX(-50%); width: max-content; }
+.layout-phase-hint { position: absolute; left: 50%; transform: translateX(-50%); width: 410px; max-width: 55%; text-align: center; font-size: 14px; line-height: 1.5; margin: 0; color: var(--header); }
+.layout-footnote { font-size: 12px; opacity: .7; margin: 20px 0 32px; line-height: 1.5; }
+@media (max-width: 1050px) {
+  .layout-controls { gap: 18px; }
+  .layout-actor { margin-left: 0; }
+  .layout-option-title { font-size: 12px; gap: 6px; }
+  .layout-mini { height: 120px; }
+  .layout-option-position { font-size: 10px; }
+}
+@media (max-width: 760px) {
+  .layout-page { width: calc(100% - 32px); }
+  .layout-page-heading { align-items: start; flex-direction: column; gap: 12px; }
+  .layout-page-heading h1 { font-size: 28px; }
+  .layout-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .layout-detail-heading { align-items: start; flex-direction: column; gap: 8px; }
+  .layout-detail-heading .layout-tradeoff { max-width: none; }
+}

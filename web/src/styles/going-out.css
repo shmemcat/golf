@@ -1,0 +1,64 @@
+.golf-game { position: relative; }
+.golf-going-out-announcer {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.golf-going-out-notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 22px 26px;
+  border: 1px solid var(--infopillborder);
+  border-radius: 16px;
+  background: var(--contentbox);
+  color: var(--text);
+  text-align: left;
+  animation: golf-going-out-fade 2s ease-in-out both;
+}
+.golf-going-out-notice > svg { font-size: 30px; color: var(--tan); }
+.golf-going-out-notice strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: .2px;
+  overflow-wrap: anywhere;
+}
+.golf-going-out-notice div > span {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  letter-spacing: .1px;
+}
+.golf-going-out-flag {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  color: var(--tan);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+.golf-going-out-flag svg { opacity: 1; }
+@keyframes golf-going-out-fade {
+  0%, 100% { opacity: 0; }
+  25%, 75% { opacity: 1; }
+}
+@media (max-width: 700px) {
+  .golf-going-out-notice { gap: 12px; padding: 18px; }
+  .golf-going-out-notice strong { font-size: 19px; }
+  .golf-going-out-notice div > span { font-size: 12px; }
+  .golf-going-out-flag { gap: 3px; font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .golf-going-out-notice { animation: none; }
+}

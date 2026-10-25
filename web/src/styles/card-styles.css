@@ -1,0 +1,60 @@
+.golf-style-page {
+  max-width: 1240px;
+  margin: 24px auto;
+  padding: 0 24px 28px;
+  color: var(--text);
+}
+.golf-style-heading { margin: 32px 0 24px; }
+.golf-style-heading h1 { margin: 0 0 12px; font-size: 32px; letter-spacing: 1px; }
+.golf-style-heading p { font-size: 15px; margin: 0 0 8px; }
+.golf-style-heading a { font-size: 14px; color: var(--link); }
+.golf-style-theme {
+  --cardface: #faf6ee;
+  --cardborder: #a5af9c;
+  --cardblacksuit: #293f35;
+  --cardredsuit: #a24e59;
+  --lightpink: #cf9f9c;
+  --contentbox: #f0f3e9;
+  --cardhighlight: #925d60;
+  --sample-ink: #304339;
+  padding: 20px;
+  margin-top: 20px;
+  border-radius: 16px;
+  background: var(--contentbox);
+  color: var(--sample-ink);
+  color-scheme: light;
+}
+.golf-style-theme[data-preview-theme="dark"] {
+  --contentbox: #344c40;
+  --cardhighlight: #cf9f9c;
+  --sample-ink: #f0eee1;
+  color-scheme: dark;
+}
+.golf-style-theme h2 { margin: 0 0 18px; font-size: 18px; letter-spacing: .4px; }
+.golf-style-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; }
+.golf-style-example { min-width: 0; }
+.golf-style-example h3 { margin: 0 0 16px; font-size: 15px; font-weight: 600; letter-spacing: .1px; }
+.golf-style-example h3 > span { opacity: .6; margin-right: 3px; }
+.golf-style-cards { display: flex; justify-content: flex-start; gap: 10px; padding: 4px 0; }
+.golf-style-cards > div { display: flex; flex-direction: column; align-items: center; gap: 13px; }
+.golf-style-card {
+  --card-width: 50px;
+  width: var(--card-width);
+  height: calc(var(--card-width) * 1.4);
+  display: block;
+  border: 0;
+  border-radius: 7px;
+  padding: 0;
+  background: transparent;
+  transition: transform .32s;
+}
+.golf-style-card .playing-card { --card-width: inherit; width: 100%; height: 100%; }
+.golf-style-card:enabled:is(:hover, :focus-visible) { transform: translateY(-6px); }
+.golf-style-cards > div > span { font-size: 11px; opacity: .7; }
+.golf-style-example p { min-height: 36px; margin: 12px 0 6px; font-size: 12px; line-height: 1.45; letter-spacing: .1px; }
+.golf-style-try { font-size: 11px; text-underline-offset: 3px; color: inherit; }
+.golf-style-note { font-size: 13px; margin: 20px 0 0; opacity: .8; }
+@media (max-width: 1120px) { .golf-style-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; } }
+@media (max-width: 680px) { .golf-style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 16px; } }
+@media (max-width: 460px) { .golf-style-grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .golf-style-card { transition: none; } }

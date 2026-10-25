@@ -1,0 +1,71 @@
+/* The same treatments are used on the table and in the light/dark comparison. */
+.golf-selection {
+  position: relative;
+  isolation: isolate;
+}
+.golf-selection-indicator {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.golf-selection-indicator::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--cardhighlight);
+  border-radius: inherit;
+  pointer-events: none;
+}
+[data-selection-style="outline"] .golf-selection-indicator::after {
+  inset: -4px;
+  border-width: 1px;
+  border-color: var(--cardhighlight);
+}
+[data-selection-style="corners"] .golf-selection-indicator::after {
+  --corner-ink: var(--cardhighlight);
+  inset: -4px;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(var(--corner-ink), var(--corner-ink)) left top / 12px 2px,
+    linear-gradient(var(--corner-ink), var(--corner-ink)) left top / 2px 12px,
+    linear-gradient(var(--corner-ink), var(--corner-ink)) right top / 12px 2px,
+    linear-gradient(var(--corner-ink), var(--corner-ink)) right top / 2px 12px,
+    linear-gradient(var(--corner-ink), var(--corner-ink)) left bottom / 12px 2px,
+    linear-gradient(var(--corner-ink), var(--corner-ink)) left bottom / 2px 12px,
+    linear-gradient(var(--corner-ink), var(--corner-ink)) right bottom / 12px 2px,
+    linear-gradient(var(--corner-ink), var(--corner-ink)) right bottom / 2px 12px;
+  background-repeat: no-repeat;
+}
+[data-selection-style="underline"] .golf-selection-indicator::after {
+  inset: auto 4px -6px;
+  height: 3px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--cardhighlight);
+}
+[data-selection-style="backing"] .golf-selection-indicator {
+  z-index: -1;
+}
+[data-selection-style="backing"] .golf-selection-indicator::after {
+  --backing-inset: var(--golf-backing-inset, -5px);
+  inset: var(--backing-inset) calc(var(--backing-inset) - var(--golf-stack-depth, 0px)) calc(var(--backing-inset) - var(--golf-stack-depth, 0px)) var(--backing-inset);
+  border-width: 1px;
+  border-color: color-mix(in srgb, var(--cardhighlight) 60%, transparent);
+  background: color-mix(in srgb, var(--lightpink) 22%, var(--contentbox));
+  border-radius: 10px;
+  animation: golf-backing-breathe 8s ease-in-out infinite;
+}
+@keyframes golf-backing-breathe {
+  /* Hold for four seconds, fade out for two, then fade back in for two. */
+  0%, 50%, 100% { opacity: 1; }
+  75% { opacity: .18; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-selection-style="backing"] .golf-selection-indicator::after {
+    animation: none;
+    opacity: 1;
+  }
+}

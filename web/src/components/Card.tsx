@@ -1,4 +1,3 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpade } from "@fortawesome/pro-solid-svg-icons/faSpade";
 import { faHeart } from "@fortawesome/pro-solid-svg-icons/faHeart";
 import { faClub } from "@fortawesome/pro-solid-svg-icons/faClub";
@@ -31,9 +30,11 @@ export function Card({
         alt="Face-down card"
         width="80"
         height="112"
+        draggable={false}
       />
     );
   const [label, icon] = suits[suit];
+  const [iconWidth, iconHeight, , , paths] = icon.icon;
   return (
     <div
       className={`playing-card card-face ${
@@ -42,10 +43,13 @@ export function Card({
       role="img"
       aria-label={`${rankNames[rank] || rank} of ${label}`}
     >
-      <span className="card-label">
-        <span>{rank}</span>
-        <FontAwesomeIcon icon={icon} />
-      </span>
+      {/* One coordinate system keeps the face proportional at every card size. */}
+      <svg className="card-art" viewBox="0 0 80 112" aria-hidden="true" focusable="false">
+        <text x="40" y="50" textAnchor="middle">{rank}</text>
+        <svg x="28" y="60" width="24" height="24" viewBox={`0 0 ${iconWidth} ${iconHeight}`}>
+          {(Array.isArray(paths) ? paths : [paths]).map((path, index) => <path key={index} d={path} />)}
+        </svg>
+      </svg>
     </div>
   );
 }

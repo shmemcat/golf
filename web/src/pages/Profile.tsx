@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { Navigate, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleCheck } from "@fortawesome/pro-solid-svg-icons/faCircleCheck";
 import { faTriangleExclamation } from "@fortawesome/pro-solid-svg-icons/faTriangleExclamation";
 import { PageLayout } from "@/components/ui/PageLayout";
-import { MenuLink } from "@/components/Buttons";
+import { Button, MenuLink } from "@/components/Buttons";
+import { AccountSummary } from "@/components/AccountSummary";
+import { DangerButton, DeleteAccountModal } from "@/components/DeleteAccountModal";
+import { clearResults } from "@/lib/results";
 import { useAuth } from "@/context/AuthContext";
 import {
   PROFILE_ICONS,
@@ -14,7 +18,14 @@ import {
 import styles from "@/styles/profile.module.css";
 
 export default function Profile() {
-  const { user, loading, updateProfile } = useAuth();
+  const { user } = useAuth();
+  return <ProfileContent key={user?.id ?? "guest"} />;
+}
+
+function ProfileContent() {
+  const { user, loading, error: authError, updateProfile, logout, deleteAccount } = useAuth();
+  const navigate = useNavigate();
+  const [deleting, setDeleting] = useState(false);
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState(user?.email ?? "");
   const [busy, setBusy] = useState(false);
@@ -39,6 +50,7 @@ export default function Profile() {
       setBusy(false);
     }
   };
+  if (!user && !loading) return <Navigate to="/user" replace />;
   return (
     <>
       <Helmet>
@@ -47,7 +59,7 @@ export default function Profile() {
       <PageLayout title="PROFILE">
         {user ? (
           <>
-            <h2>Profile Icon</h2>
+            <h2 className="account-name">{user.name}</h2>
             <div className={styles.iconPreview}>
               <button
                 type="button"
@@ -89,7 +101,7 @@ export default function Profile() {
                             aria-pressed={
                               (user.profile_icon ?? "user") === icon.key
                             }
-                            disabled={busy}
+                            disabled={busy || loading}
                             onClick={() =>
                               void save({
                                 profile_icon: icon.key,
@@ -105,6 +117,7 @@ export default function Profile() {
                 </div>
               </div>
             )}
+            <AccountSummary key={user.id} userId={user.id} />
             <section className={styles.emailSection}>
               <h2>Email</h2>
               <form
@@ -125,14 +138,14 @@ export default function Profile() {
                   required
                   maxLength={255}
                   value={email}
-                  readOnly={busy}
+                  readOnly={busy || loading}
                   onChange={(event) => setEmail(event.target.value)}
                 />
                 <button
                   className={styles.emailSaveBtn}
                   type="submit"
                   disabled={
-                    busy ||
+                    busy || loading ||
                     email.trim().toLowerCase() ===
                       (user.email ?? "").toLowerCase()
                   }
@@ -162,15 +175,21 @@ export default function Profile() {
             {message}
           </p>
         )}
-        {error && (
+        {(error || authError) && (
           <p role="alert" className="inline-error">
-            {error}
+            {error || authError}
           </p>
         )}
         <div className="button-stack">
-          <MenuLink to="/user" name={user ? "Back" : "Sign In"} />
+          {user && <Button name={loading ? "Signing Out…" : "Sign Out"} disabled={loading || busy} onClick={() => void logout()} />}
           <MenuLink to="/" name="Home" />
         </div>
+        {user && <DangerButton name="Delete Account" disabled={loading || busy} onClick={() => setDeleting(true)} />}
+        {user && deleting && <DeleteAccountModal onClose={() => setDeleting(false)} onDelete={async password => {
+          const result = await deleteAccount(password);
+          clearResults(user.id);
+          navigate("/user", { replace: true, state: { notice: result.message || "Account deleted." } });
+        }} />}
       </PageLayout>
     </>
   );

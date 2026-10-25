@@ -19,7 +19,7 @@
   border: 3px solid transparent;
   transition: border-color 0.2s ease, transform 0.15s ease,
     box-shadow 0.15s ease;
-  min-width: 180px;
+  min-width: 300px;
   flex: 1 1 0;
   text-decoration: none;
 }
@@ -31,10 +31,10 @@
 }
 
 .choiceLabel {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--header);
+  color: var(--darkpink);
   text-align: center;
 }
 
@@ -47,7 +47,52 @@
   padding-bottom: 4px;
 }
 
+.createSetup {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.createSetup > fieldset { width: 100%; }
+.createSetup > p { margin: 0; }
+.createSetup > :global(.field-label) { margin: 0; }
+.createSetup > :global(.button-stack) { margin: 0 0 16px; }
+
+.createSetup .gameType {
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+  gap: 4px 24px;
+}
+
+.createSetup .gameType label { min-height: 44px; }
+.gameType input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--radiobutton);
+}
+
+.gameType input:focus-visible {
+  outline: 2px solid var(--header);
+  outline-offset: 3px;
+}
+
+.joinSetup { max-width: 440px; text-align: center; }
+.joinSetup h2 { margin: 0; }
+.joinHint { margin: 16px 0 24px; line-height: 1.5; }
+.joinSetup input {
+  border: 2px solid var(--darkpink);
+  border-radius: 8px;
+  background: var(--contentbox);
+  color: var(--header);
+  font-weight: 600;
+}
+.joinSetup input.joinCode { width: 100%; max-width: 240px; font: inherit; font-weight: 600; letter-spacing: 3px; }
+.joinName { display: grid; gap: 8px; width: min(240px, 100%); margin: 20px auto 0; text-align: left; font-size: 14px; font-weight: 600; }
+
 @media only screen and (max-width: 768px) {
+  .createSetup { gap: 24px; }
+  .createSetup .gameType { flex-direction: column; padding-inline: 16px; gap: 4px; font-size: 16px; letter-spacing: 2px; }
   .grid {
     flex-direction: column;
     width: 100%;

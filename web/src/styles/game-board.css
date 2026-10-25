@@ -1,0 +1,304 @@
+/* Golf shares the sister games' quiet seats, turn outline, card lift and hint. */
+.golf-game-shell {
+  container-type: inline-size;
+  width: min(1030px, 95vw);
+  margin: 20px auto;
+  padding: 26px 35px 24px;
+  padding-inline: clamp(18px, 3.4vw, 35px);
+  box-sizing: border-box;
+  border-radius: 20px;
+  background: var(--contentbox);
+  color: var(--text);
+}
+.golf-game {
+  /* One ratio for every card, based on the table's normal 960px content width. */
+  --golf-card-unit: min(1px, calc(100cqw / 960));
+  --player-card-width: calc(76 * var(--golf-card-unit));
+  --opponent-card-width: calc(56 * var(--golf-card-unit));
+  --pile-card-width: calc(62 * var(--golf-card-unit));
+  margin-top: 16px;
+  outline: none;
+}
+.golf-table-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--infopillborder);
+}
+.golf-match-status { display: flex; align-items: flex-start; flex-direction: column; gap: 10px; }
+.golf-info-pill {
+  padding: 4px 13px;
+  border: 1px solid var(--infopillborder);
+  border-radius: 50px;
+  background: var(--infopillbg);
+  color: var(--infopilltext);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.golf-info-pill > span { opacity: .6; }
+.golf-final-turns { color: var(--tan); font-size: 13px; padding-left: 8px; }
+.golf-piles { display: flex; gap: 30px; padding-top: 3px; }
+.golf-pile { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; }
+.golf-pile-button, .golf-empty-pile {
+  --card-width: var(--pile-card-width, clamp(48px, 7vh, 62px));
+  display: block;
+  width: var(--card-width);
+  height: calc(var(--card-width) * 1.4);
+  border: 0;
+  border-radius: 7px;
+  padding: 0;
+  background: transparent;
+  position: relative;
+}
+.golf-empty-pile { border: 1px dashed var(--infopillborder); box-sizing: border-box; }
+.golf-pile .playing-card { --card-width: inherit; width: 100%; height: 100%; }
+.golf-deck { --golf-stack-depth: 4px; isolation: isolate; }
+.golf-deck-cards { position: relative; display: block; width: 100%; height: 100%; border-radius: inherit; isolation: isolate; }
+.golf-deck-cards::before, .golf-deck-cards::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--cardborder);
+  border-radius: inherit;
+  background: var(--cardface);
+  transform: translate(2px, 2px);
+  z-index: -1;
+}
+.golf-deck-cards::before { transform: translate(var(--golf-stack-depth), var(--golf-stack-depth)); }
+.golf-deck-count { opacity: .6; margin-left: 3px; font-variant-numeric: tabular-nums; }
+.golf-match-info { position: relative; justify-self: end; align-self: center; z-index: 60; }
+.golf-match-info > summary {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--infopillborder);
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+.golf-match-info > summary::-webkit-details-marker { display: none; }
+.golf-match-info > summary:hover { background: var(--infopillbg); }
+.golf-match-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 250px;
+  border: 1px solid var(--infopillborder);
+  border-radius: 14px;
+  padding: 22px;
+  background: var(--contentbox);
+  box-shadow: 0 10px 30px #1e302b26;
+  text-align: left;
+  font-size: 14px;
+}
+.golf-match-panel h2 { font-size: 20px; margin: 0 0 8px; }
+.golf-match-panel p { font-size: 12px; opacity: .75; }
+.golf-match-panel ol { margin: 12px 0 0; padding: 0; list-style: none; }
+.golf-match-panel li { display: flex; justify-content: space-between; padding: 5px 0; }
+.golf-match-panel hr { margin: 18px 0; border: 0; border-top: 1px solid var(--infopillborder); }
+.golf-match-panel .golf-leave-table { width: 100%; }
+.golf-table-scroll { overflow-x: auto; padding: 0 6px; margin: 0 -6px; }
+.golf-table {
+  --tableau-gap: 10px;
+  --tableau-row-gap: 14px;
+  --side-seat-top: calc(var(--opponent-card-width) * 2 + 78px);
+  position: relative;
+  /* Keep label and hint space while both tableaux shrink with their cards. */
+  height: calc((var(--player-card-width) + var(--opponent-card-width)) * 2.8 + 250px);
+  margin: 24px 0 12px;
+}
+.golf-table[data-players="6"] {
+  --side-seat-top: calc(var(--opponent-card-width) * 2.625 + 128px);
+}
+.golf-seat {
+  --card-width: var(--opponent-card-width);
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: max-content;
+  transform: translateX(-50%);
+}
+.golf-seat[data-position="top"] { top: 0; left: 50%; }
+.golf-seat[data-position="top-left"] { top: 0; left: 16.6667%; }
+.golf-seat[data-position="top-right"] { top: 0; left: 83.3333%; }
+.golf-table[data-players="3"] .golf-seat[data-position="top-left"] { left: 28%; }
+.golf-table[data-players="3"] .golf-seat[data-position="top-right"] { left: 72%; }
+.golf-table[data-players="5"] .golf-seat[data-position="top-left"] { left: 33.3333%; }
+.golf-table[data-players="5"] .golf-seat[data-position="top-right"] { left: 66.6667%; }
+.golf-seat[data-position="bottom"] { bottom: 0; left: 50%; }
+.golf-seat[data-position="bottom-left"] { bottom: 0; left: 16.6667%; }
+.golf-seat[data-position="bottom-right"] { bottom: 0; left: 83.3333%; }
+.golf-seat[data-position="left"] { top: var(--side-seat-top); left: 14%; }
+.golf-seat[data-position="right"] { top: var(--side-seat-top); left: 86%; }
+.golf-seat-human { --card-width: var(--player-card-width); }
+.golf-seat:not(.golf-seat-human) {
+  --tableau-gap: 8px;
+  --tableau-row-gap: var(--tableau-gap);
+}
+.golf-seat-marker {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 85px;
+  max-width: 180px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  line-height: 1.35;
+}
+.golf-turn-indicator {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  outline: 2px solid var(--lightpink);
+  outline-offset: 4px;
+  background: color-mix(in srgb, var(--lightpink) 14%, transparent);
+  opacity: 0;
+  transition: opacity .32s ease-in-out;
+}
+.golf-seat-marker[data-active="true"] > .golf-turn-indicator { opacity: 1; }
+.golf-seat-name { display: flex; align-items: center; gap: 7px; max-width: 100%; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.golf-seat-name svg { font-size: 12px; opacity: .8; flex-shrink: 0; }
+.golf-seat-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.golf-seat-score { font-size: 13px; font-variant-numeric: lining-nums tabular-nums; }
+.golf-seat-score > span { opacity: .65; font-size: 11px; }
+.golf-seat[data-position^="bottom"] .golf-seat-marker { order: 2; }
+.golf-phase-hint {
+  position: absolute;
+  bottom: calc(100% + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(440px, 60cqw);
+  text-align: center;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: .2px;
+  color: var(--header);
+  opacity: .9;
+}
+.golf-table[data-players="5"] .golf-phase-hint {
+  width: min(440px, calc(54.5cqw - 40px));
+}
+.golf-tableau {
+  --golf-backing-inset: -4px;
+  display: grid;
+  grid-template-columns: repeat(3, var(--card-width));
+  gap: var(--tableau-row-gap) var(--tableau-gap);
+  position: relative;
+}
+.golf-card-slot, .golf-grid-card, .golf-drawn-card {
+  width: var(--card-width);
+  height: calc(var(--card-width) * 1.4);
+  border-radius: 7px;
+}
+.golf-grid-card { display: block; border: 0; padding: 0; background: transparent; transition: transform .32s; }
+.golf-grid-card[data-hidden="true"] > .golf-flip-card,
+.golf-drawn-card[data-hidden="true"] .golf-flip-card { visibility: hidden; }
+.golf-card-slot:has(button:enabled):hover .golf-grid-card, .golf-grid-card:focus-visible,
+.golf-pile-button:enabled:hover, .golf-pile-button:focus-visible,
+.golf-drawn-button:enabled:hover, .golf-drawn-button:focus-visible { transform: translateY(-6px); }
+.golf-pile-button { transition: transform .32s; }
+.golf-flip-card { width: 100%; height: 100%; perspective: 900px; }
+.golf-card-rotator { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform var(--golf-flip-duration, 560ms) cubic-bezier(.4, 0, .2, 1); }
+.golf-flip-card[data-face-up="true"] .golf-card-rotator { transform: rotateY(180deg); }
+.golf-card-side { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.golf-card-front { transform: rotateY(180deg); }
+.golf-card-side .playing-card { --card-width: inherit; width: 100%; height: 100%; }
+.golf-table[data-stage="dealing"] .golf-card-slot { animation: golf-deal-in .5s var(--deal-delay) ease-out both; }
+@keyframes golf-deal-in { from { opacity: 0; transform: translateY(-12px) scale(.3); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.golf-drawn-dock {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 22px);
+  width: var(--card-width);
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .16s;
+}
+.golf-drawn-dock[data-visible="true"] { opacity: 1; pointer-events: auto; }
+.golf-drawn-dock > span { font-size: 11px; white-space: nowrap; opacity: .7; }
+.golf-drawn-dock[data-score="true"] { pointer-events: none; transition: none; }
+.golf-drawn-dock[data-score="true"] > span { visibility: hidden; }
+.golf-hole-score {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text);
+  font-size: calc(var(--card-width) * .78);
+  font-weight: 750;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+  letter-spacing: -.06em;
+  white-space: nowrap;
+  animation: golf-score-pop .32s cubic-bezier(.22, 1, .36, 1) both;
+}
+.golf-hole-score[data-went-out="true"] { color: var(--lightpink); }
+.golf-seat-marker .golf-hole-score {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 8px);
+  translate: 0 -50%;
+  width: max-content;
+  height: auto;
+  font-size: 26px;
+}
+@keyframes golf-score-pop {
+  0% { opacity: 0; transform: scale(.3); }
+  65% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.golf-drawn-button { display: block; width: 100%; height: 100%; border: 0; border-radius: inherit; padding: 0; background: transparent; transition: transform .32s; }
+.golf-drawn-card > div { width: 100%; height: 100%; }
+.golf-seat:not(.golf-seat-human) .golf-drawn-dock { left: calc(100% + 22px); }
+.golf-seat[data-position="right"] .golf-drawn-dock,
+.golf-seat[data-position="top-right"] .golf-drawn-dock,
+.golf-seat[data-position="bottom-right"] .golf-drawn-dock { left: auto; right: calc(100% + 22px); }
+.golf-seat:not(.golf-seat-human) .golf-drawn-dock > span { display: none; }
+.golf-card-flight { position: fixed; top: 0; left: 0; z-index: 50; pointer-events: none; --card-width: 64px; }
+.golf-round-summary {
+  margin: auto;
+  width: min(380px, calc(100vw - 80px));
+  max-height: calc(100dvh - 80px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 1px solid var(--infopillborder);
+  border-radius: 16px;
+  background: var(--contentbox);
+  color: var(--text);
+  text-align: center;
+  box-shadow: 0 8px 32px #1e302b40;
+}
+.golf-round-summary::backdrop { background: #0006; backdrop-filter: blur(4px); }
+.golf-round-summary h2 { margin: 0 0 18px; font-size: 24px; }
+.golf-round-summary p { font-size: 15px; }
+.golf-round-scores { margin-bottom: 24px; text-align: left; }
+.golf-round-scores > div { display: grid; grid-template-columns: 1fr 75px 50px; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--infopillborder); font-size: 15px; }
+.golf-round-scores > div > :not(:first-child) { text-align: right; }
+.golf-round-scores .golf-score-head { font-size: 11px; opacity: .65; }
+@media (max-height: 780px) {
+  .golf-game-shell { margin-top: 12px; margin-bottom: 12px; padding-top: 20px; padding-bottom: 20px; }
+  .golf-game { margin-top: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .golf-turn-indicator, .golf-card-rotator, .golf-grid-card, .golf-pile-button, .golf-drawn-button { transition: none; }
+  .golf-table[data-stage="dealing"] .golf-card-slot { animation: none; }
+  .golf-hole-score { animation: none; }
+}

@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/ui/PageLayout";
 import { MenuLink, RulesButton } from "@/components/Buttons";
 import { Card } from "@/components/Card";
 import containers from "@/styles/containers.module.css";
-const sections = ["Overview", "The Deal", "Your Turn", "Scoring"] as const;
+const sections = ["Overview", "The Deal", "Your Turn", "Going Out", "Scoring"] as const;
 type Section = (typeof sections)[number];
 
 export default function Rules() {
@@ -38,29 +38,40 @@ export default function Rules() {
             {section === "Overview" && (
               <>
                 <p>
-                  Two to four players share a standard 52-card deck. Play nine
-                  deals (“holes”); the lowest total wins.
+                  Two to six players share two standard 52-card decks (104 cards
+                  total). Play nine deals (“holes”); the lowest total wins.
                 </p>
                 <p>
                   Trade high cards for low ones. Matching ranks in a vertical
-                  column cancel out.
+                  column cancel out. Four matching cards in an adjacent 2×2
+                  block score −20 points.
                 </p>
-                <div className="rule-pair">
-                  <Card rank="8" suit="S" />
-                  <Card rank="8" suit="H" />
-                  <span className="score-badge">0 points</span>
-                </div>
+                <figure className="deal-figure">
+                  <div className="six-card-grid">
+                    <Card />
+                    <Card />
+                    <Card rank="8" suit="S" />
+                    <Card />
+                    <Card />
+                    <Card rank="8" suit="H" />
+                  </div>
+                  <figcaption>
+                    Matching column:{" "}
+                    <span className="score-badge">0 points</span>
+                  </figcaption>
+                </figure>
               </>
             )}
             {section === "The Deal" && (
               <>
                 <p>
-                  Deal each player six cards face down in two rows of three.
-                  Turn any two face up; don’t peek at the others.
+                  Shuffle both decks together. Deal each player six cards face
+                  down in two rows of three. Turn any two that are not in the
+                  same column face up; don’t peek at the others.
                 </p>
                 <p>
-                  The remaining deck is the stock. Turn up one card to begin the
-                  discard pile.
+                  The remaining cards form the deck. Turn up one card to begin
+                  the discard pile.
                 </p>
                 <figure className="deal-figure">
                   <div className="six-card-grid">
@@ -77,23 +88,38 @@ export default function Rules() {
             )}
             {section === "Your Turn" && (
               <>
-                <p>Start left of the dealer and play clockwise.</p>
+                <p>The first starting player is chosen at random. Play clockwise;
+                  the next player clockwise starts each new hole.</p>
                 <ol className="turn-steps">
-                  <li>Draw from the stock or discard pile.</li>
+                  <li>Draw from the deck or discard pile.</li>
                   <li>
                     Swap your draw for any grid card. Leave your new card face
                     up and discard the old one. Or discard your draw.
                   </li>
                 </ol>
-                <p>
-                  The deal ends when someone has six face-up cards. Reveal and
-                  score all grids.
-                </p>
+                <p>Turn all six cards face up to go out and start the final round.</p>
                 <div className="deck-preview">
                   <Card />
                   <span className="pile-label">or</span>
                   <Card rank="K" suit="H" />
                 </div>
+              </>
+            )}
+            {section === "Going Out" && (
+              <>
+                <p>
+                  Turning all six cards face up is “going out”: you’re declaring
+                  that you think you have the lowest score.
+                </p>
+                <p>
+                  The rest of the table gets to take one more turn and then the
+                  hole ends. Reveal and score all grids.
+                </p>
+                <p>
+                  If another player finishes with a lower score, add 10 penalty
+                  points to your score for that hole. Apply the penalty only once,
+                  after everyone’s final turn. A tied lowest score has no penalty.
+                </p>
               </>
             )}
             {section === "Scoring" && (
@@ -112,26 +138,33 @@ export default function Rules() {
                     </div>
                   ))}
                 </dl>
+                <p>A matching vertical pair scores zero, even two twos.</p>
                 <p>
-                  A matching vertical pair scores zero, even two twos. Add each
-                  deal to your scorecard.
+                  Four cards of the same rank in an adjacent 2×2 block score −20
+                  points instead of zero for the two matching columns. Score the
+                  remaining two cards normally.
                 </p>
+                <figure className="deal-figure">
+                  <div className="six-card-grid">
+                    <Card rank="8" suit="S" />
+                    <Card rank="8" suit="H" />
+                    <Card rank="K" suit="C" />
+                    <Card rank="8" suit="C" />
+                    <Card rank="8" suit="D" />
+                    <Card rank="3" suit="D" />
+                  </div>
+                  <figcaption>
+                    Matching block:{" "}
+                    <span className="score-badge">−20 points</span>
+                    <br />
+                    King (0) + 3 = 3. Grid total: −17 points.
+                  </figcaption>
+                </figure>
+                <p className="quiet-text">Add each deal to your scorecard.</p>
               </>
             )}
           </section>
         </div>
-        <p className="rules-source">
-          Based on{" "}
-          <a
-            className="link"
-            href="https://bicyclecards.com/how-to-play/six-card-golf"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Bicycle’s Six Card Golf rules
-          </a>
-          .
-        </p>
         <div className="button-stack">
           <MenuLink to="/" name="Home" />
         </div>

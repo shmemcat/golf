@@ -5,8 +5,9 @@ Fraunces, enlarged Argyle, and Sage & Blush Peach are selected. The game-screen
 composition remains deferred.
 
 The first implementation now lives in `web/`: home, play/setup menus, rules,
-about, shared sign-in, profile, and options. Setup and leaderboard pages explain
-that gameplay is still being built. The shared Cards runner optionally starts
+about, shared sign-in, and profile. The profile now includes local solo-game
+statistics and achievements, and the username button opens it directly. The leaderboard
+remains an empty state while online games are being built. The shared Cards runner optionally starts
 Golf on port 3003; Golf uses the existing accounts service without a new game
 service. See the repository README for development and hosting details.
 
@@ -250,20 +251,38 @@ Integration work when the application is built:
 
 ## Rules constraints for the later game screen
 
+### Family variant approved October 24, 2026
+
+The implementation follows these user-approved changes to the reference below:
+
+- Two standard 52-card decks shuffled together, with 2–6 players.
+- Start with two face-up cards in different columns.
+- Every other player gets one final turn after someone exposes all six cards.
+- Four matching ranks in an adjacent 2×2 block score −20, replacing the two
+  columns’ normal zero scores. Score the other two cards normally.
+- Keep nine deals and the existing card values and vertical-pair cancellation.
+
+Confirmed for the desktop table on October 24, 2026: six matching cards earn
+one −20 block bonus, an exhausted deck reshuffles the discards while retaining
+the top discard, and tied lowest totals share the win. A deck draw may be
+discarded; a discard-pile draw must be used. The first starter is random, then
+the starting seat rotates clockwise each hole.
+
+### Original reference
+
 The [Bicycle reference](https://bicyclecards.com/how-to-play/six-card-golf)
 specifies 2-4 players, a 52-card deck, and nine deals. Each player has a two-row,
-three-column grid, initially exposing two cards. Players draw from stock or
+three-column grid, initially exposing two cards. Players draw from deck or
 discard, then replace a grid card or discard their draw. A replaced card stays
 face up. A round ends when one player's grid is fully exposed. Lowest total
 wins. Aces score 1, twos -2, 3-10 their value, jacks/queens 10, and kings 0;
 matching ranks in a column cancel, including paired twos.
 
-This requires persistent grids, a stock/discard area, and a hole scorecard.
+This requires persistent grids, a deck/discard area, and a hole scorecard.
 The trick-taking table, fanned hand, and Euchre partnership assumptions should
-not determine Golf's board. The reference does not specify stock exhaustion or
+not determine Golf's board. The reference does not specify deck exhaustion or
 tie handling, and does not grant an extra final turn to the other players.
-Resolve those details before implementing the engine rather than silently
-adding a familiar house-rule variant.
+The desktop implementation uses the confirmed family defaults above.
 
 ## Suggested implementation sequence
 

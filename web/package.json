@@ -15,29 +15,33 @@
     "test:run": "vitest run"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^7.4.0",
-    "react-helmet-async": "^2.0.5",
-    "framer-motion": "^12.34.2",
     "@fortawesome/fontawesome-svg-core": "^7.2.0",
     "@fortawesome/pro-regular-svg-icons": "^7.2.0",
     "@fortawesome/pro-solid-svg-icons": "^7.2.0",
-    "@fortawesome/react-fontawesome": "^3.2.0"
+    "@fortawesome/react-fontawesome": "^3.2.0",
+    "@radix-ui/react-tooltip": "^1.4.1",
+    "@types/howler": "^2.2.13",
+    "framer-motion": "^12.34.2",
+    "howler": "^2.2.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-helmet-async": "^2.0.5",
+    "react-router-dom": "^7.4.0",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.18",
-    "tailwindcss": "^4.1.18",
-    "@vitejs/plugin-react": "^4.5.1",
-    "vite": "^6.3.5",
-    "vitest": "^4.0.18",
-    "typescript": "^5.9.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "25.2.3",
     "@types/react": "19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/user-event": "^14.6.1",
-    "jsdom": "^28.1.0"
+    "@vitejs/plugin-react": "^4.5.1",
+    "jsdom": "^28.1.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vite": "^6.3.5",
+    "vitest": "^4.0.18"
   }
 }

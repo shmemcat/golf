@@ -7,11 +7,20 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Howl } from "howler";
 import { asset } from "@/lib/assets";
 import { readStorage, writeStorage } from "@/lib/storage";
-type Sound = "select";
+type Sound = "select" | "deal" | "flip" | "slide" | "start" | "round" | "win" | "pop" | "goingOut";
 const FILES: Record<Sound, string[]> = {
   select: ["card-place-1", "card-place-2"],
+  deal: ["card-fan-1", "card-fan-2"],
+  flip: ["card-place-1", "card-place-2"],
+  slide: Array.from({ length: 8 }, (_, index) => `card-slide-${index + 1}`),
+  start: ["trump-chosen-chime"],
+  round: ["round-end"],
+  win: ["game-end"],
+  pop: ["pop"],
+  goingOut: ["going-out"],
 };
 const MUSIC_VOLUME_KEY = "golf.music-volume.v1";
 const clampVolume = (value: number) =>
@@ -51,7 +60,9 @@ export function SoundProvider({ children }: { children: ReactNode }) {
         : 0.15;
     return readVolume(MUSIC_VOLUME_KEY, fallback);
   });
-  const track = useRef<HTMLAudioElement | null>(null);
+  const track = useRef<Howl | null>(null);
+  const musicEnabled = useRef(music);
+  musicEnabled.current = music;
   const play = useCallback(
     (sound: Sound) => {
       if (muted) return;
@@ -64,37 +75,36 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     [muted, volume]
   );
   useEffect(() => {
-    const audio = new Audio(asset("sounds/backgroundmusic.mp3"));
-    audio.loop = true;
+    // Decode once and loop the audio buffer without a media-element restart.
+    const audio = new Howl({
+      src: [asset("sounds/backgroundmusic.mp3")],
+      loop: true,
+      preload: true,
+      onplayerror: () => {
+        audio.once("unlock", () => {
+          if (musicEnabled.current && !audio.playing()) audio.play();
+        });
+      },
+    });
     track.current = audio;
     return () => {
-      audio.pause();
+      audio.unload();
       track.current = null;
     };
   }, []);
   useEffect(() => {
+    track.current?.volume(musicVolume);
+  }, [musicVolume]);
+  useEffect(() => {
     const audio = track.current;
     if (!audio) return;
-    audio.volume = musicVolume;
-    if (music) void audio.play().catch(() => {});
+    if (music) audio.play();
     else audio.pause();
-  }, [music, musicVolume]);
+  }, [music]);
   useEffect(() => {
     // Persist the migrated music level before the effects slider changes.
     writeStorage(MUSIC_VOLUME_KEY, musicVolume);
   }, [musicVolume]);
-  useEffect(() => {
-    // Browsers may defer a remembered music preference until a user gesture.
-    const unlock = () => {
-      if (music && track.current) void track.current.play().catch(() => {});
-    };
-    window.addEventListener("pointerdown", unlock);
-    window.addEventListener("keydown", unlock);
-    return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-    };
-  }, [music]);
   const setMuted = (value: boolean) => {
     setMutedState(value);
     writeStorage("golf.muted.v1", value);

@@ -2,11 +2,18 @@
   "name": "golf-site",
   "private": true,
   "scripts": {
+    "up": "node scripts/docker.mjs up -d --wait --wait-timeout 120",
+    "up:build": "node scripts/docker.mjs up -d --build --wait --wait-timeout 120",
+    "down": "node scripts/docker.mjs down",
+    "logs": "node scripts/docker.mjs logs --tail 100 -f web",
     "web:install": "node scripts/install-web.mjs",
     "dev": "node ../cards/scripts/dev-split.mjs",
     "dev:web": "npm --prefix web run dev",
     "build": "npm --prefix web run build",
     "test": "npm --prefix web run test:run",
+    "api:install": "uv sync --project api --locked --extra dev",
+    "test:api": "uv run --directory api python -m pytest",
+    "test:online": "node --test scripts/online.test.mjs",
     "test:accounts": "node --test scripts/shared-accounts.test.mjs",
     "preview": "npm --prefix web run preview"
   }

@@ -3,21 +3,6 @@ import containers from "@/styles/containers.module.css";
 import { Navbar } from "@/components/Navbar";
 import { GolfLogo } from "@/components/GolfLogo";
 import { motion } from "framer-motion";
-import { useLocation } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { SettingsGear } from "@/components/SettingsGear";
-
-function AccountSettings() {
-  const { user } = useAuth();
-  const { pathname } = useLocation();
-  if (!user || !["/user", "/profile", "/options"].includes(pathname))
-    return null;
-  return (
-    <div className="account-settings">
-      <SettingsGear exclude={pathname} />
-    </div>
-  );
-}
 
 export type PageLayoutVariant = "default" | "menu";
 
@@ -52,7 +37,6 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
     }`}
   >
     <Navbar />
-    <AccountSettings />
     <motion.div
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}

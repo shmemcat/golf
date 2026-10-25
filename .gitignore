@@ -6,3 +6,8 @@ web/dist/
 !.env.example
 .local/
 coverage/
+api/.venv/
+api/instance/
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -1,0 +1,35 @@
+.warning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 16px;
+  color: var(--text);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--header);
+}
+
+.icon {
+  color: var(--color-warning);
+}
+
+.message {
+  max-width: 100%;
+}
+
+.signIn {
+  white-space: nowrap;
+}
+
+:global(.button-stack) > .warning {
+  margin-top: 0;
+}

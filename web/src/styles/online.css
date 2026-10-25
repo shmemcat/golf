@@ -1,0 +1,2 @@
+.golf-connection-status { position: fixed; z-index: 100; top: 72px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); border-radius: 12px; padding: 10px 14px; background: var(--contentbox); color: var(--text); box-shadow: 0 4px 20px #0003; font-size: 13px; text-align: center; }
+dialog .golf-connection-status { position: static; transform: none; width: auto; margin: 12px auto; }

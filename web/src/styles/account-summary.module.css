@@ -1,0 +1,31 @@
+.summary { width: min(100%, 590px); margin: 20px auto 0; }
+.sectionTitle { font-size: 13px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; margin: 0 0 16px; }
+.statsCard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; padding: 24px 28px; border-radius: 20px; background: var(--mediumpink); }
+.statsColumn { display: flex; flex-direction: column; gap: 12px; min-width: 0; margin: 0; }
+.statsColumn + .statsColumn { padding-left: 24px; border-left: 1px solid color-mix(in srgb, var(--header) 20%, transparent); }
+.statsRow { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; text-align: left; }
+.statsRow dt { font-size: 12px; font-weight: 600; letter-spacing: 1px; color: var(--text); }
+.statsRow dd { margin: 0; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--header); }
+.achievements { margin: 28px auto 0; }
+.badgeGrid { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; max-width: 440px; margin: 0 auto; }
+.achievement { display: flex; flex-direction: column; align-items: center; gap: 7px; width: 92px; }
+.badge { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border: 2px dashed color-mix(in srgb, var(--header) 30%, transparent); border-radius: 8px; background: transparent; color: var(--text); font-size: 16px; cursor: pointer; }
+.badge[data-earned="true"] { background: var(--lightpink); border: 2px solid var(--hoverpink); box-shadow: inset -3px -3px 0 var(--buttonboxshadow); color: var(--buttontext); }
+.badge:hover, .badge[data-state="delayed-open"], .badge[data-state="instant-open"] { transform: translateY(-2px); }
+.shine { position: absolute; top: 3px; left: 3px; transform: rotate(-25deg); width: 8px; height: 5px; border-radius: 100%; background: var(--buttonshine); }
+.sparkle { position: absolute; width: 14px; height: 14px; top: -3px; left: -1px; pointer-events: none; animation: sparkle 4s .5s infinite both; }
+.badgeLabel { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; line-height: 1.3; color: var(--text); }
+.badgeLabel[data-earned="true"] { color: var(--header); }
+.tooltipContent { display: flex; flex-direction: column; gap: 2px; }
+.tooltipName { font-size: 14px; font-weight: 700; }
+.tooltipDesc { font-size: 12px; opacity: .7; font-weight: 600; }
+.tooltipStatus { font-size: 11px; opacity: .5; font-weight: 600; }
+@keyframes sparkle { 0%, 16%, 100% { transform: scale(0) rotate(0deg); } 8% { transform: scale(1) rotate(15deg); } }
+@media (max-width: 600px) {
+  .summary { max-width: 360px; }
+  .statsCard { grid-template-columns: 1fr; padding: 22px 24px; gap: 16px; }
+  .statsColumn + .statsColumn { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--header) 20%, transparent); padding: 16px 0 0; }
+  .badgeGrid { gap: 14px 8px; }
+  .achievement { width: 82px; }
+}
+@media (prefers-reduced-motion: reduce) { .sparkle { animation: none; } }
