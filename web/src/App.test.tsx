@@ -403,9 +403,11 @@ it("opens the account dashboard and gear menu with separate Profile and Options 
   await user.click(screen.getByRole("link", { name: "Back", exact: true }));
   await user.click(screen.getByRole("button", { name: "Settings menu" }));
   await user.click(screen.getByRole("link", { name: "Options", exact: true }));
-  expect(
-    await screen.findByRole("heading", { name: "OPTIONS", exact: true })
-  ).toBeVisible();
+  await waitFor(() =>
+    expect(
+      screen.getByRole("heading", { name: "OPTIONS", exact: true })
+    ).toBeVisible()
+  );
   expect(screen.getAllByRole("checkbox")).toHaveLength(1);
   expect(screen.getByRole("checkbox")).not.toBeChecked();
 });

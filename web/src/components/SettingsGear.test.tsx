@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -54,7 +54,9 @@ it.each([
     expect(
       screen.queryByRole("link", { name: current })
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: other })).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: other })).toBeVisible()
+    );
     fireEvent.pointerDown(document.body);
     expect(
       screen.getByRole("button", { name: "Settings menu" })
