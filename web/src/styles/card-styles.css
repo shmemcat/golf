@@ -16,6 +16,7 @@
   --lightpink: #cf9f9c;
   --contentbox: #f0f3e9;
   --cardhighlight: #925d60;
+  --card-back-dark-opacity: 0;
   --sample-ink: #304339;
   padding: 20px;
   margin-top: 20px;
@@ -27,6 +28,7 @@
 .golf-style-theme[data-preview-theme="dark"] {
   --contentbox: #344c40;
   --cardhighlight: #cf9f9c;
+  --card-back-dark-opacity: 1;
   --sample-ink: #f0eee1;
   color-scheme: dark;
 }

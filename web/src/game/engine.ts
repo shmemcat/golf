@@ -114,7 +114,7 @@ function finishTurn(game: Game): Game {
     const scores = game.players.map(player => scoreGrid(player.cards));
     // The last final turn is immediately before the player who went out.
     const wentOut = (game.turn + 1) % game.players.length;
-    if (scores.some(score => score < scores[wentOut])) scores[wentOut] += 10;
+    if (scores.some((score, seat) => seat !== wentOut && score <= scores[wentOut])) scores[wentOut] += 10;
     return {
       ...game, drawn: null, finalTurns,
       phase: game.hole === 9 ? "game-over" : "round-over",

@@ -34,6 +34,13 @@ class Event(db.Model):
     __table_args__ = (db.UniqueConstraint("game_id", "revision", name="golf_event_revision"),)
 
 
+class AchievementUnlock(db.Model):
+    __tablename__ = "golf_achievement_unlocks"
+    user_id = db.Column(db.BigInteger, primary_key=True)
+    achievement_id = db.Column(db.String(64), primary_key=True)
+    earned_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+
 class DeletedUser(db.Model):
     __tablename__ = "golf_deleted_users"
     user_id = db.Column(db.BigInteger, primary_key=True)

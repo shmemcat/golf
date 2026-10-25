@@ -1,20 +1,24 @@
 from .extensions import db
 
-REVISION = "golf_001"
+REVISION = "golf_002"
 
 
 def upgrade_schema():
     # Only Golf-owned tables are present in this application's metadata.
     from . import models  # noqa: F401
-    db.create_all()
     from sqlalchemy import text
     with db.engine.begin() as connection:
         connection.execute(text("CREATE TABLE IF NOT EXISTS golf_schema_version (version_num VARCHAR(32) PRIMARY KEY)"))
         current = connection.execute(text("SELECT version_num FROM golf_schema_version")).scalar()
+        if current not in (None, "golf_001", REVISION):
+            raise RuntimeError("An explicit Golf schema migration is required.")
+    # golf_002 adds account-owned settings achievements; existing results stay intact.
+    db.create_all()
+    with db.engine.begin() as connection:
         if current is None:
             connection.execute(text("INSERT INTO golf_schema_version VALUES (:revision)"), {"revision": REVISION})
         elif current != REVISION:
-            raise RuntimeError("An explicit Golf schema migration is required.")
+            connection.execute(text("UPDATE golf_schema_version SET version_num=:revision"), {"revision": REVISION})
 
 
 def schema_ready():
@@ -23,7 +27,7 @@ def schema_ready():
     from . import models
     try:
         inspector = inspect(db.engine)
-        required = {"golf_rooms", "golf_results", "golf_events", "golf_deleted_users", "golf_schema_version"}
+        required = {"golf_rooms", "golf_results", "golf_events", "golf_deleted_users", "golf_achievement_unlocks", "golf_schema_version"}
         if not required <= set(inspector.get_table_names()):
             return False
         for table in db.metadata.sorted_tables:

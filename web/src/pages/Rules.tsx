@@ -110,16 +110,17 @@ export default function Rules() {
               <>
                 <p>
                   Turning all six cards face up is “going out”: you’re declaring
-                  that you think you have the lowest score.
+                  that you think you have the lowest score. Your score must be
+                  lower than every other player’s.
                 </p>
                 <p>
                   The rest of the table gets to take one more turn and then the
                   hole ends. Reveal and score all grids.
                 </p>
                 <p>
-                  If another player finishes with a lower score, add 10 penalty
+                  If another player ties or beats your score, add 10 penalty
                   points to your score for that hole. Apply the penalty only once,
-                  after everyone’s final turn. A tied lowest score has no penalty.
+                  after everyone’s final turn.
                 </p>
               </>
             )}

@@ -16,7 +16,7 @@ async function leaveRoom(code: string) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const { state } = await golfGet<{ state: RoomState }>(roomPath(code));
-      await golfPost(roomPath(code) + "/actions", { action: "leave", actionId, revision: state.revision });
+      await golfPost(roomPath(code) + "/actions", { action: "leave", actionId, revision: state.revision, actionToken: state.actionTokens?.leave });
       return;
     } catch (error) {
       if (error instanceof GolfError) {

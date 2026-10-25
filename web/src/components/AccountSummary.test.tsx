@@ -1,0 +1,54 @@
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { vi, expect, it } from "vitest";
+import { AccountSummary } from "./AccountSummary";
+import { statisticsFixture } from "@/test/golfFixtures";
+
+it.each([
+  [0, "Tee Time", undefined, "0 / 10 games finished", "Tee Time"],
+  [9, "Tee Time", undefined, "9 / 10 games finished", "Tee Time"],
+  [10, "Tee Time", "bronze", "10 / 50 games finished", "Green Jacket"],
+  [49, "Tee Time", "bronze", "49 / 50 games finished", "Green Jacket"],
+  [50, "Green Jacket", "silver", "50 / 100 games finished", "Tour Pro"],
+  [99, "Green Jacket", "silver", "99 / 100 games finished", "Tour Pro"],
+  [100, "Tour Pro", "gold", "100 games finished · Gold achieved", null],
+])("shows the correct medal and next milestone after %i finished games", async (games, name, tier, progress, next) => {
+  const statistics = statisticsFixture(games);
+  // Abandoned games do not advance the completion ladder.
+  statistics.all_time.games_played += 100;
+  statistics.all_time.games_abandoned = 100;
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ statistics }))));
+  render(<AccountSummary userId="golfer" />);
+  await screen.findByLabelText("Your statistics");
+  const label = `${name}: ${tier ? `${tier[0].toUpperCase() + tier.slice(1)}, Unlocked` : "Locked"}`;
+  const badge = screen.getByRole("button", { name: label });
+  if (tier) expect(badge).toHaveAttribute("data-tier", tier);
+  else expect(badge).not.toHaveAttribute("data-tier");
+  fireEvent.click(badge);
+  const tooltip = await screen.findByRole("tooltip");
+  expect(within(tooltip).getByText(progress)).toBeVisible();
+  if (next) expect(tooltip).toHaveTextContent(`Next: ${next}`);
+  else expect(tooltip).not.toHaveTextContent("Next:");
+});
+
+it("keeps existing achievements and shows all new Golf and holiday badges from account results", async () => {
+  const statistics = statisticsFixture(1);
+  statistics.all_time.achievements = { ...statistics.all_time.achievements, birdie: true, spooky: true,
+    geezer: true, night_owl: true, better_with_friends: true };
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ statistics }))));
+  render(<AccountSummary userId="golfer" />);
+  await screen.findByLabelText("Your statistics");
+  const achievements = screen.getByRole("region", { name: "Achievements" });
+  expect(within(achievements).getAllByRole("button")).toHaveLength(30);
+  expect(screen.getByRole("button", { name: "Below Zero: Unlocked" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Under Par: Unlocked" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Birdie: Unlocked" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Spooky: Unlocked" })).toBeVisible();
+  for (const name of ["Geezer", "Night Owl", "Better with Friends"]) {
+    expect(screen.getByRole("button", { name: `${name}: Unlocked` })).toBeVisible();
+  }
+  for (const name of ["Eagle", "Hole in One", "Up and Down", "Out of the Rough", "Photo Finish", "Sunday Best",
+    "Auld Lang Syne", "Lonely Heart", "Lucky Clover", "Easter Egg", "Fireworks", "Thankful", "Christmas Spirit",
+    "Early Bird", "Hot Streak", "All Year Round"]) {
+    expect(screen.getByRole("button", { name: `${name}: Locked` })).toBeVisible();
+  }
+});

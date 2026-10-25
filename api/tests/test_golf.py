@@ -179,13 +179,15 @@ def test_bot_completes_and_preserves_paired_twos():
 
 @pytest.mark.parametrize('count,went_out', [(count, seat) for count in range(2, 7) for seat in range(count)])
 @pytest.mark.parametrize('hole', [1, 9])
-def test_going_out_penalty_after_last_turn_for_every_seat(count, went_out, hole):
+@pytest.mark.parametrize('tied', [False, True])
+def test_going_out_penalty_after_last_turn_for_every_seat(count, went_out, hole, tied):
     previous = [-20 if seat == went_out else 40 for seat in range(count)]
     game = engine.deal(count, hole=hole, scores=[score * (hole - 1) for score in previous],
                        history=[previous[:] for _ in range(hole - 1)])
-    game.update(phase='draw', turn=went_out, discard=[{'id': 'out-draw', 'rank': 'Q', 'suit': 'H'}])
+    out = ['K', 'A', '3', 'K', 'A', '3'] if tied else ['J', 'Q', 'J', 'Q', 'J', 'Q']
+    game.update(phase='draw', turn=went_out, discard=[{'id': 'out-draw', 'rank': out[5], 'suit': 'H'}])
     for seat, player in enumerate(game['players']):
-        player['cards'] = grid(['J', 'Q', 'J', 'Q', 'J', 'Q'] if seat == went_out else ['K', 'A', '3', 'K', 'A', '3'])
+        player['cards'] = grid(out if seat == went_out else ['K', 'A', '3', 'K', 'A', '3'])
     totals = [p['score'] for p in game['players']]
     engine.draw(game, 'discard')
     engine.replace(game, 5)
@@ -195,7 +197,7 @@ def test_going_out_penalty_after_last_turn_for_every_seat(count, went_out, hole)
         assert [p['score'] for p in game['players']] == totals
         engine.draw(game, 'deck')
         engine.toss(game)
-    scores = [70 if seat == went_out else 0 for seat in range(count)]
+    scores = [(10 if tied else 70) if seat == went_out else 0 for seat in range(count)]
     assert game['phase'] == ('game-over' if hole == 9 else 'round-over')
     assert len(game['history']) == hole
     assert game['history'][-1] == scores
@@ -214,7 +216,9 @@ def test_going_out_penalty_after_last_turn_for_every_seat(count, went_out, hole)
 
 @pytest.mark.parametrize('out,other,penalty', [
     (['K', 'A', '3', 'K', 'A', '3'], ['K', 'A', '3', 'K', 'A', '4'], 0),
-    (['K', 'A', '3', 'K', 'A', '4'], ['K', 'A', '3', 'K', 'A', '4'], 0),
+    (['K', 'A', '3', 'K', 'A', '4'], ['K', 'A', '3', 'K', 'A', '4'], 10),
+    (['K', 'A', '3', 'K', 'A', '3'], ['K', 'A', '3', 'K', 'A', '3'], 10),
+    (['8', '8', 'K', '8', '8', 'K'], ['8', '8', 'K', '8', '8', 'K'], 10),
     (['8', '8', 'K', '8', '8', 'K'], ['8', '8', '2', '8', '8', 'A'], 10),
     (['8', '8', '2', '8', '8', 'A'], ['8', '8', 'K', '8', '8', 'K'], 0),
 ])
@@ -366,7 +370,7 @@ def test_results_are_account_owned_once_separated_global_and_durable(app, client
         save_results(data, terminal=True); db.session.commit()
         assert Result.query.count() == 3
         assert Event.query.filter_by(game_id=data['game']['id'], kind='arrival').count() == 1
-        assert set(db.inspect(db.engine).get_table_names()) == {'golf_rooms', 'golf_results', 'golf_events', 'golf_deleted_users', 'golf_schema_version'}
+        assert set(db.inspect(db.engine).get_table_names()) == {'golf_rooms', 'golf_results', 'golf_events', 'golf_deleted_users', 'golf_achievement_unlocks', 'golf_schema_version'}
     own = a.get('/api/golf/stats?user_id=2').json['statistics']
     assert own['all_time']['games_played'] == 2 and own['all_time']['games_won'] == 2
     assert own['bot']['games_played'] == own['multiplayer']['games_played'] == 1
@@ -423,12 +427,12 @@ def test_fill_bots_host_replay_and_host_transfer(app, clients):
     assert state(b, code)['game']['id'] == state(a, code)['game']['id']
     assert action(a, code, 'leave').status_code == 200
     assert a.get('/api/golf/stats').json['statistics']['all_time']['games_abandoned'] == 1
-    assert state(b, code)['seats'][0]['isBot']
+    assert len(state(b, code)['seats']) == 3
+    assert not state(b, code)['seats'][0]['isBot']
     assert state(b, code)['isHost']
     empty = create(a, 2, 'multiplayer')['code']
     assert action(a, empty, 'leave').status_code == 200
-    post(b, '/lobbies/join', {'code': empty})
-    assert state(b, empty)['isHost']
+    assert post(b, '/lobbies/join', {'code': empty}).json['code'] == 'LOBBY_CLOSED'
 
 
 def test_host_replay_notifies_guests_and_retries_do_not_deal_twice(app, clients):
@@ -469,7 +473,8 @@ def test_new_host_can_replay_after_finished_game_host_leaves(app, clients):
     assert action(guest, code, 'restart').status_code == 400
     assert action(next_host, code, 'restart').status_code == 200
     assert state(next_host, code)['game']['id'] != finished_id
-    assert state(next_host, code)['seats'][0]['isBot']
+    assert len(state(next_host, code)['seats']) == 2
+    assert not any(p['isBot'] for p in state(next_host, code)['seats'])
 
 
 def test_host_replay_still_needs_two_people_but_bot_games_do_not(app, clients):
@@ -479,7 +484,7 @@ def test_host_replay_still_needs_two_people_but_bot_games_do_not(app, clients):
     action(host, code, 'start'); complete(app, code)
     action(guest, code, 'leave')
     finished = state(host, code)
-    assert action(host, code, 'restart').status_code == 400
+    assert action(host, code, 'restart').json['code'] == 'LOBBY_CLOSED'
     assert state(host, code) == finished
     action(host, code, 'leave')
     solo = create(host)['code']; complete(app, solo)
@@ -651,8 +656,14 @@ def test_shared_wins_are_credited_to_each_account_and_guest_scores_cannot_be_upl
         for player in data['game']['players']:
             for cell in player['cards']:
                 cell['card']['rank'] = 'K'
+        went_out = (data['game']['turn'] + 1) % 2
+        # A ten-point lead leaves the game totals tied after the going-out penalty.
+        scores = [-10 if seat == went_out else 0 for seat in range(2)]
         row.data = data; db.session.commit()
-    complete(app, code)
+    complete(app, code, scores)
+    finished = state(a, code)['game']
+    assert [player['score'] for player in finished['players']] == [-20, -20]
+    assert finished['history'][-1][went_out] == -10
     for person in (a, b):
         stats = person.get('/api/golf/stats').json['statistics']['multiplayer']
         assert stats['games_won'] == stats['shared_wins'] == 1
@@ -704,8 +715,8 @@ def test_departed_players_do_not_get_new_results_in_host_rematches(app, clients,
     assert state(a, code)['game']['phase'] == 'game-over'
     assert action(a, code, 'restart').status_code == 200
     assert state(a, code)['game']['phase'] == 'opening'
-    assert state(a, code)['seats'][2]['isBot']
-    assert state(a, code)['seats'][2]['name'] == 'Clover'
+    assert len(state(a, code)['seats']) == 2
+    assert not any(p['isBot'] for p in state(a, code)['seats'])
     with app.app_context():
         data = db.session.get(Room, code).data
         assert data['humanCount'] == 2
@@ -753,6 +764,7 @@ def test_leaving_lobby_preserves_group_and_transfers_close_permission(app, clien
     host, guest, friend = clients(1), clients(2), clients(3)
     code = create(host, 3, 'multiplayer')['code']
     post(guest, '/lobbies/join', {'code': code})
+    post(clients(4), '/lobbies/join', {'code': code})
     assert action(host, code, 'leave').status_code == 200
     assert state(guest, code)['isHost'] and not state(guest, code)['closed']
     assert post(friend, '/lobbies/join', {'code': code}).status_code == 200

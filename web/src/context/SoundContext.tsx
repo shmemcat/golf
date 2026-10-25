@@ -10,8 +10,10 @@ import {
 import { Howl } from "howler";
 import { asset } from "@/lib/assets";
 import { readStorage, writeStorage } from "@/lib/storage";
+import { requestMusicPlayback } from "@/lib/musicPlayback";
 type Sound =
   | "turn"
+  | "playerJoin"
   | "select"
   | "deal"
   | "flip"
@@ -24,6 +26,7 @@ type Sound =
   | "notification";
 const FILES: Record<Sound, string[]> = {
   turn: ["sound-on"],
+  playerJoin: ["join-ding"],
   select: ["card-place-1", "card-place-2"],
   deal: ["card-fan-1", "card-fan-2"],
   flip: ["card-place-1", "card-place-2"],
@@ -96,6 +99,14 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     return readVolume(MUSIC_VOLUME_KEY, fallback);
   });
   const track = useRef<Howl | null>(null);
+  const ownsMusic = useRef(false);
+  const musicId = useRef<number | undefined>(undefined);
+  const resumeMusic = useCallback(() => {
+    const audio = track.current;
+    if (audio && !audio.playing()) {
+      musicId.current = audio.play(musicId.current);
+    }
+  }, []);
   const musicEnabled = useRef(music);
   musicEnabled.current = music;
   const musicLevel = useRef(musicVolume);
@@ -118,24 +129,37 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       if (remaining.length === 0) remaining = shuffleMusic(previous);
       const file = remaining.shift()!;
       previous = file;
+      musicId.current = undefined;
       const audio = new Howl({
         src: [asset(`sounds/${file}`)],
         loop: false,
         preload: true,
         volume: musicLevel.current,
+        onplay: () => {
+          if (
+            track.current !== audio ||
+            !ownsMusic.current ||
+            !musicEnabled.current
+          ) {
+            audio.pause();
+          }
+        },
         onend: () => {
           if (track.current !== audio) return;
           audio.unload();
           const next = loadNextTrack();
-          if (musicEnabled.current) next.play();
+          if (musicEnabled.current && ownsMusic.current) {
+            musicId.current = next.play();
+          }
         },
         onplayerror: () => {
           audio.once("unlock", () => {
             if (
               track.current === audio &&
               musicEnabled.current &&
+              ownsMusic.current &&
               !audio.playing()
-            ) audio.play();
+            ) musicId.current = audio.play(musicId.current);
           });
         },
       });
@@ -152,11 +176,13 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     track.current?.volume(musicVolume);
   }, [musicVolume]);
   useEffect(() => {
-    const audio = track.current;
-    if (!audio) return;
-    if (music) audio.play();
-    else audio.pause();
-  }, [music]);
+    if (!music) return;
+    return requestMusicPlayback((owner) => {
+      ownsMusic.current = owner;
+      if (owner) resumeMusic();
+      else track.current?.pause();
+    });
+  }, [music, resumeMusic]);
   useEffect(() => {
     // Persist the migrated music level before the effects slider changes.
     writeStorage(MUSIC_VOLUME_KEY, musicVolume);

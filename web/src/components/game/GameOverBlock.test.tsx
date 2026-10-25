@@ -21,18 +21,18 @@ const players: FinalPlayer[] = [
 function open(custom = players, onPlayAgain = vi.fn()) {
   return render(<MemoryRouter initialEntries={["/results"]}><Routes>
     <Route path="/results" element={<GameOverBlock players={custom} onPlayAgain={onPlayAgain} />} />
-    <Route path="/game/create" element={<h1>Game setup</h1>} />
     <Route path="/" element={<h1>Golf home</h1>} />
   </Routes></MemoryRouter>);
 }
 
-it("announces the winner, sorts lowest scores first and highlights the human row", () => {
+it("announces the winner, sorts lowest scores first and highlights only your own row", () => {
   open();
   expect(screen.getByRole("dialog", { name: "Clover won!" })).toBeVisible();
   const rows = within(screen.getByRole("table", { name: "Final scores" })).getAllByRole("row").slice(1);
   expect(rows.map(row => row.textContent)).toEqual(["Clover15", "Birdie22", "Emily47"]);
   expect(rows[2]).toHaveAttribute("data-current", "true");
-  expect(rows[0]).toHaveAttribute("data-winner", "true");
+  expect(rows[1]).toHaveAttribute("data-current", "false");
+  expect(rows[0]).toHaveAttribute("data-current", "false");
 });
 
 it("recognizes a signed-in human winner and restarts with Play Again", () => {
@@ -43,25 +43,26 @@ it("recognizes a signed-in human winner and restarts with Play Again", () => {
   expect(restart).toHaveBeenCalledOnce();
 });
 
-it("recognizes every tied lowest score as a shared win", () => {
-  open([{ ...players[0], score: 15 }, ...players.slice(1)]);
+it.each([0, 2])("announces a tie and highlights only your own row for seat %i", mySeatIndex => {
+  const tiedPlayers = [{ ...players[0], score: 15 }, ...players.slice(1)];
+  render(<MemoryRouter><GameOverBlock players={tiedPlayers} onPlayAgain={vi.fn()} mySeatIndex={mySeatIndex} /></MemoryRouter>);
   expect(screen.getByRole("heading", { name: "It's a tie!" })).toBeVisible();
   const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1);
-  expect(rows.filter(row => row.getAttribute("data-winner") === "true").map(row => row.textContent))
-    .toEqual(["Emily15", "Clover15"]);
+  expect(rows.filter(row => row.getAttribute("data-current") === "true").map(row => row.textContent))
+    .toEqual([`${tiedPlayers[mySeatIndex].name}${tiedPlayers[mySeatIndex].score}`]);
 });
 
-it.each([["Create New Game", "Game setup"], ["Home", "Golf home"]])("%s opens its destination", (button, heading) => {
+it("Home opens its destination", () => {
   open();
-  fireEvent.click(screen.getByRole("button", { name: button, exact: true }));
-  expect(screen.getByRole("heading", { name: heading })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Home", exact: true }));
+  expect(screen.getByRole("heading", { name: "Golf home" })).toBeVisible();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
 it("keeps non-hosts waiting and explains host replays inside the modal on focus and tap", async () => {
   const user = userEvent.setup();
   const restart = vi.fn();
-  render(<MemoryRouter><GameOverBlock players={players} onPlayAgain={restart} waitingForHost /></MemoryRouter>);
+  render(<MemoryRouter><GameOverBlock players={players} onPlayAgain={restart} onLeaveLobby={vi.fn()} waitingForHost /></MemoryRouter>);
   const waiting = screen.getByRole("button", { name: "Waiting for host…" });
   expect(waiting).toBeDisabled();
   expect(waiting.parentElement).toHaveFocus();
@@ -71,7 +72,8 @@ it("keeps non-hosts waiting and explains host replays inside the modal on focus 
   fireEvent.click(waiting);
   expect(restart).not.toHaveBeenCalled();
   await user.tab();
-  expect(screen.getByRole("button", { name: "Create New Game" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Leave Lobby" })).toHaveFocus();
+  expect(screen.queryByRole("button", { name: "Home" })).not.toBeInTheDocument();
   fireEvent.click(waiting.parentElement!);
   expect(await screen.findByRole("tooltip")).toHaveTextContent("Only the host can start a new game.");
   expect(restart).not.toHaveBeenCalled();

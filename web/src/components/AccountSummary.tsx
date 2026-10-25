@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCardsBlank, faTrophy, faStars, faSnowflake, faBullseye, faFlag, faCrown, faUsers, faLock } from "@fortawesome/pro-solid-svg-icons";
-import { Sparkle } from "./Sparkle";
-import { Tooltip } from "./Tooltip";
+import { AchievementBadge } from "./AchievementBadge";
+import { ACHIEVEMENT_EVENT, computeAchievements } from "@/lib/achievements";
 import { golfGet, type AccountStatistics, type GolfMode } from "@/lib/golfApi";
 import { StatisticsTabs, StatisticsViewToggle } from "./StatisticsTabs";
 import styles from "@/styles/account-summary.module.css";
@@ -25,7 +23,11 @@ export function AccountSummary({ userId }: { userId: string }) {
     refresh();
     window.addEventListener("focus", refresh);
     window.addEventListener("golf:results", refresh);
-    return () => { controller.abort(); window.removeEventListener("focus", refresh); window.removeEventListener("golf:results", refresh); };
+    window.addEventListener(ACHIEVEMENT_EVENT, refresh);
+    return () => {
+      controller.abort(); window.removeEventListener("focus", refresh);
+      window.removeEventListener("golf:results", refresh); window.removeEventListener(ACHIEVEMENT_EVENT, refresh);
+    };
   }, [userId, attempt]);
   const stats = data?.[mode === "all_time" ? "all_time" : category];
   const show = (value: number | null | undefined) => value ?? "—";
@@ -35,17 +37,7 @@ export function AccountSummary({ userId }: { userId: string }) {
     [["Average Score", show(stats.average_score)], ["Best Hole", show(stats.best_hole)], ["Negative Holes", stats.negative_holes],
      ["Best Win Streak", stats.best_win_streak], ["Matching Pairs", stats.pairs]],
   ] : [];
-  const earned = data?.all_time.achievements || {};
-  const badges = [
-    { name: "Newcomer", desc: "Finish your first nine-hole game.", icon: faCardsBlank, earned: earned.first_game },
-    { name: "First Light", desc: "Win your first game. Shared wins count, too.", icon: faTrophy, earned: earned.first_win },
-    { name: "Written in the Stars", desc: "Win ten games.", icon: faStars, earned: earned.ten_wins },
-    { name: "Below Zero", desc: "Finish a hole with a negative score.", icon: faSnowflake, earned: earned.negative_hole },
-    { name: "Right on Target", desc: "Score exactly zero on a hole.", icon: faBullseye, earned: earned.zero_hole },
-    { name: "Under Par", desc: "Finish all nine holes with a negative total.", icon: faFlag, earned: earned.negative_game },
-    { name: "Flawless Nine", desc: "Score zero or less on every hole in a game.", icon: faCrown, earned: earned.flawless_nine },
-    { name: "Full House", desc: "Win a game with six players.", icon: faUsers, earned: earned.full_house },
-  ];
+  const badges = computeAchievements(data?.all_time);
 
   return <div className={styles.summary}>
     <section aria-labelledby="statistics-title">
@@ -65,26 +57,8 @@ export function AccountSummary({ userId }: { userId: string }) {
     <section aria-labelledby="achievements-title" className={styles.achievements}>
       <h2 id="achievements-title" className={styles.sectionTitle}>Achievements</h2>
       <div className={styles.badgeGrid}>
-        {badges.map(badge => <div key={badge.name} className={styles.achievement}>
-          <Tooltip open={selected === badge.name}
-            onOpenChange={open => setSelected(current => open ? badge.name : current === badge.name ? null : current)}
-            content={<div className={styles.tooltipContent}>
-              <span className={styles.tooltipName}>{badge.name}</span>
-              <span className={styles.tooltipDesc}>{badge.desc}</span>
-              <span className={styles.tooltipStatus}>{badge.earned ? "Unlocked" : "Locked"}</span>
-            </div>}>
-          <button type="button" className={styles.badge} data-earned={badge.earned}
-            aria-label={`${badge.name}: ${badge.earned ? "Unlocked" : "Locked"}`}
-            onClick={event => {
-              event.preventDefault();
-              setSelected(selected === badge.name ? null : badge.name);
-            }}>
-            {badge.earned && <><span className={styles.shine} /><Sparkle className={styles.sparkle} fill="white" /></>}
-            <FontAwesomeIcon icon={badge.earned ? badge.icon : faLock} />
-          </button>
-          </Tooltip>
-          <span className={styles.badgeLabel} data-earned={badge.earned}>{badge.name}</span>
-        </div>)}
+        {badges.map(badge => <AchievementBadge key={badge.id} badge={badge} open={selected === badge.id}
+          onOpenChange={open => setSelected(current => open ? badge.id : current === badge.id ? null : current)} />)}
       </div>
     </section>
   </div>;

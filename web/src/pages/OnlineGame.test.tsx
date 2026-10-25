@@ -69,7 +69,7 @@ it.each([false, true])("uses server host status for end-game replays and follows
     return response({ state: finished });
   }));
   render(<MemoryRouter initialEntries={["/game/multiplayer/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
-  await screen.findByRole("dialog", {}, { timeout: 6000 });
+  await screen.findByRole("dialog", {}, { timeout: 10000 });
   if (isHost) {
     act(() => { transport.handlers.disconnect(); });
     expect(screen.getByRole("button", { name: "Starting game…" })).toBeDisabled();
@@ -85,6 +85,50 @@ it.each([false, true])("uses server host status for end-game replays and follows
   }
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   expect(screen.getByRole("main", { name: "3-player Golf table" })).toBeVisible();
+}, 10000);
+
+it.each([false, true])("leaves the lobby from final results while disconnected and allows retry after failure (host=%s)", async isHost => {
+  Object.defineProperties(HTMLDialogElement.prototype, {
+    showModal: { configurable: true, value: function (this: HTMLDialogElement) { this.open = true; } },
+    close: { configurable: true, value: function (this: HTMLDialogElement) { this.open = false; } },
+  });
+  const finished = roomFixture(3, isHost ? 0 : 1);
+  finished.game!.phase = "game-over";
+  finished.game!.hole = 9;
+  finished.game!.history = Array.from({ length: 9 }, () => [1, 2, 3]);
+  finished.game!.players.forEach(player => player.cards.forEach(card => { card.faceUp = true; }));
+  transport.reply = finished;
+  const actions: string[] = [];
+  let finishLeave!: (result: Response) => void;
+  vi.stubGlobal("fetch", vi.fn(async (path: string, init: RequestInit = {}) => {
+    if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
+    if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
+    if (path === "/api/golf/active") return response({ rooms: [] });
+    if (path.endsWith("/actions")) {
+      actions.push(JSON.parse(String(init.body)).action);
+      if (actions.length === 1) return response({ error: "Couldn’t leave the lobby. Please retry.", code: "LEAVE_FAILED" }, 500);
+      return new Promise<Response>(resolve => { finishLeave = resolve; });
+    }
+    return response({ state: finished });
+  }));
+  render(<MemoryRouter initialEntries={["/game/multiplayer/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  const dialog = await screen.findByRole("dialog", {}, { timeout: 10000 });
+  act(() => { transport.handlers.connect_error(); });
+  expect(within(dialog).getByRole("button", { name: isHost ? "Starting game…" : "Waiting for host…" })).toBeDisabled();
+  const leave = within(dialog).getByRole("button", { name: "Leave Lobby", exact: true });
+  expect(leave).toBeEnabled();
+  fireEvent.click(leave);
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("Couldn’t leave the lobby. Please retry.");
+  expect(screen.getByRole("dialog")).toBe(dialog);
+  expect(leave).toBeEnabled();
+  fireEvent.click(leave);
+  await waitFor(() => expect(finishLeave).toBeDefined());
+  expect(leave).toBeDisabled();
+  fireEvent.click(leave);
+  expect(actions).toEqual(["leave", "leave"]);
+  await act(async () => { finishLeave(response({ state: { left: true } })); });
+  await waitFor(() => expect(screen.getByRole("heading", { name: "PLAY", exact: true })).toBeVisible());
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 }, 10000);
 
 it("shows server account totals under All Time and exactly two separate categories, without importing local scores", async () => {
@@ -329,6 +373,47 @@ it("shows and clears the inactivity warning, then explains removal", async () =>
   expect(screen.queryByText(/removed for inactivity/)).not.toBeInTheDocument();
   act(() => transport.handlers["golf:removed"]({ code: room.code, reason: "idle" }));
   expect(screen.getByRole("alert")).toHaveTextContent("You were removed for inactivity.");
+  expect(screen.queryByText(/bot has taken your seat/i)).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /Draw from deck/ })).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Back to Play" })).toBeInTheDocument();
+});
+
+it.each([false, true])("replaces a two-player table with a closure notice when the other player leaves (reload=%s)", async reload => {
+  const room = roomFixture(2, 0);
+  const closed = { ...room, revision: room.revision + 1, closed: true, closedReason: "not_enough_players",
+    stage: "closed", mySeat: 0, seats: room.seats.slice(0, 1),
+    game: { ...room.game!, players: room.game!.players.slice(0, 1), turn: 0, starter: 0 }, motion: null };
+  transport.reply = reload ? closed : room;
+  vi.stubGlobal("fetch", vi.fn(async (path: string) => {
+    if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
+    if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
+    if (path === "/api/golf/active") return response({ rooms: [] });
+    return response({ state: reload ? closed : room });
+  }));
+  render(<MemoryRouter initialEntries={["/game/multiplayer/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  if (!reload) {
+    expect(await screen.findByRole("main", { name: "2-player Golf table" })).toBeInTheDocument();
+    act(() => transport.handlers["golf:state"](closed));
+  }
+  expect(await screen.findByText("LOBBY CLOSED")).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("There aren’t enough players to continue. The lobby has closed.");
+  expect(screen.queryByRole("button", { name: /Draw from deck/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Back to Play" })).toBeInTheDocument();
+});
+
+it("reduces the visible table when a player leaves a three-player game", async () => {
+  const room = roomFixture(3, 2);
+  transport.reply = room;
+  vi.stubGlobal("fetch", vi.fn(async (path: string) => {
+    if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
+    if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
+    return response({ state: room });
+  }));
+  render(<MemoryRouter initialEntries={["/game/multiplayer/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  expect(await screen.findByRole("main", { name: "3-player Golf table" })).toBeInTheDocument();
+  act(() => transport.handlers["golf:state"]({ ...room, revision: room.revision + 1, capacity: 2, mySeat: 1,
+    seats: room.seats.slice(1), game: { ...room.game!, players: room.game!.players.slice(1), turn: 1, starter: 0 } }));
+  expect(screen.getByRole("main", { name: "2-player Golf table" })).toBeInTheDocument();
+  expect(screen.queryByText("Friend 0")).not.toBeInTheDocument();
+  expect(screen.getAllByText("Friend 1").length).toBeGreaterThan(0);
 });

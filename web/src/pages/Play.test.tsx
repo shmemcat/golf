@@ -143,13 +143,13 @@ it("cancels concession, then clears guest progress only after Yes", async () => 
   expect(createLink()).not.toHaveAttribute("aria-disabled");
 });
 
-it("warns that a server solo concession counts as a loss and sends a fresh revision and CSRF", async () => {
+it("explains that a server solo concession does not count and sends a fresh revision and CSRF", async () => {
   rooms = [solo()];
   const user = userEvent.setup();
   render(page());
   await screen.findByRole("dialog");
   await user.click(button("Concede"));
-  expect(screen.getByRole("dialog")).toHaveTextContent("count as a loss");
+  expect(screen.getByRole("dialog")).toHaveTextContent("Only finished games count toward your statistics.");
   expect(mutations()).toHaveLength(0);
   rooms[0].revision = 18;
   await user.click(button("Yes"));
@@ -196,8 +196,9 @@ it("keeps the multiplayer confirmation busy until the server acknowledges leavin
   render(page());
   await screen.findByRole("dialog");
   await user.click(button("Leave"));
-  expect(screen.getByRole("dialog")).toHaveTextContent("A bot will take your seat");
-  expect(screen.getByRole("dialog")).toHaveTextContent("count as a loss");
+  expect(screen.getByRole("dialog")).toHaveTextContent("Your seat will be removed");
+  expect(screen.getByRole("dialog")).toHaveTextContent("If fewer than two players remain, the lobby will close");
+  expect(screen.getByRole("dialog")).toHaveTextContent("Only finished games count toward your statistics.");
   await user.click(button("Yes"));
   expect(button("Leaving…")).toBeDisabled();
   expect(button("No")).toBeDisabled();

@@ -1,3 +1,4 @@
+import type { GameTurnSoundOptions, TurnSoundUpdate } from "@/lib/turnSound";
 export function accountApiBase() {
   return import.meta.env.VITE_ACCOUNT_API_URL?.trim() || "/api/account";
 }
@@ -9,6 +10,7 @@ export type AccountUser = {
   email_verified?: boolean;
   profile_icon?: string;
   turn_sound?: Partial<Record<"golf" | "euchre" | "hearts", boolean>>;
+  turn_sound_options?: GameTurnSoundOptions;
 };
 export type AccountSession = {
   user: AccountUser | null;
@@ -17,12 +19,12 @@ export type AccountSession = {
 };
 export function createAccountClient(
   base: string,
-  fetcher: typeof fetch = fetch
+  fetcher: typeof fetch = fetch,
 ) {
   const url = base.replace(/\/$/, "");
   const request = async (
     path: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<AccountSession> => {
     const response = await fetcher(`${url}${path}`, {
       credentials: "include",
@@ -35,8 +37,8 @@ export function createAccountClient(
         typeof data?.error === "string"
           ? data.error
           : response.status === 401
-          ? "Check your username and password."
-          : "Unable to connect to your account. Please try again."
+            ? "Check your username and password."
+            : "Unable to connect to your account. Please try again.",
       );
     if (
       !data ||
@@ -70,9 +72,9 @@ export function createAccountClient(
       data: {
         profile_icon?: string;
         email?: string;
-        turn_sound?: { game: "golf" | "euchre" | "hearts"; enabled: boolean };
+        turn_sound?: TurnSoundUpdate & { game: "golf" | "euchre" | "hearts" };
       },
-      csrf: string
+      csrf: string,
     ) =>
       request("/profile", {
         method: "POST",

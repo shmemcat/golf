@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SoundProvider, useSound } from "./SoundContext";
 import { writeStorage } from "@/lib/storage";
 import type { HowlOptions } from "howler";
+import { installMusicLocks } from "@/test/musicLocks";
 
 vi.mock("howler", () => ({
   Howl: class {
@@ -80,8 +81,56 @@ beforeEach(() => {
   players = [];
   tracks = [];
   vi.stubGlobal("Audio", TestAudio);
+  installMusicLocks();
 });
 afterEach(() => vi.unstubAllGlobals());
+
+describe("Music across tabs", () => {
+   it("plays in one tab and hands off when its music is disabled", async () => {
+      writeStorage("golf.music.v1", true);
+      const first = renderSound();
+      renderSound();
+      expect(tracks[0].active).toBe(true);
+      expect(tracks[1].play).not.toHaveBeenCalled();
+      await act(async () => first.result.current.setMusic(false));
+      expect(tracks[0].active).toBe(false);
+      expect(tracks[1].active).toBe(true);
+   });
+
+   it("hands off when the owner closes and skips a closed waiting tab", async () => {
+      writeStorage("golf.music.v1", true);
+      const first = renderSound();
+      const waiting = renderSound();
+      renderSound();
+      waiting.unmount();
+      await act(async () => first.unmount());
+      expect(tracks[1].play).not.toHaveBeenCalled();
+      expect(tracks[2].active).toBe(true);
+   });
+
+   it("keeps queued track and unlock callbacks silent after losing ownership", () => {
+      writeStorage("golf.music.v1", true);
+      renderSound();
+      const first = tracks[0];
+      first.active = false;
+      act(() => first.options.onplayerror?.(1, "Autoplay blocked"));
+      act(() => window.dispatchEvent(new Event("pagehide")));
+      act(() => first.unlock?.());
+      expect(first.play).toHaveBeenCalledOnce();
+      finishTrack();
+      expect(tracks.at(-1)!.play).not.toHaveBeenCalled();
+   });
+
+   it("pauses a delayed play event after the page leaves", () => {
+      writeStorage("golf.music.v1", true);
+      renderSound();
+      const current = tracks[0];
+      act(() => window.dispatchEvent(new Event("pagehide")));
+      current.active = true;
+      act(() => current.options.onplay?.(1));
+      expect(current.active).toBe(false);
+   });
+});
 
 describe("Independent audio controls", () => {
   it.each(["pop", "goingOut"] as const)("plays %s from Golf's sound library at the effects volume and respects mute", sound => {
@@ -216,14 +265,14 @@ describe("Shuffled music playlist", () => {
     expect([...nextRound].sort()).toEqual([...musicSources].sort());
   });
 
-  it("pauses and resumes the current song without resetting the rotation", () => {
+  it("pauses and resumes the current song without resetting the rotation", async () => {
     writeStorage("golf.music.v1", true);
     const { result } = renderSound();
     finishTrack();
     const current = tracks.at(-1)!;
     act(() => result.current.setMusic(false));
     expect(current.pause).toHaveBeenCalledOnce();
-    act(() => result.current.setMusic(true));
+    await act(async () => result.current.setMusic(true));
     expect(tracks).toHaveLength(2);
     expect(current.play).toHaveBeenCalledTimes(2);
     finishTrack();
@@ -245,13 +294,13 @@ describe("Shuffled music playlist", () => {
     expect(tracks.at(-1)!.level).toBe(0.2);
   });
 
-  it("keeps music paused if a queued end event arrives after disabling it", () => {
+  it("keeps music paused if a queued end event arrives after disabling it", async () => {
     writeStorage("golf.music.v1", true);
     const { result } = renderSound();
     act(() => result.current.setMusic(false));
     finishTrack();
     expect(tracks.at(-1)!.play).not.toHaveBeenCalled();
-    act(() => result.current.setMusic(true));
+    await act(async () => result.current.setMusic(true));
     expect(tracks.at(-1)!.play).toHaveBeenCalledOnce();
   });
 

@@ -1,5 +1,7 @@
 """One Golf runtime owns its independent socket, durable rooms, and move clock."""
 import copy
+import hashlib
+import json
 import secrets
 import threading
 import time
@@ -17,6 +19,8 @@ SOCKET_PATH = "golf/socket.io"
 IDLE_WARNING_SECONDS = 540
 IDLE_TIMEOUT_SECONDS = 600
 RECONNECT_SECONDS = 120
+LOBBY_RECONNECT_SECONDS = 60
+ACTIONS = ("start", "close", "leave", "reveal", "advance", "restart", "draw", "replace", "toss")
 
 
 class Rejected(ValueError):
@@ -43,8 +47,15 @@ class GolfRuntime:
         user = actor["user"]
         if name is not None and (not isinstance(name, str) or len(name) > 24):
             raise Rejected("Use a name of up to 24 characters.")
+        try:
+            utc_offset = int(request.headers.get("X-Golf-UTC-Offset", "0"))
+        except ValueError:
+            raise Rejected("Use a valid local time offset.")
+        if not -840 <= utc_offset <= 720:
+            raise Rejected("Use a valid local time offset.")
         return {"actor": actor["key"], "userId": user.id if user else None,
                 "name": user.username if user else (name or "Guest").strip() or "Guest",
+                "utcOffsetMinutes": utc_offset,
                 "profileIcon": user.profile_icon if user else "user", "isBot": False, "left": False}
 
     def get(self, code):
@@ -61,6 +72,30 @@ class GolfRuntime:
 
     def reviewing_hole(self, data, seat):
         return bool(data.get("previousHole")) and seat not in data["ready"]
+
+    def action_token(self, data, seat, action):
+        """Bind a command to its decision, independent of other players' updates."""
+        game = data.get("game")
+        context = [data["code"], data["seats"][seat]["actor"], action]
+        if action == "leave":
+            pass  # Leaving remains valid while the game continues.
+        elif action in ("start", "close"):
+            context += [data["host"], data.get("closed", False), game["id"] if game else None]
+        else:
+            # A late Next Hole click still refers to this player's completed
+            # board, even when other players are already opening the next one.
+            visible = data["previousHole"] if action == "advance" and self.reviewing_hole(data, seat) else game
+            context += [visible["id"], visible["hole"], visible["phase"]] if visible else [None]
+            if game and action == "reveal":
+                context += [data["stage"], self.reviewing_hole(data, seat),
+                            [[c["card"]["id"], c["faceUp"]] for c in game["players"][seat]["cards"]]]
+            elif game and action in ("draw", "replace", "toss"):
+                context += [data["stage"], game["turn"], data.get("turnSerial", 0), data["motion"],
+                            game["drawn"], game["deck"][-1]["id"] if game["deck"] else None,
+                            game["discard"][-1]["id"] if game["discard"] else None]
+            elif action == "restart":
+                context += [data["host"]]
+        return hashlib.sha256(json.dumps(context, sort_keys=True).encode()).hexdigest()
 
     def view(self, data, actor):
         mine = self.seat(data, actor)
@@ -80,7 +115,9 @@ class GolfRuntime:
                     if not cell["faceUp"] and not outgoing:
                         cell["card"] = {"id": cell["card"]["id"]}
         return {"code": data["code"], "mode": data["mode"], "capacity": data["capacity"], "revision": data["revision"],
+                "actionTokens": {action: self.action_token(data, mine, action) for action in ACTIONS},
                 "closed": data.get("closed", False),
+                "closedReason": data.get("closedReason"),
                 "mySeat": mine, "isHost": data["host"] == actor, "seats": seats,
                 "stage": "playing" if reviewing else data.get("stage", "lobby"), "game": game, "motion": motion,
                 "ready": data.get("ready", []), "rematchReady": data.get("rematchReady", []),
@@ -93,7 +130,7 @@ class GolfRuntime:
             try:
                 self.socketio.emit("golf:state", self.view(data, actor), to=sid, namespace=NAMESPACE)
             except Rejected:
-                reason = next((p.get("removedReason") for p in data["seats"] if p["actor"] == actor), None)
+                reason = data.get("removed", {}).get(actor) or next((p.get("removedReason") for p in data["seats"] if p["actor"] == actor), None)
                 self.socketio.emit("golf:removed", {"code": code, "reason": reason}, to=sid, namespace=NAMESPACE)
 
     def active_rooms(self, actor):
@@ -110,6 +147,41 @@ class GolfRuntime:
                     if error.code != "NOT_SEATED":
                         raise
             return rooms
+
+    def transfer_guest_lobbies(self, actor, guest_key):
+        """Claim only waiting seats owned by this browser's signed guest cookie."""
+        with self.lock:
+            for row in Room.query.filter(Room.data["mode"].as_string() == "multiplayer").all():
+                data = copy.deepcopy(row.data)
+                if data.get("closed") or data.get("game"):
+                    continue
+                guest = next((p for p in data["seats"] if p["actor"] == guest_key and not p.get("left")), None)
+                if guest is None:
+                    continue
+                existing = next((p for p in data["seats"] if p["actor"] == actor["key"]), None)
+                person = existing if existing is not None else guest
+                if existing is not None:
+                    data["seats"].remove(guest)
+                user = actor["user"]
+                person.update(actor=actor["key"], userId=user.id, name=user.username, profileIcon=user.profile_icon)
+                if data["host"] == guest_key:
+                    data["host"] = actor["key"]
+                    # The lobby displays the host first, including when merging
+                    # a duplicate seat left by an older client.
+                    data["seats"].remove(person)
+                    data["seats"].insert(0, person)
+                receipts = data["receipts"].pop(guest_key, [])
+                data["receipts"].setdefault(actor["key"], []).extend(receipts)
+                if data.get("createRequest", [None])[0] == guest_key:
+                    data["createRequest"][0] = actor["key"]
+                # A socket authenticated as a guest must not inherit an account
+                # seat. Its replacement reconnects with the current cookies.
+                old_sids = [sid for sid, (code, key) in self.connections.items() if code == row.code and key == guest_key]
+                for sid in old_sids:
+                    self.connections.pop(sid, None)
+                self.save(row, data, "signed_in")
+                for sid in old_sids:
+                    self.socketio.server.disconnect(sid, namespace=NAMESPACE)
 
     def save(self, row, data, kind, seat=None, detail=None):
         self.sync_inactivity(data)
@@ -149,6 +221,11 @@ class GolfRuntime:
             data["seats"].append({"actor": f"bot:{i}", "userId": None, "name": BOT_NAMES[i], "profileIcon": "robot", "isBot": True, "left": False})
 
     def begin(self, data):
+        data.pop("removed", None)
+        # Convert legacy departed seats saved before multiplayer seats were removed.
+        if data["mode"] == "multiplayer":
+            data["seats"] = [p for p in data["seats"] if not p.get("left")]
+            data["capacity"] = len(data["seats"])
         # A departed account must not acquire results in later rematches.
         used_names = {p["name"] for p in data["seats"] if p["isBot"] and not p.get("left")}
         for person in data["seats"]:
@@ -174,7 +251,7 @@ class GolfRuntime:
             row = self.get(code)
             data = copy.deepcopy(row.data)
             if data.get("closed"):
-                raise Rejected("The host closed this lobby.", "LOBBY_CLOSED")
+                raise Rejected(self.closed_message(data), "LOBBY_CLOSED")
             try:
                 self.seat(data, actor["key"])
                 return self.view(data, actor["key"])
@@ -283,12 +360,18 @@ class GolfRuntime:
             receipts = data["receipts"].setdefault(actor["key"], [])
             if action_id in receipts:
                 return self.view(data, actor["key"])
-            if type(payload.get("revision")) is not int or payload["revision"] != data["revision"]:
-                raise Rejected("The table changed. Please try that move again.", "STALE_STATE")
             action = payload.get("action")
+            revision = payload.get("revision")
+            # Older clients retain the exact-revision guard. New clients carry
+            # the decision they displayed; never rebase an outdated move.
+            current = revision == data["revision"]
+            if "actionToken" in payload:
+                current = isinstance(payload["actionToken"], str) and payload["actionToken"] == self.action_token(data, seat, action)
+            if type(revision) is not int or not 0 <= revision <= data["revision"] or not current:
+                raise Rejected("The table changed. Please try that move again.", "STALE_STATE")
             game = data["game"]
             if data.get("closed") and action not in ("close", "leave"):
-                raise Rejected("The host closed this lobby.", "LOBBY_CLOSED")
+                raise Rejected(self.closed_message(data), "LOBBY_CLOSED")
             if action == "close":
                 if game or data["host"] != actor["key"]:
                     raise Rejected("Only the host can close a waiting lobby.")
@@ -297,8 +380,14 @@ class GolfRuntime:
                 self.save(row, data, "closed", seat)
                 return self.view(data, actor["key"])
             if action == "leave":
+                if data["mode"] == "multiplayer":
+                    self.remove_participant(data, seat)
+                    self.save(row, data, "left", seat)
+                    return {"left": True}
                 person = data["seats"][seat]
                 if game:
+                    if game["phase"] == "game-over":
+                        save_results(data, terminal=True)
                     person["left"] = True
                     humans = [p for p in data["seats"] if not p["isBot"] and not p.get("left")]
                     if data["host"] == actor["key"] and humans:
@@ -307,6 +396,8 @@ class GolfRuntime:
                     if not humans:
                         save_results(data, terminal=True, abandoned=game["phase"] != "game-over")
                         data["next"] = None
+                    elif game["phase"] == "game-over":
+                        pass
                     elif data["stage"] == "opening":
                         self.open_for(data, seat)
                         self.finish_opening(data)
@@ -427,10 +518,12 @@ class GolfRuntime:
 
     def sync_inactivity(self, data):
         """Persist separate decision and disconnect clocks alongside animation work."""
+        self.close_if_empty(data)
+        self.sync_lobby_disconnects(data)
         game = data.get("game")
         timers = data.setdefault("inactivity", {})
         pending = {}
-        if data["mode"] == "multiplayer" and game and game["phase"] != "game-over":
+        if data["mode"] == "multiplayer" and not data.get("closed") and game and game["phase"] != "game-over":
             for seat, person in enumerate(data["seats"]):
                 if person["isBot"] or person.get("left"):
                     continue
@@ -458,17 +551,123 @@ class GolfRuntime:
                 timers[seat] = dict(kind=kind, decision=decision, warned=False, at=time.time() + (RECONNECT_SECONDS if kind == "disconnected" else IDLE_WARNING_SECONDS))
         data["inactivityAt"] = min((t["at"] for t in timers.values()), default=None)
 
+    def close_if_empty(self, data):
+        if data["mode"] == "multiplayer" and not any(not p["isBot"] and not p.get("left") for p in data["seats"]):
+            data.update(closed=True, stage="closed", next=None, motion=None)
+
+    def closed_message(self, data):
+        if data.get("closedReason") == "not_enough_players":
+            return "There aren’t enough players to continue. The lobby has closed."
+        return "The host closed this lobby."
+
+    def remove_participant(self, data, seat, reason=None):
+        """Keep every seat-indexed board, animation and timer aligned after a departure."""
+        person = data["seats"][seat]
+        game = data.get("game")
+        finished = game and game["phase"] == "game-over"
+        if finished:
+            save_results(data, terminal=True)
+        person["left"] = True
+        save_results(data)
+        if reason:
+            data.setdefault("removed", {})[person["actor"]] = reason
+        data["seats"].pop(seat)
+        data["receipts"].pop(person["actor"], None)
+        if data.get("createRequest", [None])[0] == person["actor"]:
+            data["createRequest"] = ["left", "left"]
+        humans = [p for p in data["seats"] if not p["isBot"] and not p.get("left")]
+        if humans and data["host"] == person["actor"]:
+            data["host"] = humans[0]["actor"]
+
+        def remap(index):
+            return index - (index > seat)
+
+        for key in ("ready", "rematchReady"):
+            data[key] = [remap(index) for index in data.get(key, []) if index != seat]
+        for key in ("revealBusy", "inactivity"):
+            data[key] = {str(remap(int(index))): value for index, value in data.get(key, {}).items() if int(index) != seat}
+        if game:
+            phase = game["phase"]
+            engine.remove_player(game, seat)
+            if data.get("previousHole"):
+                engine.remove_player(data["previousHole"], seat)
+            data["metrics"].pop(seat)
+            data["humanCount"] = len(humans)
+            data["capacity"] = len(data["seats"])
+            motion = data.get("motion")
+            if motion:
+                if motion["seat"] == seat and motion["kind"] != "upcard":
+                    data.update(motion=None, next=None)
+                else:
+                    motion["seat"] = game["starter"] if motion["kind"] == "upcard" else remap(motion["seat"])
+                    for key in ("from", "to"):
+                        anchor = motion[key].split("-")
+                        if anchor[0] in ("card", "drawn"):
+                            anchor[1] = str(remap(int(anchor[1])))
+                            motion[key] = "-".join(anchor)
+        if len(data["seats"]) < 2 or not humans:
+            if game and not finished:
+                save_results(data, cancelled=True)
+            data.update(closed=True, closedReason="not_enough_players", stage="closed", next=None, motion=None)
+            return
+        if not game or finished:
+            return
+        if phase in ("draw", "replace") and game["phase"] in ("round-over", "game-over"):
+            self.next_turn(data)
+        elif data["stage"] == "opening":
+            self.finish_opening(data)
+        elif game["phase"] == "round-over":
+            self.resume_ready(data)
+        elif data["stage"] == "playing" and not data["motion"]:
+            self.next_turn(data)
+
+    def sync_lobby_disconnects(self, data):
+        # Actor keys keep deadlines stable when another lobby seat is removed.
+        timers = data.setdefault("lobbyDisconnects", {})
+        offline = set()
+        game = data.get("game")
+        if data["mode"] == "multiplayer" and not data.get("closed") and (not game or game["phase"] == "game-over"):
+            online = {actor for code, actor in self.connections.values() if code == data["code"]}
+            offline = {p["actor"] for p in data["seats"] if not p["isBot"] and not p.get("left") and p["actor"] not in online}
+        for actor in list(timers):
+            if actor not in offline:
+                timers.pop(actor)
+        for actor in offline:
+            timers.setdefault(actor, time.time() + (RECONNECT_SECONDS if game else LOBBY_RECONNECT_SECONDS))
+        data["lobbyDisconnectAt"] = min(timers.values(), default=None)
+
+    def expire_lobby_seats(self, data, now):
+        expired = {actor for actor, deadline in data.get("lobbyDisconnects", {}).items() if deadline <= now}
+        if not expired:
+            return
+        for seat in reversed(range(len(data["seats"]))):
+            if data["seats"][seat]["actor"] in expired:
+                self.remove_participant(data, seat, "disconnected")
+        for actor in expired:
+            data["receipts"].pop(actor, None)
+        self.close_if_empty(data)
+        humans = [p for p in data["seats"] if not p["isBot"] and not p.get("left")]
+        if humans and data["host"] in expired:
+            data["host"] = humans[0]["actor"]
+
     def remove_inactive(self, data, seat, reason):
+        if data["mode"] == "multiplayer":
+            self.remove_participant(data, seat, reason)
+            return
         person, game = data["seats"][seat], data["game"]
+        if game["phase"] == "game-over":
+            save_results(data, terminal=True)
         person.update(left=True, removedReason=reason)
         save_results(data)
         humans = [p for p in data["seats"] if not p["isBot"] and not p.get("left")]
         if not humans:
-            save_results(data, terminal=True, abandoned=True)
+            save_results(data, terminal=True, abandoned=game["phase"] != "game-over")
             data["next"] = None
             return
         if data["host"] == person["actor"]:
             data["host"] = humans[0]["actor"]
+        if game["phase"] == "game-over":
+            return
         if data["stage"] == "opening":
             self.open_for(data, seat)
             self.finish_opening(data)
@@ -481,14 +680,18 @@ class GolfRuntime:
         now = time.time() if now is None else now
         with self.lock:
             if not self.recovered:
-                # Convert restored live seats to reconnect clocks immediately.
-                for row in Room.query.filter(Room.data["mode"].as_string() == "multiplayer", Room.data["game"]["phase"].as_string() != "game-over").all():
+                # Waiting lobbies also need recovery, including older rooms
+                # saved before lobby disconnect clocks existed.
+                for row in Room.query.filter(Room.data["mode"].as_string() == "multiplayer").all():
+                    if row.data.get("closed"):
+                        continue
                     data = copy.deepcopy(row.data)
                     self.sync_inactivity(data)
                     if data != row.data:
                         self.save(row, data, "recovered")
                 self.recovered = True
-            rows = Room.query.filter(db.or_(Room.data["next"]["at"].as_float() <= now, Room.data["inactivityAt"].as_float() <= now)).order_by(Room.updated_at).limit(100).all()
+            rows = Room.query.filter(db.or_(Room.data["next"]["at"].as_float() <= now, Room.data["inactivityAt"].as_float() <= now,
+                                           Room.data["lobbyDisconnectAt"].as_float() <= now)).order_by(Room.updated_at).limit(100).all()
             user_ids = {p["userId"] for row in rows for p in row.data["seats"] if p.get("userId") and row.data.get("inactivityAt") is not None and row.data["inactivityAt"] <= now}
         # Account I/O must stay outside the game lock. An outage cannot cause a loss.
         available = True
@@ -502,8 +705,9 @@ class GolfRuntime:
                 db.session.refresh(row)
                 data = copy.deepcopy(row.data)
                 self.sync_inactivity(data)
+                self.expire_lobby_seats(data, now)
                 changed = False
-                for seat, timer in list(data.get("inactivity", {}).items()):
+                for seat, timer in sorted(data.get("inactivity", {}).items(), key=lambda item: int(item[0]), reverse=True):
                     if timer["at"] > now:
                         continue
                     changed = True

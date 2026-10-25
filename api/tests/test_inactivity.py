@@ -57,6 +57,7 @@ def test_opening_warning_at_nine_minutes_clears_on_move_and_removes_at_ten(app, 
     assert not state(people[1], code)['seats'][1]['isBot']
     advance(1)
     value = state(people[0], code)
+    assert len(value['seats']) == 2
     assert value['seats'][1]['isBot'] and not value['seats'][0]['isBot']
     assert people[1].get('/api/golf/rooms/' + code).json['code'] == 'NOT_SEATED'
     events = sockets[1].get_received('/golf')
@@ -78,11 +79,12 @@ def test_disconnect_has_two_minutes_reconnect_cancels_it_and_expiry_is_final(app
     advance(119)
     assert not state(people[1], code)['seats'][0]['isBot']
     advance(1)
-    assert state(people[1], code)['seats'][0]['isBot']
+    assert len(state(people[1], code)['seats']) == 2
+    assert state(people[1], code)['seats'][0]['name'] == 'Player 2'
     assert state(people[1], code)['isHost']
     assert people[0].get('/api/golf/rooms/' + code).json['code'] == 'NOT_SEATED'
     with app.app_context():
-        assert db.session.get(Room, code).data['seats'][0]['removedReason'] == 'disconnected'
+        assert db.session.get(Room, code).data['removed']['account:1'] == 'disconnected'
 
 
 def test_second_connection_keeps_seat_online(online):
@@ -121,8 +123,9 @@ def test_only_the_player_owing_a_decision_can_be_removed(app, online, phase):
     assert not state(people[1], code)['idleWarning']
     assert state(people[0], code)['game']['phase'] == phase
     advance(60)
-    assert state(people[1], code)['seats'][0]['isBot']
-    assert not state(people[1], code)['seats'][1]['isBot']
+    assert len(state(people[1], code)['seats']) == 2
+    assert not state(people[1], code)['seats'][0]['isBot']
+    assert state(people[1], code)['seats'][0]['name'] == 'Player 2'
     if phase == 'round-over':
         assert state(people[1], code)['game']['hole'] == 2
 
@@ -146,10 +149,11 @@ def test_removal_pauses_for_account_outages_outside_lock_and_grants_recovery(app
     advance(30)
     assert not state(people[1], code)['seats'][0]['isBot']
     advance(30)
-    assert state(people[1], code)['seats'][0]['isBot']
+    assert len(state(people[1], code)['seats']) == 2
+    assert state(people[1], code)['seats'][0]['name'] == 'Player 2'
 
 
-def test_finished_games_have_no_inactivity_or_disconnect_deadline(app, online):
+def test_finished_games_have_no_idle_deadline_but_expire_disconnected_seats(app, online):
     people, sockets, connect, code, runtime, advance, clock = online
     with app.app_context():
         row = db.session.get(Room, code)
@@ -157,9 +161,15 @@ def test_finished_games_have_no_inactivity_or_disconnect_deadline(app, online):
         data['game']['phase'] = 'game-over'
         data['next'] = None
         runtime.save(row, data, 'test_setup')
-    sockets[0].disconnect(namespace='/golf')
     advance(10000)
+    assert all(not p['isBot'] for p in state(people[1], code)['seats'][:2])
+    sockets[0].disconnect(namespace='/golf')
+    advance(119)
     assert not state(people[1], code)['seats'][0]['isBot']
+    advance(1)
+    assert len(state(people[1], code)['seats']) == 2
+    assert state(people[1], code)['seats'][0]['name'] == 'Player 2'
+    assert state(people[1], code)['isHost']
 
 
 @pytest.mark.parametrize('kind', ['opening_timeout', 'turn_timeout', 'round_timeout'])

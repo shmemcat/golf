@@ -59,7 +59,9 @@ def test_closed_lobbies_and_departed_members_are_ignored(app, clients):
     assert command(player, conceded, "leave").status_code == 200
     assert active(player) == []
     stats = player.get("/api/golf/stats").json["statistics"]["bot"]
-    assert stats["games_lost"] == stats["games_abandoned"] == 1
+    assert stats["games_started"] == stats["games_abandoned"] == 1
+    assert stats["games_played"] == stats["games_lost"] == stats["games_won"] == 0
+    assert stats["win_rate"] == 0
 
 
 @pytest.mark.parametrize("mode", ["bot", "multiplayer"])
@@ -90,7 +92,9 @@ def test_every_game_phase_is_discoverable_except_completed_solo(app, clients, mo
             assert active(friend)[0]["code"] == room["code"]
             assert command(player, room, "leave").status_code == 200
             assert active(player) == []
-            assert active(friend)[0]["code"] == room["code"]
+            assert active(friend) == []
+            remaining = friend.get("/api/golf/rooms/" + room["code"]).json["state"]
+            assert remaining["closedReason"] == "not_enough_players"
 
 
 def test_changing_accounts_never_discovers_the_previous_accounts_games(app, clients):

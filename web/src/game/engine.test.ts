@@ -161,15 +161,16 @@ describe("Golf rules and table seats", () => {
   });
 
   it.each([2, 3, 4, 5, 6].flatMap(count => Array.from({ length: count }, (_, wentOut) =>
-    [1, 9].map(hole => ({ count, wentOut, hole }))
-  )).flat())("adds one going-out penalty after the last turn for seat $wentOut of $count on hole $hole", ({ count, wentOut, hole }) => {
+    [1, 9].flatMap(hole => [false, true].map(tied => ({ count, wentOut, hole, tied })))
+  )).flat())("adds one going-out penalty after the last turn for seat $wentOut of $count on hole $hole (tied: $tied)", ({ count, wentOut, hole, tied }) => {
     const previous = Array.from({ length: count }, (_, seat) => seat === wentOut ? -20 : 40);
+    const out: Rank[] = tied ? ["K", "A", "3", "K", "A", "3"] : ["J", "Q", "J", "Q", "J", "Q"];
     let game: Game = { ...createGame(count), phase: "draw", turn: wentOut, hole,
       history: Array.from({ length: hole - 1 }, () => [...previous]),
-      discard: [{ id: "out-draw", rank: "Q", suit: "H" }],
+      discard: [{ id: "out-draw", rank: out[5], suit: "H" }],
     };
     game.players = game.players.map((player, seat) => ({ ...player, score: previous[seat] * (hole - 1),
-      cards: grid(seat === wentOut ? ["J", "Q", "J", "Q", "J", "Q"] : ["K", "A", "3", "K", "A", "3"])
+      cards: grid(seat === wentOut ? out : ["K", "A", "3", "K", "A", "3"])
         .map((cell, index) => ({ ...cell, faceUp: index !== 5 })),
     }));
     const totals = game.players.map(player => player.score);
@@ -180,7 +181,7 @@ describe("Golf rules and table seats", () => {
       expect(game.players.map(player => player.score)).toEqual(totals);
       game = discardDraw(drawCard(game, "deck"));
     }
-    const scores = Array.from({ length: count }, (_, seat) => seat === wentOut ? 70 : 0);
+    const scores = Array.from({ length: count }, (_, seat) => seat === wentOut ? (tied ? 10 : 70) : 0);
     expect(game.phase).toBe(hole === 9 ? "game-over" : "round-over");
     expect(game.history).toHaveLength(hole);
     expect(game.history.at(-1)).toEqual(scores);
@@ -196,7 +197,9 @@ describe("Golf rules and table seats", () => {
 
   it.each<{ out: Rank[]; other: Rank[]; penalty: number }>([
     { out: ["K", "A", "3", "K", "A", "3"], other: ["K", "A", "3", "K", "A", "4"], penalty: 0 },
-    { out: ["K", "A", "3", "K", "A", "4"], other: ["K", "A", "3", "K", "A", "4"], penalty: 0 },
+    { out: ["K", "A", "3", "K", "A", "4"], other: ["K", "A", "3", "K", "A", "4"], penalty: 10 },
+    { out: ["K", "A", "3", "K", "A", "3"], other: ["K", "A", "3", "K", "A", "3"], penalty: 10 },
+    { out: ["8", "8", "K", "8", "8", "K"], other: ["8", "8", "K", "8", "8", "K"], penalty: 10 },
     { out: ["8", "8", "K", "8", "8", "K"], other: ["8", "8", "2", "8", "8", "A"], penalty: 10 },
     { out: ["8", "8", "2", "8", "8", "A"], other: ["8", "8", "K", "8", "8", "K"], penalty: 0 },
   ])("compares hole scores, including ties and negative scores: $penalty penalty", ({ out, other, penalty }) => {

@@ -51,13 +51,11 @@
   letter-spacing: .5px;
 }
 .golf-final-score-table tbody tr:last-child td { border-bottom: 0; }
-.golf-final-score-table tr[data-current="true"],
-.golf-final-score-table tr[data-winner="true"] {
+.golf-final-score-table tr[data-current="true"] {
   background: color-mix(in srgb, var(--contentbox), var(--infopillborder));
   font-weight: 700;
 }
-html[data-theme="dark"] .golf-final-score-table tr[data-current="true"],
-html[data-theme="dark"] .golf-final-score-table tr[data-winner="true"] {
+html[data-theme="dark"] .golf-final-score-table tr[data-current="true"] {
   background: color-mix(in srgb, #b8d9b4 25%, transparent);
 }
 .golf-final-player { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }

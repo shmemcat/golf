@@ -1,5 +1,5 @@
 import { useTurnIndicator } from "@/context/TurnSoundContext";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -40,7 +40,7 @@ import "@/styles/mobile-table.css";
 
 const describeCard = (card: GolfCard) => `${card.rank} of ${{ S: "spades", H: "hearts", C: "clubs", D: "diamonds" }[card.suit]}`;
 const location = (index: number) => `${index < 3 ? "top" : "bottom"} row, column ${index % 3 + 1}`;
-const BOARD_REVIEW_MS = 3000;
+const BOARD_REVIEW_MS = 5000;
 const SCORE_POP_BEAT_MS = 250;
 export type DrawLayout = "beside" | "below" | "piles";
 export const drawLayoutFrom = (value: string | null): DrawLayout => value === "below" || value === "piles" ? value : "beside";
@@ -90,6 +90,25 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   const navigation = useTableauNavigation(count,
     stage === "playing" ? game.turn : stage === "announcing" ? game.starter : 0);
   const { mobile, cycled, viewedSeat, following } = navigation;
+  useLayoutEffect(() => {
+    if (mobile) return;
+    const table = board.current?.querySelector<HTMLElement>(".golf-table");
+    const hint = table?.querySelector<HTMLElement>(".golf-phase-hint");
+    const human = table?.querySelector<HTMLElement>(".golf-seat-human");
+    const opponents = table?.querySelectorAll<HTMLElement>('.golf-seat[data-position^="top"]');
+    if (!table || !hint || !human || !opponents?.length) return;
+
+    const centerHint = () => {
+      const upperEdge = Math.max(...Array.from(opponents, seat => seat.getBoundingClientRect().bottom));
+      const lowerEdge = human.getBoundingClientRect().top;
+      hint.style.setProperty("--golf-hint-offset", `${(lowerEdge - upperEdge) / 2}px`);
+    };
+    centerHint();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(centerHint);
+    [table, human, ...opponents].forEach(element => observer.observe(element));
+    return () => observer.disconnect();
+  }, [mobile, count, game.hole]);
   const humanVisible = !cycled || viewedSeat === 0;
   const canDraw = table.canDraw && humanVisible;
   const sharedDraw = mobile && !cycled && drawLayout !== "beside";
@@ -325,6 +344,8 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
           name: name(seat), score: player.score, isBot: isBot(seat), icon: icon(seat),
         }))}
         onPlayAgain={table.restart}
+        onLeaveLobby={multiplayer ? onLeave : undefined}
+        leavePending={pending}
         waiting={rematchWaiting}
         waitingForHost={multiplayer && !isHost}
         penaltyNotice={<PenaltyBanner game={game} name={name} />}
@@ -337,7 +358,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
           <PenaltyBanner game={game} name={name} />
           <div className="golf-round-scores">
             <div className="golf-score-head"><span>Player</span><span>This hole</span><span>Total</span></div>
-            {standings.map(({ seat, score }) => <div key={seat}><span>{name(seat)}</span><span>{holeScores[seat] >= 0 ? `+${holeScores[seat]}` : holeScores[seat]}</span><strong>{score}</strong></div>)}
+            {standings.map(({ seat, score }) => <div key={seat} data-current={seat === 0}><span>{name(seat)}</span><span>{holeScores[seat] >= 0 ? `+${holeScores[seat]}` : holeScores[seat]}</span><strong>{score}</strong></div>)}
           </div>
           <Button name="Next Hole" disabled={pending || disconnected} onClick={table.advance} />
           {connectionNotice}

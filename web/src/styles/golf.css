@@ -46,6 +46,7 @@ html {
   --cardblacksuit: #293f35;
   --cardredsuit: #a24e59;
   --cardhighlight: #925d60;
+  --card-back-dark-opacity: 0;
   --infopillbg: #e2e9dc;
   --infopillborder: #c0ceba;
   --infopilltext: #304339;
@@ -53,6 +54,9 @@ html {
   --volumesliderbase: #e2e9dc;
   --warningicon: #925d60;
   --color-warning: #925d60;
+  --achievement-bronze: hsl(30, 55%, 50%);
+  --achievement-silver: hsl(212, 10%, 63%);
+  --achievement-gold: hsl(38, 75%, 48%);
   --button-label-size: 16px;
   --button-label-weight: 700;
   --button-label-spacing: 1px;
@@ -91,6 +95,7 @@ html[data-theme="dark"] {
   --button-secondary-shadow: #1e302b55;
   --button-secondary-shine: #e4b4ad66;
   --cardhighlight: #cf9f9c;
+  --card-back-dark-opacity: 1;
   --infopillbg: #405c4e;
   --infopillborder: #607e68;
   --infopilltext: #f0eee1;
@@ -98,6 +103,9 @@ html[data-theme="dark"] {
   --volumesliderbase: #344c40;
   --warningicon: #e4b4ad;
   --color-warning: #e4b4ad;
+  --achievement-bronze: hsl(30, 57%, 40%);
+  --achievement-silver: hsl(209, 17%, 76%);
+  --achievement-gold: hsl(43, 70%, 55%);
   color-scheme: dark;
 }
 body {
@@ -480,8 +488,17 @@ input.lobby-code {
   color: var(--cardredsuit);
 }
 .card-back {
+  position: relative;
   display: block;
+}
+.card-back > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
   object-fit: cover;
+  pointer-events: none;
 }
 .card-art {
   display: block;
@@ -500,6 +517,11 @@ input.lobby-code {
 .playing-card,
 .playing-card * {
   transition: none;
+}
+/* Keep both palettes loaded so a theme change smoothly blends the same pattern. */
+.card-back .card-back-dark {
+  opacity: var(--card-back-dark-opacity);
+  transition: opacity 0.3s ease;
 }
 .deck-preview {
   display: flex;

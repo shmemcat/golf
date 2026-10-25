@@ -53,8 +53,8 @@ export function Play() {
         leaveLabel={session.type === "solo" ? "Concede" : "Leave"}
         confirmMessage={session.type === "solo" ? session.localId
           ? "Are you sure you wish to concede? Your progress in this game will be lost."
-          : "Are you sure you wish to concede? This game will count as a loss."
-          : session.playing ? "Are you sure you want to leave the game? A bot will take your seat, and this game will count as a loss."
+          : "Are you sure you wish to concede? Only finished games count toward your statistics."
+          : session.playing ? "Are you sure you want to leave the game? Your seat will be removed. Only finished games count toward your statistics. If fewer than two players remain, the lobby will close."
           : "Are you sure you want to leave the lobby?"}
         busy={busy} leaveDisabled={!!session.room && !active.online}
         error={active.leaveError || (!active.online && session.room ? "You’re offline. Reconnect to leave, or rejoin your table." : "")}

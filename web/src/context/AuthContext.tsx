@@ -1,3 +1,4 @@
+import type { TurnSoundUpdate } from "@/lib/turnSound";
 import {
   createContext,
   useContext,
@@ -21,7 +22,7 @@ const Context = createContext<{
   updateProfile: (data: {
     profile_icon?: string;
     email?: string;
-    turn_sound?: { game: "golf" | "euchre" | "hearts"; enabled: boolean };
+    turn_sound?: TurnSoundUpdate & { game: "golf" | "euchre" | "hearts" };
   }) => Promise<AccountSession>;
   deleteAccount: (password: string) => Promise<AccountSession>;
 } | null>(null);
@@ -95,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (data: {
     profile_icon?: string;
     email?: string;
-    turn_sound?: { game: "golf" | "euchre" | "hearts"; enabled: boolean };
+    turn_sound?: TurnSoundUpdate & { game: "golf" | "euchre" | "hearts" };
   }) => {
     if (!client) throw new Error("Accounts are not configured.");
     const fresh = await client.session();

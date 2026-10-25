@@ -5,6 +5,14 @@ import { FLIP_MS } from "./useGolfTable";
 import type { RoomState } from "@/lib/golfApi";
 import { useSound } from "@/context/SoundContext";
 
+function motionKey(motion: TableMotion | null) {
+  // HTTP and socket JSON use different key orders; identify the movement by its values.
+  return motion && JSON.stringify([
+    motion.kind, motion.card.id, motion.from, motion.to, motion.flip,
+    motion.seat, motion.index, motion.source,
+  ]);
+}
+
 export function projectTable(state: RoomState) {
   const source = state.game!;
   const count = source.players.length;
@@ -29,7 +37,7 @@ export function useServerGolfTable(state: RoomState, command: (action: string, d
   useEffect(() => {
     const before = previous.current;
     if (state.game && before?.game?.id === state.game.id) {
-      if (state.motion && JSON.stringify(state.motion) !== JSON.stringify(before.motion)) play("slide");
+      if (state.motion && motionKey(state.motion) !== motionKey(before.motion)) play("slide");
       if (state.game.hole !== before.game.hole) play("deal");
       if (state.game.phase !== before.game.phase && state.game.phase === "game-over") play("win");
       else if (state.game.phase !== before.game.phase && state.game.phase === "round-over") play("round");

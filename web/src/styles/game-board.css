@@ -176,9 +176,9 @@
 .golf-seat[data-position^="bottom"] .golf-seat-marker { order: 2; }
 .golf-phase-hint {
   position: absolute;
-  bottom: calc(100% + 16px);
+  bottom: calc(100% + var(--golf-hint-offset, 32px));
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, 50%);
   width: min(440px, 60cqw);
   text-align: center;
   margin: 0;
@@ -311,6 +311,13 @@
 .golf-round-summary p { font-size: 15px; }
 .golf-round-scores { margin-bottom: 24px; text-align: left; }
 .golf-round-scores > div { display: grid; grid-template-columns: 1fr 75px 50px; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--infopillborder); font-size: 15px; }
+.golf-round-scores > div[data-current="true"] {
+  background: color-mix(in srgb, var(--contentbox), var(--infopillborder));
+  font-weight: 700;
+}
+html[data-theme="dark"] .golf-round-scores > div[data-current="true"] {
+  background: color-mix(in srgb, #b8d9b4 25%, transparent);
+}
 .golf-round-scores > div > :not(:first-child) { text-align: right; }
 .golf-round-scores .golf-score-head { font-size: 11px; opacity: .65; }
 @media (max-height: 780px) {

@@ -24,14 +24,14 @@ export function Card({
 }) {
   if (!rank)
     return (
-      <img
+      <span
         className="playing-card card-back"
-        src={asset("cards/back.svg")}
-        alt="Face-down card"
-        width="80"
-        height="112"
-        draggable={false}
-      />
+        role="img"
+        aria-label="Face-down card"
+      >
+        <img src={asset("cards/back-light.svg")} alt="" width="80" height="112" draggable={false} aria-hidden="true" />
+        <img className="card-back-dark" src={asset("cards/back.svg")} alt="" width="80" height="112" draggable={false} aria-hidden="true" />
+      </span>
     );
   const [label, icon] = suits[suit];
   const [iconWidth, iconHeight, , , paths] = icon.icon;

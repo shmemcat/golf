@@ -15,7 +15,7 @@ from sqlalchemy.engine import make_url
 from .account_contracts import AccountsUnavailable
 from .account_remote import RemoteAccounts
 from .extensions import db
-from .models import DeletedUser, Result, Room
+from .models import AchievementUnlock, DeletedUser, Result, Room
 from .runtime import GolfRuntime, Rejected, NAMESPACE, SOCKET_PATH
 from .schema import schema_ready
 from .statistics import account_statistics, leaderboard
@@ -74,9 +74,17 @@ def create_app(config=None, *, accounts=None):
         user = provider.cookie_user()
         if user and db.session.get(DeletedUser, user.id):
             raise Rejected("This account is no longer available.", "SIGNED_OUT")
+        if user:
+            who = {"key": f"account:{user.id}", "user": user}
+            if session.get("guest") and not session.get("guest_lobbies_claimed"):
+                runtime.transfer_guest_lobbies(who, "guest:" + session["guest"])
+                session["guest_lobbies_claimed"] = True
+            return who
+        if session.get("guest_lobbies_claimed"):
+            session.pop("guest_lobbies_claimed")
         if not session.get("guest"):
             session["guest"] = secrets.token_urlsafe(32)
-        return {"key": f"account:{user.id}" if user else "guest:" + session["guest"], "user": user}
+        return {"key": "guest:" + session["guest"], "user": None}
 
     def guard(token=None):
         origin = request.headers.get("Origin")
@@ -174,6 +182,19 @@ def create_app(config=None, *, accounts=None):
         with runtime.lock:
             return jsonify(statistics=account_statistics(identity.id))
 
+    @app.post("/api/golf/achievements")
+    def unlock_achievement():
+        guard()
+        identity = require_user()
+        if body().get("id") != "geezer":
+            raise Rejected("This achievement is earned by playing Golf.")
+        with runtime.lock:
+            key = (identity.id, "geezer")
+            if not db.session.get(AchievementUnlock, key):
+                db.session.add(AchievementUnlock(user_id=identity.id, achievement_id="geezer"))
+                db.session.commit()
+        return jsonify(unlocks=["geezer"])
+
     @app.get("/api/golf/results")
     def results():
         identity = require_user()
@@ -181,7 +202,7 @@ def create_app(config=None, *, accounts=None):
             offset = max(0, int(request.args.get("offset", "0")))
         except ValueError:
             raise Rejected("Invalid results page.")
-        rows = Result.query.filter(Result.user_id == identity.id, Result.status != "active").order_by(Result.completed_at.desc()).offset(offset).limit(25).all()
+        rows = Result.query.filter(Result.user_id == identity.id, Result.status.in_(("completed", "abandoned"))).order_by(Result.completed_at.desc()).offset(offset).limit(25).all()
         return jsonify(results=[{"id": r.game_id, "mode": r.mode, "status": r.status, "won": r.won, "score": r.score,
                                 "finishedAt": r.completed_at.isoformat() + "Z", **r.detail} for r in rows], next_offset=offset + 25 if len(rows) == 25 else None)
 
@@ -207,6 +228,7 @@ def create_app(config=None, *, accounts=None):
             if not db.session.get(DeletedUser, uid):
                 db.session.add(DeletedUser(user_id=uid, request_id=rid))
             Result.query.filter_by(user_id=uid).delete()
+            AchievementUnlock.query.filter_by(user_id=uid).delete()
             for row in Room.query.all():
                 data = copy.deepcopy(row.data)
                 changed = False

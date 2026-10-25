@@ -386,15 +386,17 @@ it("opens the account dashboard and gear menu with separate Profile and Options 
   await user.keyboard("{Escape}");
   expect(gear).toHaveFocus();
   expect(gear).toHaveAttribute("aria-expanded", "false");
-  expect(
-    await screen.findByRole("heading", { name: "Game Statistics" })
-  ).toBeVisible();
+  await waitFor(
+    () => expect(screen.getByRole("heading", { name: "Game Statistics" })).toBeVisible(),
+    { timeout: 3000 }
+  );
   expect(screen.getByRole("heading", { name: "Achievements" })).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Settings menu" }));
   await user.click(screen.getByRole("link", { name: "Profile", exact: true }));
-  expect(
-    await screen.findByRole("heading", { name: "PROFILE", exact: true })
-  ).toBeVisible();
+  await waitFor(
+    () => expect(screen.getByRole("heading", { name: "PROFILE", exact: true })).toBeVisible(),
+    { timeout: 3000 }
+  );
   expect(
     screen.getByRole("button", { name: "Toggle icon picker" })
   ).toBeVisible();
@@ -528,7 +530,10 @@ it("explains the six-card grid, special scores, and the end of a deal", async ()
     "only once, after everyone’s final turn"
   );
   expect(screen.getByText(/10 penalty/)).toHaveTextContent(
-    "A tied lowest score has no penalty"
+    "If another player ties or beats your score"
+  );
+  expect(screen.getByText(/you’re declaring/)).toHaveTextContent(
+    "Your score must be lower than every other player’s."
   );
   await user.click(screen.getByRole("button", { name: "Scoring" }));
   expect(screen.getByText("−2")).toBeVisible();

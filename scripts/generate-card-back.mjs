@@ -2,23 +2,25 @@ import { writeFileSync } from "node:fs";
 
 // Preserve the geometry, translucent diamonds, and stitching of the approved
 // enlarged Argyle preview. Miniatures use its continuous, heavier thread.
-const paper = "#faf6ee",
-  base = "#344c40",
-  leaf = "#7c9885";
-const blush = "#cf9f9c",
-  peach = "#e4b4ad";
-function svg(miniature) {
+const paper = "#faf6ee";
+const palettes = {
+  light: { base: "#c6d5be", leaf: "#7c9885", blush: "#849d87", peach: "#a8bea4", leafOpacity: 0.55, peachOpacity: 0.60 },
+  dark: { base: "#344c40", leaf: "#7c9885", blush: "#cf9f9c", peach: "#e4b4ad", leafOpacity: 0.34, peachOpacity: 0.18 },
+};
+function svg(miniature, theme) {
+  const { base, leaf, blush, peach, leafOpacity, peachOpacity } = palettes[theme];
   const diamonds = [];
   for (let row = -5; row <= 5; row++) {
     for (let col = -4; col <= 4; col++) {
       const x = 120 + col * 84 + (Math.abs(row) % 2 ? 42 : 0);
       const y = 168 + row * 42;
-      const warm = Math.abs(col + row) % 3 === 0;
+      // Staggered rows form a checkerboard: edge-sharing diamonds alternate.
+      const warm = row % 2 === 0;
       diamonds.push(
         `<path d="M${x} ${y - 41.3} ${x + 41.3} ${y} ${x} ${y + 41.3} ${
           x - 41.3
         } ${y}Z" fill="${warm ? peach : leaf}" fill-opacity="${
-          warm ? 0.18 : 0.34
+          warm ? peachOpacity : leafOpacity
         }"/>`
       );
     }
@@ -44,12 +46,14 @@ function svg(miniature) {
   <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="${paper}" stroke-opacity=".45" stroke-width=".8"/>
 </svg>\n`;
 }
-for (const miniature of [false, true]) {
-  writeFileSync(
-    new URL(
-      `../web/public/cards/back${miniature ? "-mini" : ""}.svg`,
-      import.meta.url
-    ),
-    svg(miniature)
-  );
+for (const theme of ["light", "dark"]) {
+  for (const miniature of [false, true]) {
+    writeFileSync(
+      new URL(
+        `../web/public/cards/back${theme === "light" ? "-light" : ""}${miniature ? "-mini" : ""}.svg`,
+        import.meta.url
+      ),
+      svg(miniature, theme)
+    );
+  }
 }

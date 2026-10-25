@@ -14,9 +14,11 @@ export interface FinalPlayer {
   isBot?: boolean;
 }
 
-export function GameOverBlock({ players, onPlayAgain, mySeatIndex = 0, notice, penaltyNotice, waiting = false, waitingForHost = false, visibilityToggle }: {
+export function GameOverBlock({ players, onPlayAgain, onLeaveLobby, leavePending = false, mySeatIndex = 0, notice, penaltyNotice, waiting = false, waitingForHost = false, visibilityToggle }: {
   players: FinalPlayer[];
   onPlayAgain: () => void;
+  onLeaveLobby?: () => void;
+  leavePending?: boolean;
   mySeatIndex?: number;
   notice?: ReactNode;
   penaltyNotice?: ReactNode;
@@ -48,8 +50,7 @@ export function GameOverBlock({ players, onPlayAgain, mySeatIndex = 0, notice, p
     <table className="golf-final-score-table" aria-label="Final scores">
       <thead><tr><th scope="col">Player</th><th scope="col">Score</th></tr></thead>
       <tbody>{standings.map(player => <tr key={player.seat}
-        data-current={player.seat === mySeatIndex}
-        data-winner={player.score === lowest}>
+        data-current={player.seat === mySeatIndex}>
         <td><span className="golf-final-player">
           {player.isBot ? <FontAwesomeIcon icon={faRobot} /> : <ProfileIcon name={player.icon} />}
           <span>{player.name}</span>
@@ -66,8 +67,8 @@ export function GameOverBlock({ players, onPlayAgain, mySeatIndex = 0, notice, p
           <Button name="Waiting for host…" disabled />
         </span>
       </Tooltip> : <Button name={waiting ? "Starting game…" : "Play Again"} disabled={waiting} onClick={onPlayAgain} />}
-      <Button name="Create New Game" onClick={() => navigate("/game/create")} />
-      <Button name="Home" onClick={() => navigate("/")} />
+      {onLeaveLobby && <Button name="Leave Lobby" variant="secondary" disabled={leavePending} onClick={onLeaveLobby} />}
+      {!onLeaveLobby && !waitingForHost && <Button name="Home" onClick={() => navigate("/")} />}
     </div>
     {visibilityToggle}
   </dialog>;

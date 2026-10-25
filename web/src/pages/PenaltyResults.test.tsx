@@ -64,6 +64,9 @@ it.each([1, 9])("explains the actual penalty above the scores on hole %i without
     expect(game.history.at(-1)).toEqual([17, 3, 11]);
     if (hole === 1) {
       expect([...scores.children].slice(1).map(row => row.textContent)).toEqual(["Birdie+33", "Clover+1111", "Emily+1717"]);
+      const currentRows = scores.querySelectorAll('[data-current="true"]');
+      expect(currentRows).toHaveLength(1);
+      expect(currentRows[0]).toHaveTextContent("Emily+1717");
       view.rerender(<MemoryRouter><Providers><GolfTableView count={3} selection="backing" table={{ ...table, game: nextHole(game) }} participants={participants} /></Providers></MemoryRouter>);
       expect(screen.queryByRole("complementary", { name: "Going-out penalty" })).not.toBeInTheDocument();
     }
@@ -73,8 +76,8 @@ it.each([1, 9])("explains the actual penalty above the scores on hole %i without
   }
 });
 
-it.each([0, 1, 2])("keeps the penalty assigned to the right person when online seat %i views the table", mySeat => {
-  const game = finishedHole();
+it.each([0, 1, 2].flatMap(mySeat => [false, true].map(tied => ({ mySeat, tied }))))("keeps the penalty assigned to the right person when online seat $mySeat views the table (tied: $tied)", ({ mySeat, tied }) => {
+  const game = finishedHole(1, tied);
   const { deck, ...source } = game;
   const state = roomFixture(3, mySeat);
   state.game = { ...source, deckCount: deck.length };
@@ -82,15 +85,33 @@ it.each([0, 1, 2])("keeps the penalty assigned to the right person when online s
   render(<PenaltyBanner game={projected.game} name={seat => projected.participants[seat].name} />);
   const banner = screen.getByRole("complementary", { name: "Going-out penalty" });
   expect(banner).toHaveTextContent("Friend 0 +10 penalty");
-  expect(banner).toHaveTextContent("Friend 0 went out with 7, but Friend 1 finished with 3.");
+  expect(banner).toHaveTextContent(tied
+    ? "Friend 0 went out with 3, but Friend 1 also finished with 3."
+    : "Friend 0 went out with 7, but Friend 1 finished with 3.");
 });
 
-it("omits the banner for a tied lowest score, active play, or a hole whose stored score has no penalty", () => {
+it.each([1, 9])("explains a tied lowest score on hole %i and penalizes only the player who went out", hole => {
+  const game = finishedHole(hole, true);
+  render(<PenaltyBanner game={game} name={name} />);
+  const banner = screen.getByRole("complementary", { name: "Going-out penalty" });
+  expect(banner).toHaveTextContent("Emily +10 penalty");
+  expect(banner).toHaveTextContent("Emily went out with 3, but Birdie also finished with 3.");
+  if (hole === 9) expect(banner).toHaveTextContent("Hole 9:");
+  expect(game.history.at(-1)).toEqual([13, 3, 11]);
+  expect(game.players.map(player => player.score)).toEqual([3 * (hole - 1) + 13, 4 * (hole - 1) + 3, 5 * (hole - 1) + 11]);
+});
+
+it("omits the banner for a strictly lowest score, active play, or a hole whose stored score has no penalty", () => {
   const game = finishedHole();
-  const view = render(<PenaltyBanner game={finishedHole(1, true)} name={name} />);
+  const winner = finishedHole(1, true);
+  winner.players[0].cards[5].card.rank = "K";
+  winner.history = [[0, 3, 11]];
+  const view = render(<PenaltyBanner game={winner} name={name} />);
   expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
   view.rerender(<PenaltyBanner game={nextHole(game)} name={name} />);
   expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
   view.rerender(<PenaltyBanner game={{ ...game, history: [[7, 3, 11]] }} name={name} />);
+  expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+  view.rerender(<PenaltyBanner game={{ ...finishedHole(1, true), history: [[3, 3, 11]] }} name={name} />);
   expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 });

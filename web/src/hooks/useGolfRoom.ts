@@ -32,17 +32,25 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
     setError("");
     setNeedsJoin(false);
     setRemovedReason(null);
+    const noLongerSeated = (reason: string) => {
+      setConnected(false);
+      if (latest.current && !latest.current.game) {
+        latest.current = null;
+        setState(null);
+        setNeedsJoin(true);
+      } else setRemovedReason(reason);
+    };
     const socket = io("/golf", {
       path: "/golf/socket.io", withCredentials: true, autoConnect: false,
       auth: done => { void golfSession().then(s => done({ csrf_token: s.csrf_token })).catch(e => { if (alive) setError(e.message); }); },
     });
     socket.on("golf:state", (next: RoomState) => { if (alive) accept(next); });
-    socket.on("golf:removed", (event: { reason?: string } = {}) => { if (alive) { setConnected(false); setRemovedReason(event.reason || "removed"); setError("You’re no longer seated at this table."); } });
+    socket.on("golf:removed", (event: { reason?: string } = {}) => { if (alive) { noLongerSeated(event.reason || "removed"); setError("You’re no longer seated at this table."); } });
     socket.on("connect", () => {
       socket.emit("golf:subscribe", { code }, (reply: { ok: boolean; state?: RoomState; error?: string }) => {
         if (!alive) return;
         if (reply.ok && reply.state) { accept(reply.state); setConnected(true); setError(""); }
-        else { setConnected(false); setError(reply.error || "Couldn’t join the table."); if ((reply as { code?: string }).code === "NOT_SEATED") setRemovedReason("removed"); }
+        else { setConnected(false); setError(reply.error || "Couldn’t join the table."); if ((reply as { code?: string }).code === "NOT_SEATED") noLongerSeated("removed"); }
       });
     });
     socket.on("disconnect", () => { if (alive) setConnected(false); });
@@ -54,11 +62,12 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
     return () => { alive = false; socket.removeAllListeners(); socket.disconnect(); };
   }, [code, accept, attempt, user?.id]);
   const command = async (action: string, detail: Record<string, unknown> = {}) => {
-    if (!latest.current || busy.current) return false;
+    if (!state || busy.current) return false;
     busy.current = true;
     setPending(true);
     setError("");
-    const payload = { ...detail, action, actionId: newRequestId(), revision: latest.current.revision };
+    // Keep the command bound to the board that rendered the clicked control.
+    const payload = { ...detail, action, actionId: newRequestId(), revision: state.revision, actionToken: state.actionTokens?.[action] };
     try {
       // The same action ID can safely be retried after a lost response.
       let response: { state: RoomState | { left: true } };

@@ -99,20 +99,11 @@ def finish_turn(game):
         final = [s for s in final if s != seat]
     elif all(c["faceUp"] for c in game["players"][seat]["cards"]):
         final = [(seat + i) % len(game["players"]) for i in range(1, len(game["players"]))]
+        game["wentOut"] = seat
     game["finalTurns"] = final
     game["drawn"] = None
     if final == []:
-        scores = [score_grid(p["cards"]) for p in game["players"]]
-        # The last final turn is immediately before the player who went out.
-        went_out = (seat + 1) % len(game["players"])
-        if any(score < scores[went_out] for score in scores):
-            scores[went_out] += 10
-        game["history"].append(scores)
-        for player, score in zip(game["players"], scores):
-            player["score"] += score
-            for cell in player["cards"]:
-                cell["faceUp"] = True
-        game["phase"] = "game-over" if game["hole"] == 9 else "round-over"
+        finish_hole(game, game.get("wentOut", (seat + 1) % len(game["players"])))
         return
     if not game["deck"] and len(game["discard"]) > 1:
         game["deck"] = game["discard"][:-1]
@@ -120,6 +111,54 @@ def finish_turn(game):
         game["discard"] = game["discard"][-1:]
     game["phase"] = "draw"
     game["turn"] = (seat + 1) % len(game["players"])
+
+
+def finish_hole(game, went_out):
+    scores = [score_grid(p["cards"]) for p in game["players"]]
+    if went_out is not None and any(other != went_out and score <= scores[went_out] for other, score in enumerate(scores)):
+        scores[went_out] += 10
+    game["history"].append(scores)
+    for player, score in zip(game["players"], scores):
+        player["score"] += score
+        for cell in player["cards"]:
+            cell["faceUp"] = True
+    game["phase"] = "game-over" if game["hole"] == 9 else "round-over"
+
+
+def remove_player(game, seat):
+    """Remove a board while preserving the remaining players' hole and turns."""
+    count = len(game["players"])
+    final = game["finalTurns"]
+    if final and "wentOut" not in game:
+        game["wentOut"] = (final[-1] + 1) % count
+    active = game["phase"] in ("draw", "replace")
+    own_turn = game["turn"] == seat
+    if own_turn and game["drawn"]:
+        game["discard"].append(game["drawn"]["card"])
+        game["drawn"] = None
+    returned = [cell["card"] for cell in game["players"].pop(seat)["cards"]]
+    RNG.shuffle(returned)
+    game["deck"][0:0] = returned
+    game["history"] = [[score for i, score in enumerate(hole) if i != seat] for hole in game["history"]]
+    remaining = count - 1
+
+    def remap(index):
+        if index == seat:
+            return seat % remaining if remaining else 0
+        return index - (index > seat)
+
+    game["starter"] = remap(game["starter"])
+    game["turn"] = remap(game["turn"])
+    if "wentOut" in game and game["wentOut"] is not None:
+        game["wentOut"] = None if game["wentOut"] == seat else remap(game["wentOut"])
+    if final is not None:
+        game["finalTurns"] = [remap(index) for index in final if index != seat]
+    if active and own_turn:
+        game["phase"] = "draw"
+        if game["finalTurns"]:
+            game["turn"] = game["finalTurns"][0]
+    if active and remaining >= 2 and game["finalTurns"] == []:
+        finish_hole(game, game.get("wentOut"))
 
 
 def replace(game, index):

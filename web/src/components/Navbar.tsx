@@ -10,6 +10,7 @@ import { faMusicNoteSlash } from "@fortawesome/pro-solid-svg-icons/faMusicNoteSl
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
+import { recordMusicOff } from "@/lib/achievements";
 import { GolfLogo } from "./GolfLogo";
 import styles from "@/styles/buttons.module.css";
 import { ProfileIcon } from "./ProfileIcon";
@@ -51,6 +52,7 @@ function NavActions() {
   };
   const toggleMusic = () => {
     if (!sound.music && sound.musicVolume === 0) sound.setMusicVolume(0.15);
+    if (sound.music && user) void recordMusicOff(user.id).catch(() => {});
     sound.setMusic(!sound.music);
   };
   const changeSoundVolume = (value: number) => {
@@ -59,6 +61,7 @@ function NavActions() {
   };
   const changeMusicVolume = (value: number) => {
     sound.setMusicVolume(value);
+    if (value === 0 && sound.music && user) void recordMusicOff(user.id).catch(() => {});
     if (value > 0 !== sound.music) sound.setMusic(value > 0);
   };
   useEffect(() => {

@@ -2,6 +2,6 @@
   "component": "golf-game",
   "image": "ghcr.io/shmemcat/golf-game-api",
   "tagPrefix": "game-v",
-  "schemaRevision": "golf_001",
+  "schemaRevision": "golf_002",
   "package": "golf_server"
 }

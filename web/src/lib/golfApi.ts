@@ -5,7 +5,8 @@ export type GolfMode = "bot" | "multiplayer";
 export interface Participant { name: string; profileIcon: string; isBot: boolean; connected: boolean }
 export interface RoomState {
   code: string; mode: GolfMode; capacity: number; revision: number; mySeat: number; isHost: boolean;
-  seats: Participant[]; stage: Stage | "lobby" | "closed"; closed?: boolean;
+  actionTokens?: Record<string, string>;
+  seats: Participant[]; stage: Stage | "lobby" | "closed"; closed?: boolean; closedReason?: "not_enough_players" | null;
   game: (Omit<Game, "deck" | "players"> & { deckCount: number; players: { score: number; cards: { faceUp: boolean; card: Pick<GolfCard, "id"> & Partial<GolfCard> }[] }[] }) | null;
   motion: TableMotion | null; ready: number[]; rematchReady: number[]; idleWarning?: boolean;
 }
@@ -39,9 +40,15 @@ async function golfRequest<T>(path: string, init: RequestInit): Promise<T> {
   }
 }
 export const golfSession = () => golfGet<{ csrf_token: string; user: { id: string; name: string } | null }>("/session");
-export async function golfPost<T>(path: string, body: unknown): Promise<T> {
+export async function golfPost<T>(path: string, body: unknown, expectedUserId?: string): Promise<T> {
   const session = await golfSession();
-  return golfRequest<T>(path, { method: "POST", headers: { "Content-Type": "application/json", "X-Golf-CSRF": session.csrf_token }, body: JSON.stringify(body) });
+  if (expectedUserId !== undefined && session.user?.id !== expectedUserId) {
+    throw new GolfError("Your account changed. Please refresh and try again.", "SIGNED_OUT");
+  }
+  return golfRequest<T>(path, { method: "POST", headers: {
+    "Content-Type": "application/json", "X-Golf-CSRF": session.csrf_token,
+    "X-Golf-UTC-Offset": String(new Date().getTimezoneOffset()),
+  }, body: JSON.stringify(body) });
 }
 export const newRequestId = () => crypto.randomUUID();
 export const roomPath = (code: string) => `/rooms/${encodeURIComponent(code)}`;

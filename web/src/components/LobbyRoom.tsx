@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/pro-solid-svg-icons/faCopy";
@@ -9,6 +9,7 @@ import { Button, MenuLink } from "./Buttons";
 import { ProfileIcon } from "./ProfileIcon";
 import { PageLayout } from "./ui/PageLayout";
 import { useAuth } from "@/context/AuthContext";
+import { useSound } from "@/context/SoundContext";
 import type { useGolfRoom } from "@/hooks/useGolfRoom";
 import { golfPost } from "@/lib/golfApi";
 import styles from "@/styles/lobby.module.css";
@@ -38,13 +39,22 @@ function LobbySharing({ code }: { code: string }) {
 
 export function LobbyRoom({ room }: { room: Room }) {
   const state = room.state!;
+  const { play } = useSound();
   const navigate = useNavigate();
+  const humanCount = state.seats.filter(player => !player.isBot).length;
+  const lobbyCode = state.mode === "multiplayer" && state.stage === "lobby" && !state.closed ? state.code : null;
+  const previousPlayers = useRef<{ code: string; count: number } | null>(null);
+  useEffect(() => {
+    const previous = previousPlayers.current;
+    previousPlayers.current = lobbyCode ? { code: lobbyCode, count: humanCount } : null;
+    if (lobbyCode && previous?.code === lobbyCode && humanCount > previous.count) play("playerJoin");
+  }, [lobbyCode, humanCount, play]);
   const [preferBots, setPreferBots] = useState(state.seats.length < 2);
   const fillBots = state.seats.length < 2 || preferBots;
   const missing = state.capacity - state.seats.length;
   const leave = (action: "leave" | "close") => { void room.command(action).then(done => { if (done) navigate("/play"); }); };
   return <PageLayout title={state.closed ? "LOBBY CLOSED" : "GAME LOBBY"} contentClassName={styles.page} className={styles.body}>
-    {state.closed ? <div className="button-stack"><p role="status">The host closed this lobby.</p><MenuLink to="/play" name="Back to Play" /><MenuLink to="/" name="Home" /></div> : <div className={styles.lobby}>
+    {state.closed ? <div className="button-stack"><p role="status">{state.closedReason === "not_enough_players" ? "There aren’t enough players to continue. The lobby has closed." : "The host closed this lobby."}</p><MenuLink to="/play" name="Back to Play" /><MenuLink to="/" name="Home" /></div> : <div className={styles.lobby}>
       <LobbySharing code={state.code} />
       <ol className={styles.seats} data-seats={state.capacity} aria-label="Players in lobby">
         {Array.from({ length: state.capacity }, (_, i) => {
