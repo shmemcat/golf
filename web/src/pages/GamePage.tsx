@@ -8,6 +8,8 @@ import { faChevronLeft } from "@fortawesome/pro-solid-svg-icons/faChevronLeft";
 import { faChevronRight } from "@fortawesome/pro-solid-svg-icons/faChevronRight";
 import { faCheck } from "@fortawesome/pro-solid-svg-icons/faCheck";
 import { faFlag } from "@fortawesome/pro-solid-svg-icons/faFlag";
+import { faEye } from "@fortawesome/pro-solid-svg-icons/faEye";
+import { faEyeSlash } from "@fortawesome/pro-solid-svg-icons/faEyeSlash";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/Buttons";
 import { Card } from "@/components/Card";
@@ -21,6 +23,7 @@ import { PenaltyBanner } from "@/components/game/PenaltyBanner";
 import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
 import { FLIP_MS, useGolfTable } from "@/hooks/useGolfTable";
+import { useInactivityNudge } from "@/hooks/useInactivityNudge";
 import { useGameResults } from "@/hooks/useGameResults";
 import { seatOffset, useTableauNavigation } from "@/hooks/useTableauNavigation";
 import { canOpen, type GolfCard } from "@/game/engine";
@@ -41,9 +44,10 @@ const SCORE_POP_BEAT_MS = 250;
 export type DrawLayout = "beside" | "below" | "piles";
 export const drawLayoutFrom = (value: string | null): DrawLayout => value === "below" || value === "piles" ? value : "beside";
 
-export function GolfTableView({ count, selection, table, drawLayout = "beside", resultNotice, participants, roundWaiting = false, rematchWaiting = false, onLeave, connectionNotice }: {
+export function GolfTableView({ count, selection, table, drawLayout = "beside", resultNotice, participants, rematchWaiting = false, onLeave, connectionNotice, multiplayer = false, disconnected = false, pending = false }: {
   count: number; selection: SelectionStyle; table: ReturnType<typeof useGolfTable>; drawLayout?: DrawLayout; resultNotice?: ReactNode;
-  participants?: Participant[]; roundWaiting?: boolean; rematchWaiting?: boolean; onLeave?: () => void; connectionNotice?: ReactNode;
+  multiplayer?: boolean; disconnected?: boolean; pending?: boolean;
+  participants?: Participant[]; rematchWaiting?: boolean; onLeave?: () => void; connectionNotice?: ReactNode;
 }) {
   const { game, stage, motion } = table;
   const { user } = useAuth();
@@ -53,6 +57,8 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   const navigate = useNavigate();
   const board = useRef<HTMLDivElement>(null);
   const summary = useRef<HTMLDialogElement>(null);
+  const resultsToggle = useRef<HTMLButtonElement>(null);
+  const matchInfo = useRef<HTMLDetailsElement>(null);
   const name = (seat: number) => participants?.[seat]?.name || (seat === 0 ? user?.name || "You" : BOT_NAMES[seat - 1]);
   const isBot = (seat: number) => participants ? participants[seat].isBot : seat !== 0;
   const icon = (seat: number) => participants?.[seat]?.profileIcon || (seat === 0 ? user?.profile_icon : undefined);
@@ -61,9 +67,17 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   const completedHole = complete ? `${game.id}:${game.hole}` : null;
   const [reviewedHole, setReviewedHole] = useState<string | null>(null);
   const [scorePopHole, setScorePopHole] = useState<string | null>(null);
+  const [hiddenResultsHole, setHiddenResultsHole] = useState<string | null>(null);
   const showResults = complete && reviewedHole === completedHole;
+  const resultsHidden = completedHole !== null && hiddenResultsHole === completedHole;
   const showHoleScores = complete && scorePopHole === completedHole;
+  const nudge = useInactivityNudge(multiplayer && !disconnected && !pending && (
+    table.canDraw || table.canReplace || Array.from({ length: 6 }, (_, index) => table.canReveal(index)).some(Boolean) ||
+    (roundComplete && showResults)
+  ), `${game.id}:${game.hole}:${stage}:${game.phase}:${game.turn}:${game.players[0].cards.filter(c => c.faceUp).length}`);
   const holeScores = game.history[game.history.length - 1];
+  const standings = game.players.map((player, seat) => ({ seat, score: player.score }))
+    .sort((a, b) => a.score - b.score);
   const wentOut = (game.turn + 1) % count;
   // The final player in the queue always sits immediately before whoever went out.
   const goingOutSeat = game.finalTurns?.length ? (game.finalTurns[game.finalTurns.length - 1] + 1) % count : -1;
@@ -74,9 +88,18 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   const canDraw = table.canDraw && humanVisible;
   const sharedDraw = mobile && !cycled && drawLayout !== "beside";
   useEffect(() => {
+    const closeOutside = (event: MouseEvent) => {
+      const info = matchInfo.current;
+      if (info?.open && !info.contains(event.target as Node)) info.open = false;
+    };
+    document.addEventListener("click", closeOutside, true);
+    return () => document.removeEventListener("click", closeOutside, true);
+  }, []);
+  useEffect(() => {
     if (!completedHole) {
       setReviewedHole(null);
       setScorePopHole(null);
+      setHiddenResultsHole(null);
       return;
     }
     const pop = window.setTimeout(() => {
@@ -88,16 +111,22 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
     return () => { window.clearTimeout(pop); window.clearTimeout(timer); };
   }, [completedHole]);
   useEffect(() => {
-    if (!roundComplete || !showResults || !summary.current) return;
+    if (!roundComplete || !showResults) return;
+    if (resultsHidden) {
+      resultsToggle.current?.focus({ preventScroll: true });
+      return;
+    }
     const dialog = summary.current;
+    if (!dialog) return;
     dialog.showModal();
     dialog.querySelector("button")?.focus();
     return () => dialog.close();
-  }, [roundComplete, showResults]);
+  }, [roundComplete, showResults, resultsHidden]);
 
   let hint = "Dealing your cards…";
   if (stage === "opening") hint = game.players[0].cards.filter(card => card.faceUp).length >= 2 ? "Waiting for everyone’s starting cards…" : game.players[0].cards.some(card => card.faceUp)
-    ? "Flip one more card in a different column." : mobile ? "Flip two cards in different columns." : "Choose two cards in different columns to flip.";
+    ? `Flip a card in the ${game.players[0].cards.slice(0, 3).some(card => card.faceUp) ? "bottom" : "top"} row and a different column.`
+    : "Flip one top card and one bottom card, in different columns.";
   if (stage === "opponents") hint = "Everyone turns over their starting cards.";
   if (stage === "upcard") hint = "Turning up the first discard…";
   if (stage === "picking") hint = "Choosing who goes first…";
@@ -149,8 +178,16 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
     </div>;
   };
 
+  const resultsButton = <button ref={resultsToggle} type="button" className="golf-results-toggle"
+    aria-label={resultsHidden ? "Show hole results" : "Hide hole results"}
+    title={resultsHidden ? "Show hole results" : "Hide hole results"}
+    aria-expanded={!resultsHidden} aria-controls="golf-hole-results"
+    onClick={() => setHiddenResultsHole(resultsHidden ? null : completedHole)}>
+    <FontAwesomeIcon icon={resultsHidden ? faEye : faEyeSlash} />
+  </button>;
+
   return (
-    <div className="golf-game-shell" ref={board} data-selection-style={selection} data-mobile-layout={mobile ? cycled ? "cycle" : "overview" : undefined} data-draw-layout={drawLayout}
+    <div className={`golf-game-shell${nudge.shaking ? " inactivity-shake" : ""}`} onPointerDown={nudge.reset} onKeyDown={nudge.reset} ref={board} data-selection-style={selection} data-mobile-layout={mobile ? cycled ? "cycle" : "overview" : undefined} data-draw-layout={drawLayout}
       style={{ "--golf-flip-duration": `${FLIP_MS}ms` } as React.CSSProperties}>
       <Navbar />
       {connectionNotice}
@@ -184,7 +221,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
             </div>
             {sharedDraw && !complete && drawLayout === "piles" && drawnDock(game.turn, true)}
           </div>
-          <details className="golf-match-info">
+          <details className="golf-match-info" ref={matchInfo}>
             <summary aria-label="Game information and scorecard"><FontAwesomeIcon icon={faListUl} /></summary>
             <div className="golf-match-panel">
               <h2>Scorecard</h2>
@@ -285,18 +322,19 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
         penaltyNotice={<PenaltyBanner game={game} name={name} />}
         notice={resultNotice}
       />}
-      {roundComplete && showResults && (
-        <dialog ref={summary} className="golf-round-summary" aria-labelledby="golf-summary-title" onCancel={event => event.preventDefault()}>
+      {roundComplete && showResults && (resultsHidden ? resultsButton : (
+        <dialog ref={summary} id="golf-hole-results" className="golf-round-summary" aria-labelledby="golf-summary-title" onCancel={event => event.preventDefault()}>
           <h2 id="golf-summary-title">Hole {game.hole} complete</h2>
           <PenaltyBanner game={game} name={name} />
           <div className="golf-round-scores">
             <div className="golf-score-head"><span>Player</span><span>This hole</span><span>Total</span></div>
-            {game.players.map((player, seat) => <div key={seat}><span>{name(seat)}</span><span>{game.history[game.history.length - 1][seat]}</span><strong>{player.score}</strong></div>)}
+            {standings.map(({ seat, score }) => <div key={seat}><span>{name(seat)}</span><span>{holeScores[seat] >= 0 ? `+${holeScores[seat]}` : holeScores[seat]}</span><strong>{score}</strong></div>)}
           </div>
-          <Button name={roundWaiting ? "Waiting for players…" : "Next Hole"} disabled={roundWaiting} onClick={table.advance} />
+          <Button name="Next Hole" disabled={pending || disconnected} onClick={table.advance} />
           {connectionNotice}
+          {resultsButton}
         </dialog>
-      )}
+      ))}
     </div>
   );
 }

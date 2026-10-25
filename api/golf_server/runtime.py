@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 from flask import request
 from . import engine
+from .account_contracts import AccountsUnavailable
 from .extensions import db
 from .models import Room, Event, DeletedUser
 from .statistics import save_results, count_hole
@@ -13,6 +14,9 @@ from .statistics import save_results, count_hole
 BOT_NAMES = ("Clover", "Birdie", "Sunny", "Maple", "Robin")
 NAMESPACE = "/golf"
 SOCKET_PATH = "golf/socket.io"
+IDLE_WARNING_SECONDS = 540
+IDLE_TIMEOUT_SECONDS = 600
+RECONNECT_SECONDS = 120
 
 
 class Rejected(ValueError):
@@ -27,6 +31,7 @@ class GolfRuntime:
         self.lock = threading.RLock()
         self.connections = {}  # sid -> (room code, actor key)
         self.worker = None
+        self.recovered = False
 
     def delay(self, name):
         return self.app.config["GOLF_TIMINGS"][name]
@@ -54,15 +59,19 @@ class GolfRuntime:
                 return i
         raise Rejected("You are not seated at this table.", "NOT_SEATED")
 
+    def reviewing_hole(self, data, seat):
+        return bool(data.get("previousHole")) and seat not in data["ready"]
+
     def view(self, data, actor):
         mine = self.seat(data, actor)
+        reviewing = self.reviewing_hole(data, mine)
         seats = [{"name": p["name"], "profileIcon": p["profileIcon"], "isBot": p["isBot"] or p.get("left", False),
                   "connected": any(code == data["code"] and key == p["actor"] for code, key in self.connections.values())}
                  for p in data["seats"]]
-        game = copy.deepcopy(data.get("game"))
+        game = copy.deepcopy(data["previousHole"] if reviewing else data.get("game"))
+        motion = None if reviewing else data.get("motion")
         if game:
             game["deckCount"] = len(game.pop("deck"))
-            motion = data.get("motion")
             for seat, player in enumerate(game["players"]):
                 for index, cell in enumerate(player["cards"]):
                     # The outgoing card has already reached the discard pile
@@ -73,8 +82,9 @@ class GolfRuntime:
         return {"code": data["code"], "mode": data["mode"], "capacity": data["capacity"], "revision": data["revision"],
                 "closed": data.get("closed", False),
                 "mySeat": mine, "isHost": data["host"] == actor, "seats": seats,
-                "stage": data.get("stage", "lobby"), "game": game, "motion": data.get("motion"),
-                "ready": data.get("ready", []), "rematchReady": data.get("rematchReady", [])}
+                "stage": "playing" if reviewing else data.get("stage", "lobby"), "game": game, "motion": motion,
+                "ready": data.get("ready", []), "rematchReady": data.get("rematchReady", []),
+                "idleWarning": bool(data.get("inactivity", {}).get(str(mine), {}).get("warned"))}
 
     def publish(self, data):
         for sid, (code, actor) in list(self.connections.items()):
@@ -83,7 +93,8 @@ class GolfRuntime:
             try:
                 self.socketio.emit("golf:state", self.view(data, actor), to=sid, namespace=NAMESPACE)
             except Rejected:
-                self.socketio.emit("golf:removed", {"code": code}, to=sid, namespace=NAMESPACE)
+                reason = next((p.get("removedReason") for p in data["seats"] if p["actor"] == actor), None)
+                self.socketio.emit("golf:removed", {"code": code, "reason": reason}, to=sid, namespace=NAMESPACE)
 
     def active_rooms(self, actor):
         with self.lock:
@@ -101,6 +112,7 @@ class GolfRuntime:
             return rooms
 
     def save(self, row, data, kind, seat=None, detail=None):
+        self.sync_inactivity(data)
         data["revision"] += 1
         row.data = copy.deepcopy(data)
         row.updated_at = datetime.utcnow()
@@ -151,7 +163,7 @@ class GolfRuntime:
                 data["createRequest"] = ["left", "left"]
         if not any(p["actor"] == data["host"] and not p["isBot"] for p in data["seats"]):
             data["host"] = next(p["actor"] for p in data["seats"] if not p["isBot"])
-        data.update(game=engine.deal(len(data["seats"])), stage="dealing", motion=None, ready=[], rematchReady=[],
+        data.update(game=engine.deal(len(data["seats"])), stage="dealing", motion=None, previousHole=None, ready=[], rematchReady=[],
                     startedAt=time.time(), humanCount=sum(not p["isBot"] for p in data["seats"]),
                     metrics=[{} for _ in data["seats"]], revealBusy={}, turnSerial=0, lastAutoplay=None)
         self.schedule(data, "opening", self.delay("deal"))
@@ -181,8 +193,9 @@ class GolfRuntime:
             row = self.get(code)
             self.seat(row.data, actor["key"])
             self.connections[sid] = (row.code, actor["key"])
-            self.publish(row.data)
-            return self.view(row.data, actor["key"])
+            data = copy.deepcopy(row.data)
+            self.save(row, data, "connected")
+            return self.view(data, actor["key"])
 
     def disconnect(self, sid):
         with self.lock:
@@ -190,7 +203,7 @@ class GolfRuntime:
             if previous:
                 row = db.session.get(Room, previous[0])
                 if row:
-                    self.publish(row.data)
+                    self.save(row, copy.deepcopy(row.data), "disconnected")
 
     def bump(self, data, seat, key):
         metrics = data["metrics"][seat]
@@ -202,6 +215,14 @@ class GolfRuntime:
         engine.open_bot(data["game"], seat)
         for _ in range(sum(cell["faceUp"] for cell in cards) - before):
             self.bump(data, seat, "cards_revealed")
+
+    def finish_opening(self, data):
+        if all(p["isBot"] or p.get("left") or sum(c["faceUp"] for c in data["game"]["players"][i]["cards"]) == 2 for i, p in enumerate(data["seats"])):
+            for i, person in enumerate(data["seats"]):
+                if person["isBot"] or person.get("left"):
+                    self.open_for(data, i)
+            data["stage"] = "opponents"
+            self.schedule(data, "upcard", self.delay("opponents"))
 
     def begin_motion(self, data, kind, seat, index=-1, source="deck"):
         game = data["game"]
@@ -231,15 +252,12 @@ class GolfRuntime:
             count_hole(data)
             save_results(data, terminal=game["phase"] == "game-over")
             data["ready"] = []
-            if game["phase"] == "round-over" and data["mode"] == "multiplayer":
-                self.schedule(data, "round_timeout", self.delay("round_wait"))
+            data["previousHole"] = None
             return
         person = data["seats"][game["turn"]]
         automatic = person["isBot"] or person.get("left")
         if automatic:
             self.schedule(data, "bot", self.delay("bot_draw" if game["phase"] == "draw" else "bot_replace"))
-        elif data["mode"] == "multiplayer":
-            self.schedule(data, "turn_timeout", self.delay("turn_wait"))
 
     def resume_ready(self, data):
         game = data["game"]
@@ -250,12 +268,15 @@ class GolfRuntime:
         if not humans or (phase == "game-over" and data["mode"] == "multiplayer" and len(humans) < 2):
             return
         ready = data["ready" if phase == "round-over" else "rematchReady"]
-        if not all(i in ready for i in humans):
-            return
         if phase == "game-over":
+            if not all(i in ready for i in humans):
+                return
             self.begin(data)
         else:
-            data.update(game=engine.next_hole(game), stage="dealing", motion=None, ready=[], revealBusy={})
+            if not any(i in ready for i in humans):
+                return
+            # Each player keeps the completed board until choosing the next hole.
+            data.update(previousHole=game, game=engine.next_hole(game), stage="dealing", motion=None, revealBusy={})
             self.schedule(data, "opening", self.delay("deal"))
 
     def command(self, actor, code, payload):
@@ -292,6 +313,9 @@ class GolfRuntime:
                     if not any(not p["isBot"] and not p.get("left") for p in data["seats"]):
                         save_results(data, terminal=True, abandoned=game["phase"] != "game-over")
                         data["next"] = None
+                    elif data["stage"] == "opening":
+                        self.open_for(data, seat)
+                        self.finish_opening(data)
                     elif not data["motion"] and game["phase"] in ("draw", "replace"):
                         self.next_turn(data)
                     elif game["phase"] in ("round-over", "game-over"):
@@ -318,20 +342,18 @@ class GolfRuntime:
                 raise Rejected("The host has not started this game yet.")
             elif action == "reveal":
                 index = payload.get("index")
+                if self.reviewing_hole(data, seat):
+                    raise Rejected("Continue to the next hole before flipping a card.")
                 if data["stage"] != "opening" or data.get("revealBusy", {}).get(str(seat), 0) > time.time():
                     raise Rejected("Wait for the card to finish flipping.")
                 engine.reveal(game, seat, index)
                 self.bump(data, seat, "cards_revealed")
                 data["revealBusy"][str(seat)] = time.time() + self.delay("flip")
-                if all(p["isBot"] or p.get("left") or sum(c["faceUp"] for c in game["players"][i]["cards"]) == 2 for i, p in enumerate(data["seats"])):
-                    for i, p in enumerate(data["seats"]):
-                        if p["isBot"] or p.get("left"):
-                            self.open_for(data, i)
-                    data["stage"] = "opponents"
-                    self.schedule(data, "upcard", self.delay("opponents"))
+                self.finish_opening(data)
             elif action in ("advance", "restart"):
                 expected = "round-over" if action == "advance" else "game-over"
-                if game["phase"] != expected:
+                visible_game = data["previousHole"] if self.reviewing_hole(data, seat) else game
+                if visible_game["phase"] != expected:
                     raise Rejected("Finish the current game or hole first.")
                 if action == "restart" and data["mode"] == "multiplayer" and sum(not p["isBot"] and not p.get("left") for p in data["seats"]) < 2:
                     raise Rejected("A multiplayer game needs two people. Create a new table to invite friends.")
@@ -359,40 +381,25 @@ class GolfRuntime:
             return self.view(data, actor["key"])
 
     def step(self, data, kind):
-        # Saved rooms can still contain human deadlines from before solo play was untimed.
-        if data["mode"] != "multiplayer" and kind in ("opening_timeout", "turn_timeout", "round_timeout"):
+        # Discard saved deadlines from the old automatic-human-move policy.
+        if kind in ("opening_timeout", "turn_timeout", "round_timeout"):
             return
         game = data["game"]
         if kind == "opening":
             data["stage"] = "opening"
-            if data["mode"] == "multiplayer":
-                self.schedule(data, "opening_timeout", self.delay("opening_wait"))
-        elif kind == "opening_timeout":
-            for seat in range(len(data["seats"])):
-                self.open_for(data, seat)
-            data["stage"] = "opponents"
-            self.schedule(data, "upcard", self.delay("opponents"))
         elif kind == "upcard":
             data["stage"] = "upcard"
             self.begin_motion(data, "upcard", game["starter"])
         elif kind == "playing":
             game["phase"], data["stage"] = "draw", "playing"
             self.next_turn(data)
-        elif kind in ("bot", "turn_timeout"):
+        elif kind == "bot":
             seat = game["turn"]
-            if kind == "turn_timeout":
-                turn_key = [game["hole"], seat, data.get("turnSerial", 0)]
-                if data.get("lastAutoplay") != turn_key:
-                    self.bump(data, seat, "autoplay_turns")
-                    data["lastAutoplay"] = turn_key
             if game["phase"] == "draw":
                 self.begin_motion(data, "draw", seat, source=engine.bot_source(game))
             elif game["phase"] == "replace":
                 index = engine.replacement_index(game, game["drawn"]["card"], game["drawn"]["source"] == "discard")
                 self.begin_motion(data, "toss" if index < 0 else "discard", seat, index)
-        elif kind == "round_timeout":
-            data.update(game=engine.next_hole(game), stage="dealing", motion=None, ready=[], revealBusy={})
-            self.schedule(data, "opening", self.delay("deal"))
         elif kind == "arrival":
             motion = data["motion"]
             seat = motion["seat"]
@@ -420,17 +427,101 @@ class GolfRuntime:
                 data["motion"], data["stage"] = None, "announcing"
                 self.schedule(data, "playing", self.delay("announce"))
 
+    def sync_inactivity(self, data):
+        """Persist separate decision and disconnect clocks alongside animation work."""
+        game = data.get("game")
+        timers = data.setdefault("inactivity", {})
+        pending = {}
+        if data["mode"] == "multiplayer" and game and game["phase"] != "game-over":
+            for seat, person in enumerate(data["seats"]):
+                if person["isBot"] or person.get("left"):
+                    continue
+                online = any(code == data["code"] and actor == person["actor"] for code, actor in self.connections.values())
+                if not online:
+                    pending[str(seat)] = ("disconnected", [game["id"]])
+                    continue
+                actionable = (
+                    self.reviewing_hole(data, seat)
+                    or data["stage"] == "opening" and sum(c["faceUp"] for c in game["players"][seat]["cards"]) < 2
+                    or data["stage"] == "playing" and not data["motion"] and game["turn"] == seat and game["phase"] in ("draw", "replace")
+                    or game["phase"] == "round-over" and seat not in data["ready"]
+                )
+                if actionable:
+                    reviewing = self.reviewing_hole(data, seat)
+                    visible_game = data["previousHole"] if reviewing else game
+                    decision = [visible_game["id"], visible_game["hole"], "playing" if reviewing else data["stage"], visible_game["phase"], data.get("turnSerial", 0), sum(c["faceUp"] for c in visible_game["players"][seat]["cards"])]
+                    pending[str(seat)] = ("idle", decision)
+        for seat in list(timers):
+            if seat not in pending:
+                timers.pop(seat)
+        for seat, (kind, decision) in pending.items():
+            old = timers.get(seat)
+            if not old or (old["kind"], old["decision"]) != (kind, decision):
+                timers[seat] = dict(kind=kind, decision=decision, warned=False, at=time.time() + (RECONNECT_SECONDS if kind == "disconnected" else IDLE_WARNING_SECONDS))
+        data["inactivityAt"] = min((t["at"] for t in timers.values()), default=None)
+
+    def remove_inactive(self, data, seat, reason):
+        person, game = data["seats"][seat], data["game"]
+        person.update(left=True, removedReason=reason)
+        save_results(data)
+        humans = [p for p in data["seats"] if not p["isBot"] and not p.get("left")]
+        if not humans:
+            save_results(data, terminal=True, abandoned=True)
+            data["next"] = None
+            return
+        if data["host"] == person["actor"]:
+            data["host"] = humans[0]["actor"]
+        if data["stage"] == "opening":
+            self.open_for(data, seat)
+            self.finish_opening(data)
+        elif game["phase"] == "round-over":
+            self.resume_ready(data)
+        elif not data["motion"] and game["phase"] in ("draw", "replace"):
+            self.next_turn(data)
+
     def tick(self, now=None):
         now = time.time() if now is None else now
         with self.lock:
-            for row in Room.query.filter(Room.data["next"]["at"].as_float() <= now).order_by(Room.updated_at).limit(100).all():
+            if not self.recovered:
+                # Convert restored live seats to reconnect clocks immediately.
+                for row in Room.query.filter(Room.data["mode"].as_string() == "multiplayer", Room.data["game"]["phase"].as_string() != "game-over").all():
+                    data = copy.deepcopy(row.data)
+                    self.sync_inactivity(data)
+                    if data != row.data:
+                        self.save(row, data, "recovered")
+                self.recovered = True
+            rows = Room.query.filter(db.or_(Room.data["next"]["at"].as_float() <= now, Room.data["inactivityAt"].as_float() <= now)).order_by(Room.updated_at).limit(100).all()
+            user_ids = {p["userId"] for row in rows for p in row.data["seats"] if p.get("userId") and row.data.get("inactivityAt") is not None and row.data["inactivityAt"] <= now}
+        # Account I/O must stay outside the game lock. An outage cannot cause a loss.
+        available = True
+        if user_ids:
+            try:
+                self.app.extensions["accounts"].public_profiles(list(user_ids))
+            except AccountsUnavailable:
+                available = False
+        with self.lock:
+            for row in rows:
+                db.session.refresh(row)
                 data = copy.deepcopy(row.data)
+                self.sync_inactivity(data)
+                changed = False
+                for seat, timer in list(data.get("inactivity", {}).items()):
+                    if timer["at"] > now:
+                        continue
+                    changed = True
+                    if timer["kind"] == "idle" and not timer["warned"]:
+                        timer.update(warned=True, at=timer["at"] + IDLE_TIMEOUT_SECONDS - IDLE_WARNING_SECONDS)
+                    elif not available or timer.get("recovering"):
+                        timer.update(at=time.time() + 30, recovering=not available)
+                    else:
+                        self.remove_inactive(data, int(seat), timer["kind"])
                 event = data.get("next")
-                if not event or event["at"] > now:
-                    continue
-                data["next"] = None
-                self.step(data, event["kind"])
-                self.save(row, data, event["kind"])
+                if event and event["at"] <= now:
+                    data["next"] = None
+                    self.step(data, event["kind"])
+                    changed = True
+                if changed or data != row.data:
+                    self.save(row, data, event["kind"] if event and event["at"] <= now else "inactivity")
 
     def start(self):
         if self.worker:

@@ -19,9 +19,9 @@ function isResult(value: unknown): value is GolfResult {
   return typeof result.id === "string" && !!result.id &&
     typeof result.finishedAt === "string" && Number.isFinite(Date.parse(result.finishedAt)) &&
     Array.isArray(result.scores) && result.scores.length >= 2 && result.scores.length <= 6 &&
-    result.scores.every(value => score(value) && value >= -216 && value <= 630) &&
+    result.scores.every(value => score(value) && value >= -288 && value <= 630) &&
     Array.isArray(result.holes) && result.holes.length === 9 &&
-    result.holes.every(value => score(value) && value >= -24 && value <= 70) &&
+    result.holes.every(value => score(value) && value >= -32 && value <= 70) &&
     result.holes.reduce((sum, value) => sum + value, 0) === result.scores[0];
 }
 

@@ -63,7 +63,7 @@ it.each([1, 9])("explains the actual penalty above the scores on hole %i without
     expect(banner.compareDocumentPosition(scores) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(game.history.at(-1)).toEqual([17, 3, 11]);
     if (hole === 1) {
-      expect(scores.firstElementChild?.nextElementSibling).toHaveTextContent("Emily1717");
+      expect([...scores.children].slice(1).map(row => row.textContent)).toEqual(["Birdie+33", "Clover+1111", "Emily+1717"]);
       view.rerender(<MemoryRouter><Providers><GolfTableView count={3} selection="backing" table={{ ...table, game: nextHole(game) }} participants={participants} /></Providers></MemoryRouter>);
       expect(screen.queryByRole("complementary", { name: "Going-out penalty" })).not.toBeInTheDocument();
     }

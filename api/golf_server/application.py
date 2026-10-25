@@ -21,7 +21,7 @@ from .schema import schema_ready
 from .statistics import account_statistics, leaderboard
 
 TIMINGS = {"deal": .9, "flip": .56, "flight": .6, "opponents": .75, "announce": 1.1,
-           "bot_draw": 1., "bot_replace": .8, "turn_wait": 60., "opening_wait": 90., "round_wait": 180.}
+           "bot_draw": 1., "bot_replace": .8}
 
 
 def create_app(config=None, *, accounts=None):

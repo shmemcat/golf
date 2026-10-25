@@ -10,6 +10,7 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
   const accountId = useRef(user?.id);
   const [error, setError] = useState("");
   const [needsJoin, setNeedsJoin] = useState(false);
+  const [removedReason, setRemovedReason] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -30,17 +31,18 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
     setConnected(false);
     setError("");
     setNeedsJoin(false);
+    setRemovedReason(null);
     const socket = io("/golf", {
       path: "/golf/socket.io", withCredentials: true, autoConnect: false,
       auth: done => { void golfSession().then(s => done({ csrf_token: s.csrf_token })).catch(e => { if (alive) setError(e.message); }); },
     });
     socket.on("golf:state", (next: RoomState) => { if (alive) accept(next); });
-    socket.on("golf:removed", () => { if (alive) { setConnected(false); setError("You’re no longer seated at this table."); } });
+    socket.on("golf:removed", (event: { reason?: string } = {}) => { if (alive) { setConnected(false); setRemovedReason(event.reason || "removed"); setError("You’re no longer seated at this table."); } });
     socket.on("connect", () => {
       socket.emit("golf:subscribe", { code }, (reply: { ok: boolean; state?: RoomState; error?: string }) => {
         if (!alive) return;
         if (reply.ok && reply.state) { accept(reply.state); setConnected(true); setError(""); }
-        else { setConnected(false); setError(reply.error || "Couldn’t join the table."); }
+        else { setConnected(false); setError(reply.error || "Couldn’t join the table."); if ((reply as { code?: string }).code === "NOT_SEATED") setRemovedReason("removed"); }
       });
     });
     socket.on("disconnect", () => { if (alive) setConnected(false); });
@@ -76,5 +78,5 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
       return false;
     } finally { busy.current = false; setPending(false); }
   };
-  return { state, error, connected, pending, command, retry, needsJoin };
+  return { state, error, connected, pending, command, retry, needsJoin, removedReason };
 }

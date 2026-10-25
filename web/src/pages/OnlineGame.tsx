@@ -66,11 +66,13 @@ function ReadyTable({ room, selection }: { room: ReturnType<typeof useGolfRoom>;
     if (completed && !wasComplete.current) window.dispatchEvent(new Event("golf:results"));
     wasComplete.current = completed;
   }, [completed]);
+  const inactivityNotice = state.idleWarning ? <div className="golf-connection-status" role="alert">You’ll be removed for inactivity in 1 minute. Make a move to stay in the game.</div> : undefined;
   const connectionNotice = room.error || (!room.connected && wasConnected.current) ? <div className="golf-connection-status" role={room.error ? "alert" : "status"}>
-    {room.error || "Reconnecting to your table…"}{" "}<button className="link" type="button" onClick={room.retry}>Retry</button>
-  </div> : undefined;
+    {room.error || (state.mode === "multiplayer" ? "Reconnecting to your table… A bot takes over after 2 minutes." : "Reconnecting to your table…")}{" "}<button className="link" type="button" onClick={room.retry}>Retry</button>
+  </div> : inactivityNotice;
   return <GolfTableView count={state.seats.length} selection={selection} table={table} participants={participants}
-    roundWaiting={room.pending || state.ready.includes(state.mySeat)} rematchWaiting={room.pending || state.rematchReady.includes(state.mySeat)}
+    multiplayer={state.mode === "multiplayer"} disconnected={!room.connected} pending={room.pending}
+    rematchWaiting={room.pending || state.rematchReady.includes(state.mySeat)}
     onLeave={() => { void room.command("leave").then(left => { if (left) navigate("/play"); }); }}
     connectionNotice={connectionNotice} resultNotice={connectionNotice || (user && <p className="quiet-text">Your results have been saved.</p>)} />;
 }
@@ -80,6 +82,10 @@ function ConnectedGame({ code, selection = selectionStyle(null), initialState = 
 }) {
   const room = useGolfRoom(code, initialState);
   const state = room.state;
+  if (room.removedReason) return <PageLayout title="REMOVED FROM GAME">
+    <p role="alert">{room.removedReason === "idle" ? "You were removed for inactivity." : room.removedReason === "disconnected" ? "You were removed after disconnecting for 2 minutes." : "You’re no longer seated at this table."} A bot has taken your seat.</p>
+    <MenuLink to="/play" name="Back to Play" />
+  </PageLayout>;
   if (state?.game) return <ReadyTable room={room} selection={selection} />;
   if (state) return <LobbyRoom room={room} />;
   if (botGame) return <BotTableLoading error={room.error} retry={room.retry} />;

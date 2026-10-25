@@ -256,11 +256,13 @@ Integration work when the application is built:
 The implementation follows these user-approved changes to the reference below:
 
 - Two standard 52-card decks shuffled together, with 2–6 players.
-- Start with two face-up cards in different columns.
+- Start with one face-up card in each row, in different columns.
 - Every other player gets one final turn after someone exposes all six cards.
 - Four matching ranks in an adjacent 2×2 block score −20, replacing the two
-  columns’ normal zero scores. Score the other two cards normally.
-- Keep nine deals and the existing card values and vertical-pair cancellation.
+  columns’ normal zero scores, except four twos, which score −28 (−8 in card
+  values plus the −20 block bonus). Score the other two cards normally.
+- A matching vertical pair scores zero, except paired twos, which score −4.
+- Keep nine deals and the existing card values.
 
 Confirmed for the desktop table on October 24, 2026: six matching cards earn
 one −20 block bonus, an exhausted deck reshuffles the discards while retaining

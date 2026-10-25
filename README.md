@@ -52,12 +52,13 @@ Create Game and live preview games use the approved layout.
 Golf uses the family variant confirmed on October 24, 2026:
 
 - Shuffle two standard 52-card decks together (104 cards), for 2–6 players.
-- Each player has two rows of three cards. The two starting face-up cards must
-  be in different columns.
+- Each player has two rows of three cards. Turn one starting card face up in
+  each row, in different columns.
 - After someone reveals all six cards, every other player gets one final turn.
-- A matching vertical pair scores zero, including paired twos.
+- A matching vertical pair scores zero, except paired twos, which score −4.
 - Four cards of the same rank in an adjacent 2×2 block score −20 instead of
-  zero for the two matching columns. Score the remaining two cards normally.
+  the two matching columns’ usual scores, except four twos, which score −28
+  (−8 in card values plus the −20 block bonus). Score the remaining two cards normally.
 - Play nine deals; the lowest total wins.
 - Choose the first starting player randomly, then rotate clockwise each hole.
 - A deck draw may be discarded; a discard-pile draw must be used.

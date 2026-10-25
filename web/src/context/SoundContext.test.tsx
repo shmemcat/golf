@@ -173,3 +173,9 @@ describe("Buffered music loop", () => {
     expect(music.play).toHaveBeenCalledTimes(1);
   });
 });
+
+it("plays Hearts’ notification clip for inactivity reminders", () => {
+  const { result } = renderSound();
+  act(() => result.current.play("notification"));
+  expect(players.at(-1)?.src).toBe("/sounds/notification.mp3");
+});

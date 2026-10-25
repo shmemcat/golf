@@ -74,10 +74,13 @@ prevents further joins. Neither action records an unstarted game as a result.
 
 Single-player games have no time limits: starting-card choices, every draw and
 replacement, and Next Hole all wait for the player, including after reconnecting.
-In multiplayer, the opening wait is 90 seconds; an inactive human gets an automatic
-move after 60 seconds. Between holes, everyone can select Next Hole; after three
-minutes the next hole starts automatically. Explicitly leaving records an abandonment
-and lets a bot cover the seat. Rematches require all remaining humans to agree,
+Multiplayer matches Hearts: a sound and shake after 15 seconds of an available
+decision, a warning after 9 minutes, and removal with bot takeover after 10 minutes.
+This applies to starting cards, draws, replacements, and Next Hole while waiting
+for that player. Disconnected players have 2 minutes to return. Moves cancel the
+warning; time spent waiting for other players or animations does not count.
+Removal records an abandonment, as does explicitly leaving. A removed seat cannot
+be reclaimed during that game. Single-player games remain untimed. Rematches require all remaining humans to agree,
 and at least two humans for multiplayer. Shared lowest scores count as wins.
 
 Results are unique per game and registered player. The service records the

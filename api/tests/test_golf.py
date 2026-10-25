@@ -31,7 +31,7 @@ def action(client, code, verb, **detail):
 def tick(app, count=1):
     with app.app_context():
         for _ in range(count):
-            app.extensions['golf_runtime'].tick(float('inf'))
+            app.extensions['golf_runtime'].tick(time.time())
 
 
 def playing(app, client, code):
@@ -52,8 +52,9 @@ def test_nine_hole_engine_card_conservation_and_end(count):
         assert game['id'] == game_id
         for seat in range(count):
             engine.open_bot(game, seat)
-            opened = [i % 3 for i, c in enumerate(game['players'][seat]['cards']) if c['faceUp']]
-            assert len(opened) == len(set(opened)) == 2
+            opened = [i for i, c in enumerate(game['players'][seat]['cards']) if c['faceUp']]
+            assert len(opened) == len({i % 3 for i in opened}) == 2
+            assert {i // 3 for i in opened} == {0, 1}
         game['discard'].append(game['deck'].pop())
         game['phase'] = 'draw'
         for turn in range(2000):
@@ -77,7 +78,7 @@ def test_scoring_pairs_block_and_bot_cannot_read_hidden():
     def cards(ranks):
         return [{'faceUp': True, 'card': {'id': str(i), 'rank': r, 'suit': 'S'}} for i, r in enumerate(ranks)]
     assert engine.score_grid(cards(['9', '9', 'A', '9', '9', '2'])) == -21
-    assert engine.score_grid(cards(['K', '2', 'Q', 'K', '2', 'Q'])) == 0
+    assert engine.score_grid(cards(['K', '2', 'Q', 'K', '2', 'Q'])) == -4
     game = engine.deal(2)
     game['players'][game['turn']]['cards'] = [{'faceUp': False, 'card': {'id': str(i)}} for i in range(6)]
     assert 0 <= engine.replacement_index(game, {'rank': '2'}) < 6
@@ -86,6 +87,94 @@ def test_scoring_pairs_block_and_bot_cannot_read_hidden():
 
 def grid(ranks):
     return [{'faceUp': i != 5, 'card': {'id': str(i), 'rank': rank, 'suit': 'S'}} for i, rank in enumerate(ranks)]
+
+
+@pytest.mark.parametrize('seat', range(6))
+@pytest.mark.parametrize('first', range(6))
+def test_opening_requires_opposite_rows_and_different_columns(seat, first):
+    game = engine.deal(6)
+    engine.reveal(game, seat, first)
+    for index in range(6):
+        candidate = copy.deepcopy(game)
+        legal = index // 3 != first // 3 and index % 3 != first % 3
+        assert engine.can_open(candidate, seat, index) == legal
+        if legal:
+            engine.reveal(candidate, seat, index)
+            assert sum(c['faceUp'] for c in candidate['players'][seat]['cards']) == 2
+            assert not any(engine.can_open(candidate, seat, i) for i in range(6))
+        else:
+            with pytest.raises(ValueError, match='one starting card in each row'):
+                engine.reveal(candidate, seat, index)
+            assert candidate == game
+
+
+@pytest.mark.parametrize('first', [None, *range(6)])
+def test_bot_opening_respects_rows_and_columns_and_preserves_first_choice(first):
+    game = engine.deal(2)
+    if first is not None:
+        engine.reveal(game, 1, first)
+    engine.open_bot(game, 1)
+    opened = [i for i, c in enumerate(game['players'][1]['cards']) if c['faceUp']]
+    assert len(opened) == len({i % 3 for i in opened}) == 2
+    assert {i // 3 for i in opened} == {0, 1}
+    assert first is None or first in opened
+    before = copy.deepcopy(game)
+    engine.open_bot(game, 1)
+    assert game == before
+
+
+@pytest.mark.parametrize('column', range(3))
+def test_paired_twos_score_negative_four_in_each_column(column):
+    cards = grid(['K', 'A', 'Q', 'K', 'A', 'Q'])
+    cards[column]['card']['rank'] = cards[column + 3]['card']['rank'] = '2'
+    assert engine.score_grid(cards) == -4
+
+
+@pytest.mark.parametrize('ranks,score', [
+    (['2', 'A', 'K', '2', '3', 'Q'], 10),
+    (['2', 'K', '2', '2', 'K', '2'], -8),
+    (['2', '2', 'K', '2', '2', 'K'], -28),
+    (['K', '2', '2', 'K', '2', '2'], -28),
+    (['2', '2', 'K', '2', '2', '3'], -25),
+    (['2', '2', '2', '2', '2', '2'], -32),
+])
+def test_twos_scoring_with_pairs_and_blocks(ranks, score):
+    assert engine.score_grid(grid(ranks)) == score
+
+
+@pytest.mark.parametrize('ranks', [
+    ['2', '2', 'K', '2', '2', 'K'],
+    ['K', '2', '2', 'K', '2', '2'],
+])
+def test_bot_values_a_visible_twos_block_as_negative_twenty_eight(ranks):
+    game = engine.deal(2)
+    cards = grid(ranks)
+    for cell in cards:
+        cell['faceUp'] = True
+    game['players'][game['turn']]['cards'] = cards
+    king = {'id': 'test-king', 'rank': 'K', 'suit': 'H'}
+    game['discard'] = [king]
+    assert engine.grid_value(cards) == -28
+    assert engine.replacement_index(game, king) == -1
+    assert engine.bot_source(game) == 'deck'
+
+
+def test_bot_completes_and_preserves_paired_twos():
+    game = engine.deal(2)
+    cards = grid(['2', 'A', '3', 'K', 'A', '3'])
+    for cell in cards:
+        cell['faceUp'] = True
+    game['players'][game['turn']]['cards'] = cards
+    two = {'id': 'test-two', 'rank': '2', 'suit': 'H'}
+    game['discard'] = [two]
+    assert engine.replacement_index(game, two) == 3
+    assert engine.bot_source(game) == 'discard'
+
+    cards[3]['card'] = two
+    king = {'id': 'test-king', 'rank': 'K', 'suit': 'H'}
+    game['discard'] = [king]
+    assert engine.replacement_index(game, king) == -1
+    assert engine.bot_source(game) == 'deck'
 
 
 @pytest.mark.parametrize('count,went_out', [(count, seat) for count in range(2, 7) for seat in range(count)])
@@ -192,7 +281,8 @@ def test_multiplayer_join_capacity_host_and_opening(app, clients, count):
     for person in people:
         assert action(person, code, 'reveal', index=0).status_code == 200
         assert action(person, code, 'reveal', index=3).status_code == 400
-        assert action(person, code, 'reveal', index=1).status_code == 200
+        assert action(person, code, 'reveal', index=1).status_code == 400
+        assert action(person, code, 'reveal', index=4).status_code == 200
     assert state(people[0], code)['stage'] == 'opponents'
     tick(app, 3)
     assert state(people[0], code)['stage'] == 'playing'
@@ -237,7 +327,7 @@ def test_actions_exactly_once_stale_revision_and_wrong_turn(app, clients):
     assert repeated.json == first.json
     assert post(client, f'/rooms/{code}/actions', {**payload, 'actionId': 'different-action', 'index': 1}).status_code == 409
     assert action(client, code, 'reveal', index=True).status_code == 400
-    assert action(client, code, 'reveal', index=1).status_code == 200
+    assert action(client, code, 'reveal', index=4).status_code == 200
     value = playing(app, client, code)
     with app.app_context():
         row = db.session.get(Room, code)
@@ -357,7 +447,7 @@ def test_single_player_waits_for_draw_replacement_and_next_hole_while_bots_play(
         data['game'].update(starter=0, turn=0)
         row.data = data; db.session.commit()
     tick(app)
-    for index in (0, 1):
+    for index in (0, 4):
         assert action(person, code, 'reveal', index=index).status_code == 200
     playing(app, person, code)
 
@@ -446,11 +536,33 @@ def test_multiplayer_durable_clock_completes_nine_holes_and_logs_actual_counters
     assert action(person, code, 'start', fillBots=True).status_code == 200
     with app.app_context():
         runtime = app.extensions['golf_runtime']
+        actors = [{'key': f'account:{i}', 'user': app.extensions['accounts'].identity(i)} for i in (1, 2)]
+        runtime.connections.update({f'test-{i}': (code, a['key']) for i, a in enumerate(actors)})
         for _ in range(10000):
-            runtime.tick(float('inf'))
+            runtime.tick(time.time())
             row = db.session.get(Room, code)
-            if row.data['game']['phase'] == 'game-over':
+            data, game = row.data, row.data['game']
+            if game['phase'] == 'game-over':
                 break
+            decisions = []
+            if data['stage'] == 'opening':
+                for seat in (0, 1):
+                    opened = [i for i, c in enumerate(game['players'][seat]['cards']) if c['faceUp']]
+                    if len(opened) < 2:
+                        index = next(i for i in range(6) if engine.can_open(game, seat, i))
+                        decisions.append((seat, dict(action='reveal', index=index)))
+            elif game['phase'] == 'round-over':
+                decisions = [(seat, dict(action='advance')) for seat in (0, 1) if seat not in data['ready']]
+            elif data['stage'] == 'playing' and not data['motion'] and game['turn'] in (0, 1):
+                seat = game['turn']
+                if game['phase'] == 'draw':
+                    decisions = [(seat, dict(action='draw', source=engine.bot_source(game)))]
+                elif game['phase'] == 'replace':
+                    index = engine.replacement_index(game, game['drawn']['card'], game['drawn']['source'] == 'discard')
+                    decisions = [(seat, dict(action='toss') if index < 0 else dict(action='replace', index=index))]
+            for seat, decision in decisions:
+                revision = db.session.get(Room, code).data['revision']
+                runtime.command(actors[seat], code, dict(**decision, revision=revision, actionId=str(uuid.uuid4())))
         else:
             pytest.fail('Server clock did not complete nine holes')
         result = Result.query.filter_by(user_id=1).one()
@@ -460,7 +572,7 @@ def test_multiplayer_durable_clock_completes_nine_holes_and_logs_actual_counters
         assert result.detail['deck_draws'] + result.detail['discard_draws'] > 0
         assert result.detail['replacements'] + result.detail['discarded_draws'] == result.detail['deck_draws'] + result.detail['discard_draws']
         assert 18 <= result.detail['cards_revealed'] <= 54
-        assert result.detail['autoplay_turns'] == result.detail['replacements'] + result.detail['discarded_draws']
+        assert result.detail['autoplay_turns'] == 0
         completed_events = Event.query.count()
         runtime.tick(float('inf'))
         assert Event.query.count() == completed_events
@@ -489,7 +601,7 @@ def test_discard_stays_visible_during_placement_but_other_hidden_cards_stay_priv
     person = clients(1); code = create(person)['code']
     tick(app)
     assert action(person, code, 'reveal', index=0).status_code == 200
-    assert action(person, code, 'reveal', index=1).status_code == 200
+    assert action(person, code, 'reveal', index=4).status_code == 200
     playing(app, person, code)
     with app.app_context():
         row = db.session.get(Room, code); data = copy.deepcopy(row.data)

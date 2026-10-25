@@ -7,7 +7,7 @@ export interface RoomState {
   code: string; mode: GolfMode; capacity: number; revision: number; mySeat: number; isHost: boolean;
   seats: Participant[]; stage: Stage | "lobby" | "closed"; closed?: boolean;
   game: (Omit<Game, "deck" | "players"> & { deckCount: number; players: { score: number; cards: { faceUp: boolean; card: Pick<GolfCard, "id"> & Partial<GolfCard> }[] }[] }) | null;
-  motion: TableMotion | null; ready: number[]; rematchReady: number[];
+  motion: TableMotion | null; ready: number[]; rematchReady: number[]; idleWarning?: boolean;
 }
 export interface Statistics {
   games_started: number; games_played: number; games_completed: number; games_won: number; games_lost: number;

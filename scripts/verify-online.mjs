@@ -67,7 +67,7 @@ export async function verifyGolfOnline(stack) {
     assert(reply.ok);
     await until(() => a.latest?.stage === 'opening' && b.latest?.stage === 'opening', 'Starting cards did not arrive');
     for (const view of [a, b]) {
-      for (const index of [0, 1]) {
+      for (const index of [0, 4]) {
         const answer = await view.emit('golf:action', { code, revision: view.latest.revision, actionId: randomUUID(), action: 'reveal', index });
         assert(answer.ok, JSON.stringify(answer));
         await delay(600);

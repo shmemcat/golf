@@ -10,7 +10,7 @@ import {
 import { Howl } from "howler";
 import { asset } from "@/lib/assets";
 import { readStorage, writeStorage } from "@/lib/storage";
-type Sound = "select" | "deal" | "flip" | "slide" | "start" | "round" | "win" | "pop" | "goingOut";
+type Sound = "select" | "deal" | "flip" | "slide" | "start" | "round" | "win" | "pop" | "goingOut" | "notification";
 const FILES: Record<Sound, string[]> = {
   select: ["card-place-1", "card-place-2"],
   deal: ["card-fan-1", "card-fan-2"],
@@ -21,6 +21,7 @@ const FILES: Record<Sound, string[]> = {
   win: ["game-end"],
   pop: ["pop"],
   goingOut: ["going-out"],
+  notification: ["notification"],
 };
 const MUSIC_VOLUME_KEY = "golf.music-volume.v1";
 const clampVolume = (value: number) =>

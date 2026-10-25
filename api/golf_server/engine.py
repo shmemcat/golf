@@ -31,20 +31,20 @@ def can_open(game, seat, index):
         return False
     cards = game["players"][seat]["cards"]
     opened = [i for i, cell in enumerate(cards) if cell["faceUp"]]
-    return not cards[index]["faceUp"] and len(opened) < 2 and all(i % 3 != index % 3 for i in opened)
+    return (not cards[index]["faceUp"] and len(opened) < 2
+            and all(i // 3 != index // 3 and i % 3 != index % 3 for i in opened))
 
 
 def reveal(game, seat, index):
     if not can_open(game, seat, index):
-        raise ValueError("Choose two starting cards in different columns.")
+        raise ValueError("Choose one starting card in each row, in different columns.")
     game["players"][seat]["cards"][index]["faceUp"] = True
 
 
 def open_bot(game, seat):
-    opened = [i for i, cell in enumerate(game["players"][seat]["cards"]) if cell["faceUp"]]
-    columns = RNG.sample([column for column in range(3) if all(i % 3 != column for i in opened)], max(0, 2 - len(opened)))
-    for column in columns:
-        game["players"][seat]["cards"][column + RNG.choice((0, 3))]["faceUp"] = True
+    cards = game["players"][seat]["cards"]
+    while sum(cell["faceUp"] for cell in cards) < 2:
+        reveal(game, seat, RNG.choice([i for i in range(6) if can_open(game, seat, i)]))
 
 
 def visible_bonus(cards):
@@ -55,12 +55,13 @@ def visible_bonus(cards):
 def grid_value(cards, hidden=0):
     def column(i):
         top, bottom = cards[i], cards[i + 3]
-        if top["faceUp"] and bottom["faceUp"] and top["card"]["rank"] == bottom["card"]["rank"]:
+        if (top["faceUp"] and bottom["faceUp"] and top["card"]["rank"] == bottom["card"]["rank"]
+                and top["card"]["rank"] != "2"):
             return 0
         return sum(card_value(c["card"]["rank"]) if c["faceUp"] else hidden for c in (top, bottom))
     for start in (0, 1):
         if all(cards[i]["faceUp"] and cards[i]["card"]["rank"] == cards[start]["card"]["rank"] for i in (start, start + 1, start + 3, start + 4)):
-            return -20 + column(2 if start == 0 else 0)
+            return (-28 if cards[start]["card"]["rank"] == "2" else -20) + column(2 if start == 0 else 0)
     return sum(column(i) for i in range(3))
 
 

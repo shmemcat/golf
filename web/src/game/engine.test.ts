@@ -30,13 +30,14 @@ describe("Golf rules and table seats", () => {
     expect(SEAT_LAYOUTS[count][0]).toBe("bottom");
   });
 
-  it("accepts exactly two opening cards in separate columns and waits for every opening before the upcard", () => {
+  it("accepts one opening card per row in separate columns and waits for every opening before the upcard", () => {
     const dealt = createGame(6);
     expect(turnUpDeck(dealt)).toBe(dealt);
     expect(openOpponents(dealt)).toBe(dealt);
     const first = openCard(dealt, 0);
     expect(canOpen(first, 3)).toBe(false);
-    expect([1, 2, 4, 5].every(index => canOpen(first, index))).toBe(true);
+    expect([0, 1, 2, 3].every(index => !canOpen(first, index))).toBe(true);
+    expect([4, 5].every(index => canOpen(first, index))).toBe(true);
     expect(openCard(first, 3)).toBe(first);
     const opened = openCard(first, 5);
     expect(openCard(opened, 1)).toBe(opened);
@@ -45,6 +46,7 @@ describe("Golf rules and table seats", () => {
     for (const player of bots.players) {
       const indices = player.cards.flatMap((cell, i) => cell.faceUp ? [i] : []);
       expect(indices).toHaveLength(2);
+      expect(Math.floor(indices[0] / 3)).not.toBe(Math.floor(indices[1] / 3));
       expect(indices[0] % 3).not.toBe(indices[1] % 3);
     }
     expect(startPlay(bots)).toBe(bots);
@@ -52,6 +54,32 @@ describe("Golf rules and table seats", () => {
     expect(upcard.discard).toHaveLength(1);
     expect(turnUpDeck(upcard)).toBe(upcard);
     expect(startPlay(upcard).phase).toBe("draw");
+  });
+
+  it.each([0, 1, 2, 3, 4, 5])("restricts the second opening card after choosing position %i first", firstIndex => {
+    const first = openCard(createGame(2), firstIndex);
+    for (let index = 0; index < 6; index++) {
+      const legal = Math.floor(index / 3) !== Math.floor(firstIndex / 3) && index % 3 !== firstIndex % 3;
+      expect(canOpen(first, index)).toBe(legal);
+      const second = openCard(first, index);
+      if (!legal) expect(second).toBe(first);
+      else {
+        expect(second.players[0].cards.filter(cell => cell.faceUp)).toHaveLength(2);
+        expect(second.players[0].cards.every((_, i) => !canOpen(second, i))).toBe(true);
+      }
+    }
+  });
+
+  it.each([0, 0.49, 0.99])("keeps bot opening cards in opposite rows and different columns with randomness %f", random => {
+    vi.spyOn(Math, "random").mockReturnValue(random);
+    const game = openOpponents(openCard(openCard(createGame(6), 5), 0));
+    for (const player of game.players) {
+      const indices = player.cards.flatMap((cell, i) => cell.faceUp ? [i] : []);
+      expect(indices).toHaveLength(2);
+      expect(indices[0]).toBeLessThan(3);
+      expect(indices[1]).toBeGreaterThanOrEqual(3);
+      expect(indices[0] % 3).not.toBe(indices[1] % 3);
+    }
   });
 
   it("replaces and exposes a face-down card, discards its original, then advances clockwise", () => {
@@ -114,11 +142,22 @@ describe("Golf rules and table seats", () => {
 
   it("scores pairs, twos and both adjacent blocks, with one bonus for six matching cards", () => {
     expect(["A", "2", "3", "J", "Q", "K"].map(rank => cardValue(rank as Rank))).toEqual([1, -2, 3, 10, 10, 0]);
-    expect(scoreGrid(grid(["2", "A", "K", "2", "3", "Q"]))).toBe(14);
+    expect(scoreGrid(grid(["2", "A", "K", "2", "3", "Q"]))).toBe(10);
     expect(scoreGrid(grid(["8", "8", "K", "8", "8", "3"]))).toBe(-17);
     expect(scoreGrid(grid(["K", "8", "8", "3", "8", "8"]))).toBe(-17);
     expect(scoreGrid(grid(["8", "K", "8", "8", "3", "8"]))).toBe(3);
-    expect(scoreGrid(grid(["2", "2", "2", "2", "2", "2"]))).toBe(-20);
+    expect(scoreGrid(grid(["2", "K", "2", "2", "K", "2"]))).toBe(-8);
+    expect(scoreGrid(grid(["2", "2", "K", "2", "2", "K"]))).toBe(-28);
+    expect(scoreGrid(grid(["K", "2", "2", "K", "2", "2"]))).toBe(-28);
+    expect(scoreGrid(grid(["2", "2", "K", "2", "2", "3"]))).toBe(-25);
+    expect(scoreGrid(grid(["2", "2", "2", "2", "2", "2"]))).toBe(-32);
+  });
+
+  it.each([0, 1, 2])("scores paired twos as −4 in column %i while other pairs cancel", column => {
+    const cards = grid(["K", "A", "Q", "K", "A", "Q"]);
+    cards[column].card.rank = "2";
+    cards[column + 3].card.rank = "2";
+    expect(scoreGrid(cards)).toBe(-4);
   });
 
   it.each([2, 3, 4, 5, 6].flatMap(count => Array.from({ length: count }, (_, wentOut) =>
@@ -201,7 +240,22 @@ describe("Golf rules and table seats", () => {
     game.players[game.turn].cards = grid(["2", "2", "K", "2", "2", "K"]);
     const king = { id: "test-king", rank: "K" as const, suit: "H" as const };
     game.discard = [king];
-    expect(scoreGrid(game.players[game.turn].cards)).toBe(-20);
+    expect(scoreGrid(game.players[game.turn].cards)).toBe(-28);
+    expect(replacementIndex(game, king)).toBe(-1);
+    expect(botSource(game)).toBe("deck");
+  });
+
+  it("completes and preserves paired twos for their −4 score", () => {
+    const game = ready(2);
+    game.players[game.turn].cards = grid(["2", "A", "3", "K", "A", "3"]);
+    const two = { id: "test-two", rank: "2" as const, suit: "H" as const };
+    game.discard = [two];
+    expect(replacementIndex(game, two)).toBe(3);
+    expect(botSource(game)).toBe("discard");
+
+    game.players[game.turn].cards[3].card = two;
+    const king = { id: "test-king", rank: "K" as const, suit: "H" as const };
+    game.discard = [king];
     expect(replacementIndex(game, king)).toBe(-1);
     expect(botSource(game)).toBe("deck");
   });
@@ -225,7 +279,7 @@ describe("Golf rules and table seats", () => {
     const drawn = drawCard(game, "discard");
     const index = replacementIndex(drawn, king);
     expect(index).toBe(2);
-    expect(scoreGrid(replaceCard(drawn, index).players[game.turn].cards)).toBe(-20);
+    expect(scoreGrid(replaceCard(drawn, index).players[game.turn].cards)).toBe(-28);
   });
 
   it.each([2, 3, 4, 5, 6])("plays all nine holes against real bot decisions for %i players without losing cards or scoring twice", count => {

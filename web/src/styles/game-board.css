@@ -287,6 +287,26 @@
   box-shadow: 0 8px 32px #1e302b40;
 }
 .golf-round-summary::backdrop { background: #0006; backdrop-filter: blur(4px); }
+.golf-results-toggle {
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--infopillborder);
+  border-radius: 50%;
+  background: var(--contentbox);
+  color: var(--lightpink);
+  box-shadow: 0 2px 8px #0003;
+  font-size: 18px;
+  cursor: pointer;
+}
+.golf-results-toggle:hover { color: var(--text); }
+.golf-results-toggle:focus-visible { outline: 2px solid var(--lightpink); outline-offset: 3px; }
 .golf-round-summary h2 { margin: 0 0 18px; font-size: 24px; }
 .golf-round-summary p { font-size: 15px; }
 .golf-round-scores { margin-bottom: 24px; text-align: left; }

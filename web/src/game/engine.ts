@@ -49,7 +49,7 @@ export function canOpen(game: Game, index: number): boolean {
   const cards = game.players[0].cards;
   const open = cards.flatMap((card, i) => card.faceUp ? [i] : []);
   return game.phase === "opening" && !!cards[index] && !cards[index].faceUp && open.length < 2 &&
-    open.every(i => i % 3 !== index % 3);
+    open.every(i => Math.floor(i / 3) !== Math.floor(index / 3) && i % 3 !== index % 3);
 }
 
 export function openCard(game: Game, index: number): Game {
@@ -64,7 +64,7 @@ export function openOpponents(game: Game): Game {
   return { ...game, players: game.players.map((player, seat) => {
     if (!seat || player.cards.some(card => card.faceUp)) return player;
     const columns = shuffle([0, 1, 2]).slice(0, 2);
-    const indices = columns.map(column => column + (Math.random() < 0.5 ? 0 : 3));
+    const indices = [columns[0], columns[1] + 3];
     return { ...player, cards: player.cards.map((card, index) => ({ ...card, faceUp: indices.includes(index) })) };
   }) };
 }
@@ -87,11 +87,12 @@ export function cardValue(rank: Rank): number {
 
 export function scoreGrid(cards: readonly GridCard[]): number {
   const rank = (i: number) => cards[i].card.rank;
-  const column = (i: number) => rank(i) === rank(i + 3) ? 0 : cardValue(rank(i)) + cardValue(rank(i + 3));
+  const column = (i: number) => rank(i) === rank(i + 3) && rank(i) !== "2"
+    ? 0 : cardValue(rank(i)) + cardValue(rank(i + 3));
   // Overlapping 2×2 blocks share a column, so at most one block earns a bonus.
   for (const start of [0, 1]) {
     if ([start + 1, start + 3, start + 4].every(i => rank(i) === rank(start))) {
-      return -20 + column(start === 0 ? 2 : 0);
+      return (rank(start) === "2" ? -28 : -20) + column(start === 0 ? 2 : 0);
     }
   }
   return column(0) + column(1) + column(2);
@@ -160,13 +161,14 @@ function visibleGridValue(cards: readonly GridCard[]): number {
   const column = (index: number) => {
     const top = cards[index];
     const bottom = cards[index + 3];
-    return top.faceUp && bottom.faceUp && top.card.rank === bottom.card.rank ? 0 : value(top) + value(bottom);
+    return top.faceUp && bottom.faceUp && top.card.rank === bottom.card.rank && top.card.rank !== "2"
+      ? 0 : value(top) + value(bottom);
   };
   for (const start of [0, 1]) {
     const first = cards[start];
     if (first.faceUp && [start + 1, start + 3, start + 4].every(index =>
       cards[index].faceUp && cards[index].card.rank === first.card.rank)) {
-      return -20 + column(start === 0 ? 2 : 0);
+      return (first.card.rank === "2" ? -28 : -20) + column(start === 0 ? 2 : 0);
     }
   }
   return column(0) + column(1) + column(2);

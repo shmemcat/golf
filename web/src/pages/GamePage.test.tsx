@@ -160,6 +160,61 @@ it("cancels a pending results popup when the hole changes or the table is left",
   }
 });
 
+it("toggles the hole results to inspect the board and opens the next hole’s results normally", async () => {
+  vi.useFakeTimers();
+  Object.defineProperties(HTMLDialogElement.prototype, {
+    showModal: { configurable: true, value: function (this: HTMLDialogElement) { this.open = true; } },
+    close: { configurable: true, value: function (this: HTMLDialogElement) { this.open = false; } },
+  });
+  const finished = discardDraw(drawCard({ ...createGame(4), phase: "draw", turn: 0, finalTurns: [0] }, "deck"));
+  const advance = vi.fn();
+  const tableView = (game: Game, pending = false) => <MemoryRouter><Providers><GolfTableView count={4} selection="backing"
+    table={{ ...endingTable(game), advance }} pending={pending} /></Providers></MemoryRouter>;
+  const view = render(tableView(finished));
+  await act(async () => {});
+  try {
+    expect(screen.queryByRole("button", { name: "Hide hole results" })).not.toBeInTheDocument();
+    act(() => { vi.advanceTimersByTime(FLIP_MS + 3000); });
+    const hide = screen.getByRole("button", { name: "Hide hole results" });
+    expect(hide).toHaveAttribute("aria-expanded", "true");
+    expect(hide.querySelector("svg")).toHaveAttribute("data-icon", "eye-slash");
+    fireEvent.click(hide);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Your board" })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Draw from deck/ })).toBeDisabled();
+    expect(view.container.querySelectorAll('.golf-card-slot [data-face-up="true"]')).toHaveLength(24);
+    const show = screen.getByRole("button", { name: "Show hole results" });
+    expect(show).toHaveFocus();
+    expect(show).toHaveAttribute("aria-expanded", "false");
+    expect(show.querySelector("svg")).toHaveAttribute("data-icon", "eye");
+    expect(advance).not.toHaveBeenCalled();
+
+    view.rerender(tableView({ ...finished }, true));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show hole results" }));
+    expect(screen.getByRole("dialog", { name: "Hole 1 complete" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Next Hole", exact: true })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Waiting for players…" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Hide hole results" }));
+
+    view.rerender(tableView({ ...finished }));
+    fireEvent.click(screen.getByRole("button", { name: "Show hole results" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next Hole", exact: true }));
+    expect(advance).toHaveBeenCalledOnce();
+
+    const next = nextHole(finished);
+    view.rerender(tableView(next));
+    expect(screen.queryByRole("button", { name: /hole results/ })).not.toBeInTheDocument();
+    view.rerender(tableView(discardDraw(drawCard({ ...next, phase: "draw", turn: 0, finalTurns: [0] }, "deck"))));
+    act(() => { vi.advanceTimersByTime(FLIP_MS + 3000); });
+    expect(screen.getByRole("dialog", { name: "Hole 2 complete" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Next Hole", exact: true })).toHaveFocus();
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+  }
+});
+
 it("pops the signed hole scores, including a going-out penalty, instead of accumulated totals", async () => {
   vi.useFakeTimers();
   const ranks: Rank[][] = [["A", "K", "K", "K", "A", "K"], ["2", "2", "K", "K", "A", "K"],
@@ -224,6 +279,29 @@ it("returns through the progress prompt and restores a guest table after navigat
   expect(readLocalGame()?.game.id).toBe(saved.game.id);
   expect(readLocalGame()?.game.players).toEqual(saved.game.players);
   view.unmount();
+});
+
+it.each([0, 5])("only enables the opposite row and different columns after opening position %i", async first => {
+  vi.useFakeTimers();
+  const view = render(<MemoryRouter initialEntries={["/game/single?players=2"]}><Providers><GamePage /></Providers></MemoryRouter>);
+  await act(async () => {});
+  const label = (index: number) => `Reveal ${index < 3 ? "top" : "bottom"} row, column ${index % 3 + 1}, face down`;
+  try {
+    act(() => { vi.advanceTimersByTime(DEAL_MS); });
+    expect(screen.getByText("Flip one top card and one bottom card, in different columns.")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: label(first) }));
+    act(() => { vi.advanceTimersByTime(FLIP_MS); });
+    expect(screen.getByText(`Flip a card in the ${first < 3 ? "bottom" : "top"} row and a different column.`)).toBeVisible();
+    for (let index = 0; index < 6; index++) {
+      if (index === first) continue;
+      const button = screen.getByRole("button", { name: label(index) });
+      if (Math.floor(index / 3) !== Math.floor(first / 3) && index % 3 !== first % 3) expect(button).toBeEnabled();
+      else expect(button).toBeDisabled();
+    }
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+  }
 });
 
 it("lets the drawn card itself discard a deck draw and keeps a discard draw reserved for replacement", async () => {

@@ -27,7 +27,7 @@ function playTable() {
   return view;
 }
 
-it("holds input for the deal, restricts the opening column, then flips every bot together before the upcard and picker", () => {
+it("holds input for the deal, restricts the opening row and column, then flips every bot together before the upcard and picker", () => {
   const view = renderHook(() => useGolfTable(6));
   expect(view.result.current.canReveal(0)).toBe(false);
   expect(view.result.current.canDraw).toBe(false);
@@ -37,7 +37,8 @@ it("holds input for the deal, restricts the opening column, then flips every bot
   expect(view.result.current.canReveal(1)).toBe(false);
   tick(FLIP_MS);
   expect(view.result.current.canReveal(3)).toBe(false);
-  expect([1, 2, 4, 5].every(index => view.result.current.canReveal(index))).toBe(true);
+  expect([0, 1, 2, 3].every(index => !view.result.current.canReveal(index))).toBe(true);
+  expect([4, 5].every(index => view.result.current.canReveal(index))).toBe(true);
   expect(view.result.current.game.players.slice(1).every(player => player.cards.every(cell => !cell.faceUp))).toBe(true);
   act(() => view.result.current.reveal(4));
   tick(FLIP_MS);

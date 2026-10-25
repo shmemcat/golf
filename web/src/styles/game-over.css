@@ -56,6 +56,10 @@
   background: color-mix(in srgb, var(--lightpink) 30%, transparent);
   font-weight: 700;
 }
+html[data-theme="dark"] .golf-final-score-table tr[data-current="true"],
+html[data-theme="dark"] .golf-final-score-table tr[data-winner="true"] {
+  background: color-mix(in srgb, #b8d9b4 25%, transparent);
+}
 .golf-final-player { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
 .golf-final-player svg { font-size: 13px; flex-shrink: 0; }
 .golf-final-player > span { overflow-wrap: anywhere; }

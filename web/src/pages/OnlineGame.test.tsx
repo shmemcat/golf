@@ -272,3 +272,21 @@ it("lets a friend join directly from a shared lobby URL", async () => {
   const joinedRequest = fetcher.mock.calls.find(([path]) => path === "/api/golf/lobbies/join")!;
   expect(JSON.parse(String(joinedRequest[1].body))).toEqual({ code: "ABC234", name: "Friend" });
 });
+
+it("shows and clears the inactivity warning, then explains removal", async () => {
+  const room = { ...roomFixture(3, 0), idleWarning: true };
+  transport.reply = room;
+  vi.stubGlobal("fetch", vi.fn(async (path: string) => {
+    if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
+    if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
+    return response({ state: room });
+  }));
+  render(<MemoryRouter initialEntries={["/game/lobby/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  expect(await screen.findByRole("alert")).toHaveTextContent("removed for inactivity in 1 minute");
+  act(() => transport.handlers["golf:state"]({ ...room, revision: room.revision + 1, idleWarning: false }));
+  expect(screen.queryByText(/removed for inactivity/)).not.toBeInTheDocument();
+  act(() => transport.handlers["golf:removed"]({ code: room.code, reason: "idle" }));
+  expect(screen.getByRole("alert")).toHaveTextContent("You were removed for inactivity.");
+  expect(screen.queryByRole("button", { name: /Draw from deck/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Back to Play" })).toBeInTheDocument();
+});

@@ -326,9 +326,12 @@ it("explains the six-card grid, special scores, and the end of a deal", async ()
   expect(screen.getByText(/Two to six players/)).toHaveTextContent(
     "two standard 52-card decks (104 cards total)"
   );
+  expect(screen.getByText(/Trade high cards/)).toHaveTextContent("paired twos, which score −4");
+  expect(screen.getByText(/Trade high cards/)).toHaveTextContent("four twos, which score −28");
   await user.click(screen.getByRole("button", { name: "The Deal" }));
   expect(screen.getAllByRole("img")).toHaveLength(6);
   expect(screen.getByText(/don’t peek/)).toBeVisible();
+  expect(screen.getByText(/don’t peek/)).toHaveTextContent("one top card and one bottom card");
   expect(screen.getByText(/don’t peek/)).toHaveTextContent(
     "not in the same column"
   );
@@ -343,10 +346,11 @@ it("explains the six-card grid, special scores, and the end of a deal", async ()
   expect(screen.getByText(/10 penalty/)).toHaveTextContent("A tied lowest score has no penalty");
   await user.click(screen.getByRole("button", { name: "Scoring" }));
   expect(screen.getByText("−2")).toBeVisible();
-  expect(screen.getByText(/even two twos/)).toBeVisible();
+  expect(screen.getByText(/A matching vertical pair/)).toHaveTextContent("paired twos, which score −4");
   expect(screen.getByText(/Four cards of the same rank/)).toHaveTextContent(
     "Score the remaining two cards normally."
   );
+  expect(screen.getByText(/Four cards of the same rank/)).toHaveTextContent("Four twos score −28");
   expect(screen.getByText("−20 points")).toBeVisible();
   expect(screen.getByText(/Grid total:/)).toHaveTextContent("−17 points");
   expect(screen.getAllByRole("img", { name: /^8 of/ })).toHaveLength(4);

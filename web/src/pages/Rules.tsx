@@ -43,8 +43,9 @@ export default function Rules() {
                 </p>
                 <p>
                   Trade high cards for low ones. Matching ranks in a vertical
-                  column cancel out. Four matching cards in an adjacent 2×2
-                  block score −20 points.
+                  column cancel out, except paired twos, which score −4. Four
+                  matching cards in an adjacent 2×2 block score −20 points,
+                  except four twos, which score −28.
                 </p>
                 <figure className="deal-figure">
                   <div className="six-card-grid">
@@ -66,8 +67,8 @@ export default function Rules() {
               <>
                 <p>
                   Shuffle both decks together. Deal each player six cards face
-                  down in two rows of three. Turn any two that are not in the
-                  same column face up; don’t peek at the others.
+                  down in two rows of three. Turn one top card and one bottom
+                  card face up, not in the same column; don’t peek at the others.
                 </p>
                 <p>
                   The remaining cards form the deck. Turn up one card to begin
@@ -138,11 +139,15 @@ export default function Rules() {
                     </div>
                   ))}
                 </dl>
-                <p>A matching vertical pair scores zero, even two twos.</p>
+                <p>
+                  A matching vertical pair scores zero, except paired twos,
+                  which score −4.
+                </p>
                 <p>
                   Four cards of the same rank in an adjacent 2×2 block score −20
-                  points instead of zero for the two matching columns. Score the
-                  remaining two cards normally.
+                  points instead of the two matching columns’ usual scores.
+                  Four twos score −28: their −8 card value plus the −20 block bonus.
+                  Score the remaining two cards normally.
                 </p>
                 <figure className="deal-figure">
                   <div className="six-card-grid">

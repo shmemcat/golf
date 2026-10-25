@@ -43,6 +43,23 @@ it("preserves hole and game totals that include going-out penalties", () => {
   expect(recordResult(finishedGame([0, 639]), "alice")).toBe(false);
 });
 
+it.each([-28, -32])("preserves holes scoring %i and their nine-hole totals", holeScore => {
+  const game = finishedGame([holeScore * 9, 0]);
+  expect(recordResult(game, "alice")).toBe(true);
+  expect(readResults("alice")[0]).toMatchObject({ scores: [holeScore * 9, 0], holes: Array(9).fill(holeScore) });
+  expect(summarizeResults(readResults("alice"))).toMatchObject({ bestScore: holeScore * 9, bestHole: holeScore });
+});
+
+it("rejects hole and game totals below the minimum possible score", () => {
+  expect(recordResult(finishedGame([-297, 0]), "alice")).toBe(false);
+  expect(recordResult(finishedGame([0, -297]), "alice")).toBe(false);
+  const game = finishedGame([-9, 0]);
+  game.history[0][0] = -33;
+  game.history[1][0] = 31;
+  expect(recordResult(game, "alice")).toBe(false);
+  expect(readResults("alice")).toEqual([]);
+});
+
 it("reports a storage failure so the game can offer a retry", () => {
   vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new Error("quota"); });
   expect(recordResult(finishedGame(), "alice")).toBe(false);
