@@ -21,11 +21,14 @@ vi.mock("howler", () => ({
       this.level = value;
     });
     playing = () => this.active;
-    unload = vi.fn();
+    unload = vi.fn(() => {
+      this.active = false;
+    });
     once = vi.fn((_event: string, callback: () => void) => {
       this.unlock = callback;
     });
     constructor(public options: HowlOptions) {
+      this.level = options.volume ?? 1;
       tracks.push(this);
     }
   },
@@ -57,6 +60,21 @@ const renderSound = () =>
       <SoundProvider>{children}</SoundProvider>
     ),
   });
+const musicSources = [
+  "/sounds/backgroundmusic.mp3",
+  "/sounds/alex-morgan-jazz-restaurant-music-556244.mp3",
+  "/sounds/alex-morgan-jazz-dinner-restaurant-music-556236.mp3",
+  "/sounds/alex-morgan-jazz-bar-restaurant-music-564253.mp3",
+  "/sounds/alex-morgan-cocktail-jazz-556233.mp3",
+  "/sounds/alex-morgan-jazz-cocktail-lounge-music-556246.mp3",
+  "/sounds/alex-morgan-jazz-rainy-lounge-music-556235.mp3",
+];
+const finishTrack = () => {
+  const current = tracks.at(-1)!;
+  current.active = false;
+  act(() => current.options.onend?.(1));
+};
+const trackSource = () => (tracks.at(-1)!.options.src as string[])[0];
 
 beforeEach(() => {
   players = [];
@@ -138,16 +156,127 @@ describe("Independent audio controls", () => {
   });
 });
 
-describe("Buffered music loop", () => {
-  it("loads a looping buffer and releases it when the provider unmounts", () => {
+describe("Shuffled music playlist", () => {
+  it("starts with a shuffled track and releases it when the provider unmounts", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
     const { unmount } = renderSound();
     expect(tracks[0].options).toMatchObject({
-      src: ["/sounds/backgroundmusic.mp3"],
-      loop: true,
+      src: [musicSources[1]],
+      loop: false,
       preload: true,
     });
+    expect(tracks[0].play).not.toHaveBeenCalled();
     unmount();
     expect(tracks[0].unload).toHaveBeenCalledOnce();
+  });
+
+  it("plays all seven tracks once per round, then reshuffles and keeps playing", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.999);
+    writeStorage("golf.music.v1", true);
+    renderSound();
+    const firstRound = [trackSource()];
+    for (let index = 1; index < musicSources.length; index++) {
+      finishTrack();
+      firstRound.push(trackSource());
+    }
+    random.mockReturnValue(0);
+    finishTrack();
+    const secondRound = [trackSource()];
+    for (let index = 1; index < musicSources.length; index++) {
+      finishTrack();
+      secondRound.push(trackSource());
+    }
+    expect([...firstRound].sort()).toEqual([...musicSources].sort());
+    expect([...secondRound].sort()).toEqual([...musicSources].sort());
+    expect(secondRound).not.toEqual(firstRound);
+    expect(secondRound[0]).not.toBe(firstRound.at(-1));
+    expect(tracks).toHaveLength(14);
+    for (const track of tracks) expect(track.play).toHaveBeenCalledOnce();
+    for (const track of tracks.slice(0, -1)) {
+      expect(track.unload).toHaveBeenCalledOnce();
+      expect(track.active).toBe(false);
+    }
+    expect(tracks.at(-1)!.active).toBe(true);
+  });
+
+  it("avoids an immediate repeat when the next shuffle starts with the last song", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.999);
+    writeStorage("golf.music.v1", true);
+    renderSound();
+    for (let index = 1; index < musicSources.length; index++) finishTrack();
+    const lastSong = trackSource();
+    random.mockReturnValueOnce(0).mockReturnValue(0.999);
+    finishTrack();
+    expect(trackSource()).not.toBe(lastSong);
+    const nextRound = [trackSource()];
+    for (let index = 1; index < musicSources.length; index++) {
+      finishTrack();
+      nextRound.push(trackSource());
+    }
+    expect([...nextRound].sort()).toEqual([...musicSources].sort());
+  });
+
+  it("pauses and resumes the current song without resetting the rotation", () => {
+    writeStorage("golf.music.v1", true);
+    const { result } = renderSound();
+    finishTrack();
+    const current = tracks.at(-1)!;
+    act(() => result.current.setMusic(false));
+    expect(current.pause).toHaveBeenCalledOnce();
+    act(() => result.current.setMusic(true));
+    expect(tracks).toHaveLength(2);
+    expect(current.play).toHaveBeenCalledTimes(2);
+    finishTrack();
+    expect(new Set(tracks.map(track => (track.options.src as string[])[0])).size).toBe(3);
+  });
+
+  it("uses the latest music volume for subsequent songs without changing effects", () => {
+    writeStorage("golf.music.v1", true);
+    const { result } = renderSound();
+    act(() => {
+      result.current.setMusicVolume(0.6);
+      result.current.setVolume(0.3);
+    });
+    finishTrack();
+    expect(tracks.at(-1)!.level).toBe(0.6);
+    act(() => result.current.play("deal"));
+    expect(players.at(-1)!.volume).toBe(0.3);
+    act(() => result.current.setMusicVolume(0.2));
+    expect(tracks.at(-1)!.level).toBe(0.2);
+  });
+
+  it("keeps music paused if a queued end event arrives after disabling it", () => {
+    writeStorage("golf.music.v1", true);
+    const { result } = renderSound();
+    act(() => result.current.setMusic(false));
+    finishTrack();
+    expect(tracks.at(-1)!.play).not.toHaveBeenCalled();
+    act(() => result.current.setMusic(true));
+    expect(tracks.at(-1)!.play).toHaveBeenCalledOnce();
+  });
+
+  it("ignores stale end and unlock callbacks after changing tracks or unmounting", () => {
+    writeStorage("golf.music.v1", true);
+    const { unmount } = renderSound();
+    const first = tracks[0];
+    act(() => first.options.onplayerror?.(1, "Autoplay blocked"));
+    finishTrack();
+    act(() => {
+      first.options.onend?.(1);
+      first.unlock?.();
+    });
+    expect(tracks).toHaveLength(2);
+    expect(first.play).toHaveBeenCalledOnce();
+    const current = tracks.at(-1)!;
+    act(() => current.options.onplayerror?.(1, "Autoplay blocked"));
+    unmount();
+    act(() => {
+      current.options.onend?.(1);
+      current.unlock?.();
+    });
+    expect(tracks).toHaveLength(2);
+    expect(current.unload).toHaveBeenCalledOnce();
+    expect(current.play).toHaveBeenCalledOnce();
   });
 
   it("retries blocked playback after unlocking without layering music", () => {

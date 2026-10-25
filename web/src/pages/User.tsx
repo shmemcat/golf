@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Helmet } from "react-helmet-async";
-import { Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { AccountDashboard } from "@/components/AccountDashboard";
 import { PageLayout } from "@/components/ui/PageLayout";
 import { Button, MenuLink } from "@/components/Buttons";
 import { useAuth } from "@/context/AuthContext";
@@ -55,7 +56,7 @@ export default function User() {
       setSubmitting(false);
     }
   }
-  if (user) return <Navigate to="/profile" replace />;
+  if (user) return <AccountDashboard />;
   return (
     <>
       <Helmet>
@@ -63,7 +64,9 @@ export default function User() {
       </Helmet>
       <PageLayout title="SIGN IN">
         <div className="account-body">
-          {typeof state?.notice === "string" && <p role="status">{state.notice}</p>}
+          {typeof state?.notice === "string" && (
+            <p role="status">{state.notice}</p>
+          )}
           <form
             onSubmit={submit}
             className="signin-form"
@@ -129,7 +132,9 @@ export default function User() {
             )}
             <Button
               type="submit"
-              name={submitting ? "Signing In…" : loading ? "Loading…" : "Sign In"}
+              name={
+                submitting ? "Signing In…" : loading ? "Loading…" : "Sign In"
+              }
               disabled={busy}
             />
           </form>

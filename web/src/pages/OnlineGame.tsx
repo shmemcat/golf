@@ -71,8 +71,8 @@ function ReadyTable({ room, selection }: { room: ReturnType<typeof useGolfRoom>;
     {room.error || (state.mode === "multiplayer" ? "Reconnecting to your table… A bot takes over after 2 minutes." : "Reconnecting to your table…")}{" "}<button className="link" type="button" onClick={room.retry}>Retry</button>
   </div> : inactivityNotice;
   return <GolfTableView count={state.seats.length} selection={selection} table={table} participants={participants}
-    multiplayer={state.mode === "multiplayer"} disconnected={!room.connected} pending={room.pending}
-    rematchWaiting={room.pending || state.rematchReady.includes(state.mySeat)}
+    multiplayer={state.mode === "multiplayer"} isHost={state.isHost} disconnected={!room.connected} pending={room.pending}
+    rematchWaiting={room.pending || !room.connected}
     onLeave={() => { void room.command("leave").then(left => { if (left) navigate("/play"); }); }}
     connectionNotice={connectionNotice} resultNotice={connectionNotice || (user && <p className="quiet-text">Your results have been saved.</p>)} />;
 }

@@ -215,6 +215,56 @@ it("toggles the hole results to inspect the board and opens the next hole’s re
   }
 });
 
+it("toggles the final results without restarting the game or losing rematch updates", async () => {
+  vi.useFakeTimers();
+  Object.defineProperties(HTMLDialogElement.prototype, {
+    showModal: { configurable: true, value: function (this: HTMLDialogElement) { this.open = true; } },
+    close: { configurable: true, value: function (this: HTMLDialogElement) { this.open = false; } },
+  });
+  const finished = discardDraw(drawCard({ ...createGame(4), hole: 9, phase: "draw", turn: 0, finalTurns: [0] }, "deck"));
+  const restart = vi.fn();
+  const tableView = (game: Game, waiting = false) => <MemoryRouter><Providers><GolfTableView count={4} selection="backing"
+    table={{ ...endingTable(game), restart }} rematchWaiting={waiting} resultNotice={<p>Your results have been saved.</p>} /></Providers></MemoryRouter>;
+  const view = render(tableView(finished));
+  await act(async () => {});
+  try {
+    act(() => { vi.advanceTimersByTime(FLIP_MS + 3000); });
+    const scores = screen.getByRole("table", { name: "Final scores" }).textContent;
+    const hide = screen.getByRole("button", { name: "Hide game results" });
+    expect(hide.querySelector("svg")).toHaveAttribute("data-icon", "eye-slash");
+    fireEvent.click(hide);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Your board" })).toBeVisible();
+    expect(view.container.querySelectorAll('.golf-card-slot [data-face-up="true"]')).toHaveLength(24);
+    const show = screen.getByRole("button", { name: "Show game results" });
+    expect(show).toHaveFocus();
+    expect(show).toHaveAttribute("aria-expanded", "false");
+    expect(show.querySelector("svg")).toHaveAttribute("data-icon", "eye");
+    expect(restart).not.toHaveBeenCalled();
+
+    view.rerender(tableView({ ...finished }, true));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show game results" }));
+    expect(screen.getByRole("dialog")).toBeVisible();
+    expect(screen.getByRole("table", { name: "Final scores" }).textContent).toBe(scores);
+    expect(screen.getByText("Your results have been saved.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Starting game…" })).toBeDisabled();
+    view.rerender(tableView(finished));
+    fireEvent.click(screen.getByRole("button", { name: "Hide game results" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show game results" }));
+    expect(screen.getByRole("button", { name: "Play Again", exact: true })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Play Again", exact: true }));
+    expect(restart).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Hide game results" }));
+    view.rerender(tableView(createGame(4)));
+    expect(screen.queryByRole("button", { name: /game results/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+  }
+});
+
 it("pops the signed hole scores, including a going-out penalty, instead of accumulated totals", async () => {
   vi.useFakeTimers();
   const ranks: Rank[][] = [["A", "K", "K", "K", "A", "K"], ["2", "2", "K", "K", "A", "K"],

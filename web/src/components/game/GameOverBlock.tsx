@@ -1,9 +1,10 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRobot } from "@fortawesome/pro-solid-svg-icons/faRobot";
 import { Button } from "@/components/Buttons";
 import { ProfileIcon } from "@/components/ProfileIcon";
+import { Tooltip } from "@/components/Tooltip";
 import "@/styles/game-over.css";
 
 export interface FinalPlayer {
@@ -13,15 +14,18 @@ export interface FinalPlayer {
   isBot?: boolean;
 }
 
-export function GameOverBlock({ players, onPlayAgain, mySeatIndex = 0, notice, penaltyNotice, waiting = false }: {
+export function GameOverBlock({ players, onPlayAgain, mySeatIndex = 0, notice, penaltyNotice, waiting = false, waitingForHost = false, visibilityToggle }: {
   players: FinalPlayer[];
   onPlayAgain: () => void;
   mySeatIndex?: number;
   notice?: ReactNode;
   penaltyNotice?: ReactNode;
   waiting?: boolean;
+  waitingForHost?: boolean;
+  visibilityToggle?: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const [hostHintOpen, setHostHintOpen] = useState(false);
   const navigate = useNavigate();
   const standings = players.map((player, seat) => ({ ...player, seat })).sort((a, b) => a.score - b.score);
   const lowest = standings[0].score;
@@ -33,11 +37,11 @@ export function GameOverBlock({ players, onPlayAgain, mySeatIndex = 0, notice, p
     const element = dialog.current;
     if (!element) return;
     element.showModal();
-    element.querySelector("button")?.focus({ preventScroll: true });
+    element.querySelector<HTMLElement>(".golf-host-waiting, button:not(:disabled)")?.focus({ preventScroll: true });
     return () => element.close();
   }, []);
 
-  return <dialog ref={dialog} className="golf-game-over" aria-labelledby="golf-game-over-title"
+  return <dialog ref={dialog} id="golf-game-results" className="golf-game-over" aria-labelledby="golf-game-over-title"
     onCancel={event => event.preventDefault()}>
     <h2 id="golf-game-over-title" className="golf-game-over-title">{title}</h2>
     {penaltyNotice}
@@ -53,11 +57,18 @@ export function GameOverBlock({ players, onPlayAgain, mySeatIndex = 0, notice, p
         <td>{player.score}</td>
       </tr>)}</tbody>
     </table>
-    {notice}
+    {notice && <div className="golf-game-over-notice">{notice}</div>}
     <div className="golf-game-over-actions">
-      <Button name={waiting ? "Waiting for players…" : "Play Again"} disabled={waiting} onClick={onPlayAgain} />
+      {waitingForHost ? <Tooltip content="Only the host can start a new game." portal={false}
+        open={hostHintOpen} onOpenChange={setHostHintOpen}>
+        <span className="golf-host-waiting" tabIndex={0}
+          onClick={event => { event.preventDefault(); setHostHintOpen(true); }}>
+          <Button name="Waiting for host…" disabled />
+        </span>
+      </Tooltip> : <Button name={waiting ? "Starting game…" : "Play Again"} disabled={waiting} onClick={onPlayAgain} />}
       <Button name="Create New Game" onClick={() => navigate("/game/create")} />
       <Button name="Home" onClick={() => navigate("/")} />
     </div>
+    {visibilityToggle}
   </dialog>;
 }

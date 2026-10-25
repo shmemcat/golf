@@ -11,13 +11,13 @@
   color: var(--text);
   text-align: center;
   box-shadow: 0 8px 32px #0004;
-  animation: golf-game-over-enter .3s ease-out;
+  animation: golf-game-over-fade .3s ease-out;
 }
 .golf-game-over[open] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 .golf-game-over::backdrop {
   background: #0006;
@@ -53,7 +53,7 @@
 .golf-final-score-table tbody tr:last-child td { border-bottom: 0; }
 .golf-final-score-table tr[data-current="true"],
 .golf-final-score-table tr[data-winner="true"] {
-  background: color-mix(in srgb, var(--lightpink) 30%, transparent);
+  background: color-mix(in srgb, var(--contentbox), var(--infopillborder));
   font-weight: 700;
 }
 html[data-theme="dark"] .golf-final-score-table tr[data-current="true"],
@@ -63,19 +63,20 @@ html[data-theme="dark"] .golf-final-score-table tr[data-winner="true"] {
 .golf-final-player { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
 .golf-final-player svg { font-size: 13px; flex-shrink: 0; }
 .golf-final-player > span { overflow-wrap: anywhere; }
+.golf-game-over-notice { width: 100%; }
+.golf-game-over-notice > :first-child { margin-top: 0; }
+.golf-game-over-notice > :last-child { margin-bottom: 0; }
 .golf-game-over-actions {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-top: 16px;
+  padding-top: 4px;
   width: min(250px, 100%);
 }
-.golf-game-over-actions > button { width: 100%; }
+.golf-host-waiting { display: block; width: 100%; cursor: not-allowed; border-radius: 8px; }
+.golf-host-waiting > button { pointer-events: none; }
+.golf-game-over .golf-game-over-actions button { width: 100%; }
 @keyframes golf-game-over-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes golf-game-over-enter {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 @media (prefers-reduced-motion: reduce) {
   .golf-game-over, .golf-game-over::backdrop { animation: none; }
 }

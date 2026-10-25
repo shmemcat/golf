@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
 import { GameOverBlock, type FinalPlayer } from "./GameOverBlock";
+import userEvent from "@testing-library/user-event";
 
 beforeEach(() => {
   // JSDOM does not implement the browser's native modal methods.
@@ -55,4 +56,23 @@ it.each([["Create New Game", "Game setup"], ["Home", "Golf home"]])("%s opens it
   fireEvent.click(screen.getByRole("button", { name: button, exact: true }));
   expect(screen.getByRole("heading", { name: heading })).toBeVisible();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+it("keeps non-hosts waiting and explains host replays inside the modal on focus and tap", async () => {
+  const user = userEvent.setup();
+  const restart = vi.fn();
+  render(<MemoryRouter><GameOverBlock players={players} onPlayAgain={restart} waitingForHost /></MemoryRouter>);
+  const waiting = screen.getByRole("button", { name: "Waiting for host…" });
+  expect(waiting).toBeDisabled();
+  expect(waiting.parentElement).toHaveFocus();
+  expect(await screen.findByRole("tooltip")).toHaveTextContent("Only the host can start a new game.");
+  expect(screen.getByRole("dialog")).toContainElement(screen.getByRole("tooltip"));
+  expect(screen.queryByRole("button", { name: "Play Again", exact: true })).not.toBeInTheDocument();
+  fireEvent.click(waiting);
+  expect(restart).not.toHaveBeenCalled();
+  await user.tab();
+  expect(screen.getByRole("button", { name: "Create New Game" })).toHaveFocus();
+  fireEvent.click(waiting.parentElement!);
+  expect(await screen.findByRole("tooltip")).toHaveTextContent("Only the host can start a new game.");
+  expect(restart).not.toHaveBeenCalled();
 });

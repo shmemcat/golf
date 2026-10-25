@@ -6,6 +6,7 @@ type TooltipProps = {
   children: ReactElement;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  portal?: boolean;
 };
 
 const tooltipStyle: CSSProperties = {
@@ -20,16 +21,15 @@ const tooltipStyle: CSSProperties = {
   zIndex: 9999,
 };
 
-export function Tooltip({ content, children, open, onOpenChange }: TooltipProps) {
+export function Tooltip({ content, children, open, onOpenChange, portal = true }: TooltipProps) {
+  const bubble = <TooltipPrimitive.Content side="top" sideOffset={6} collisionPadding={12} style={tooltipStyle}>
+    {content}
+  </TooltipPrimitive.Content>;
   return (
     <TooltipPrimitive.Provider delayDuration={0}>
       <TooltipPrimitive.Root open={open} onOpenChange={onOpenChange}>
         <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
-        <TooltipPrimitive.Portal>
-          <TooltipPrimitive.Content side="top" sideOffset={6} collisionPadding={12} style={tooltipStyle}>
-            {content}
-          </TooltipPrimitive.Content>
-        </TooltipPrimitive.Portal>
+        {portal ? <TooltipPrimitive.Portal>{bubble}</TooltipPrimitive.Portal> : bubble}
       </TooltipPrimitive.Root>
     </TooltipPrimitive.Provider>
   );

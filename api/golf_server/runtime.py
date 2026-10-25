@@ -261,23 +261,14 @@ class GolfRuntime:
 
     def resume_ready(self, data):
         game = data["game"]
-        phase = game["phase"]
-        if phase not in ("round-over", "game-over"):
+        if game["phase"] != "round-over":
             return
         humans = [i for i, p in enumerate(data["seats"]) if not p["isBot"] and not p.get("left")]
-        if not humans or (phase == "game-over" and data["mode"] == "multiplayer" and len(humans) < 2):
+        if not any(i in data["ready"] for i in humans):
             return
-        ready = data["ready" if phase == "round-over" else "rematchReady"]
-        if phase == "game-over":
-            if not all(i in ready for i in humans):
-                return
-            self.begin(data)
-        else:
-            if not any(i in ready for i in humans):
-                return
-            # Each player keeps the completed board until choosing the next hole.
-            data.update(previousHole=game, game=engine.next_hole(game), stage="dealing", motion=None, revealBusy={})
-            self.schedule(data, "opening", self.delay("deal"))
+        # Each player keeps the completed board until choosing the next hole.
+        data.update(previousHole=game, game=engine.next_hole(game), stage="dealing", motion=None, revealBusy={})
+        self.schedule(data, "opening", self.delay("deal"))
 
     def command(self, actor, code, payload):
         if not isinstance(payload, dict):
@@ -309,8 +300,11 @@ class GolfRuntime:
                 person = data["seats"][seat]
                 if game:
                     person["left"] = True
+                    humans = [p for p in data["seats"] if not p["isBot"] and not p.get("left")]
+                    if data["host"] == actor["key"] and humans:
+                        data["host"] = humans[0]["actor"]
                     save_results(data)
-                    if not any(not p["isBot"] and not p.get("left") for p in data["seats"]):
+                    if not humans:
                         save_results(data, terminal=True, abandoned=game["phase"] != "game-over")
                         data["next"] = None
                     elif data["stage"] == "opening":
@@ -355,12 +349,16 @@ class GolfRuntime:
                 visible_game = data["previousHole"] if self.reviewing_hole(data, seat) else game
                 if visible_game["phase"] != expected:
                     raise Rejected("Finish the current game or hole first.")
-                if action == "restart" and data["mode"] == "multiplayer" and sum(not p["isBot"] and not p.get("left") for p in data["seats"]) < 2:
-                    raise Rejected("A multiplayer game needs two people. Create a new table to invite friends.")
-                ready_key = "ready" if action == "advance" else "rematchReady"
-                if seat not in data[ready_key]:
-                    data[ready_key].append(seat)
-                self.resume_ready(data)
+                if action == "restart":
+                    if data["host"] != actor["key"]:
+                        raise Rejected("Only the host can start a new game.")
+                    if data["mode"] == "multiplayer" and sum(not p["isBot"] and not p.get("left") for p in data["seats"]) < 2:
+                        raise Rejected("A multiplayer game needs two people. Create a new table to invite friends.")
+                    self.begin(data)
+                else:
+                    if seat not in data["ready"]:
+                        data["ready"].append(seat)
+                    self.resume_ready(data)
             else:
                 if data["stage"] != "playing" or data["motion"] or game["turn"] != seat:
                     raise Rejected("Wait for your turn and the current card to arrive.")

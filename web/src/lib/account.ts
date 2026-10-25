@@ -8,6 +8,7 @@ export type AccountUser = {
   email?: string;
   email_verified?: boolean;
   profile_icon?: string;
+  turn_sound?: Partial<Record<"golf" | "euchre" | "hearts", boolean>>;
 };
 export type AccountSession = {
   user: AccountUser | null;
@@ -65,7 +66,14 @@ export function createAccountClient(
         method: "POST",
         headers: { "X-CSRF-Token": csrf },
       }),
-    profile: (data: { profile_icon?: string; email?: string }, csrf: string) =>
+    profile: (
+      data: {
+        profile_icon?: string;
+        email?: string;
+        turn_sound?: { game: "golf" | "euchre" | "hearts"; enabled: boolean };
+      },
+      csrf: string
+    ) =>
       request("/profile", {
         method: "POST",
         headers: {

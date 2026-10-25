@@ -1,3 +1,4 @@
+import { useTurnIndicator } from "@/context/TurnSoundContext";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -44,9 +45,9 @@ const SCORE_POP_BEAT_MS = 250;
 export type DrawLayout = "beside" | "below" | "piles";
 export const drawLayoutFrom = (value: string | null): DrawLayout => value === "below" || value === "piles" ? value : "beside";
 
-export function GolfTableView({ count, selection, table, drawLayout = "beside", resultNotice, participants, rematchWaiting = false, onLeave, connectionNotice, multiplayer = false, disconnected = false, pending = false }: {
+export function GolfTableView({ count, selection, table, drawLayout = "beside", resultNotice, participants, rematchWaiting = false, onLeave, connectionNotice, multiplayer = false, isHost = true, disconnected = false, pending = false }: {
   count: number; selection: SelectionStyle; table: ReturnType<typeof useGolfTable>; drawLayout?: DrawLayout; resultNotice?: ReactNode;
-  multiplayer?: boolean; disconnected?: boolean; pending?: boolean;
+  multiplayer?: boolean; isHost?: boolean; disconnected?: boolean; pending?: boolean;
   participants?: Participant[]; rematchWaiting?: boolean; onLeave?: () => void; connectionNotice?: ReactNode;
 }) {
   const { game, stage, motion } = table;
@@ -75,6 +76,11 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
     table.canDraw || table.canReplace || Array.from({ length: 6 }, (_, index) => table.canReveal(index)).some(Boolean) ||
     (roundComplete && showResults)
   ), `${game.id}:${game.hole}:${stage}:${game.phase}:${game.turn}:${game.players[0].cards.filter(c => c.faceUp).length}`);
+  const openingTurn = stage === "opening";
+  useTurnIndicator(!disconnected && !pending && (openingTurn
+    ? Array.from({ length: 6 }, (_, index) => table.canReveal(index)).some(Boolean)
+    : table.canDraw), openingTurn ? `${game.id}:${game.hole}:opening` :
+      `${game.id}:${game.hole}:${game.deck.length}:${game.discard.map(card => card.id).join(",")}:${game.players.flatMap(player => player.cards.map(cell => cell.card.id + cell.faceUp)).join(",")}`);
   const holeScores = game.history[game.history.length - 1];
   const standings = game.players.map((player, seat) => ({ seat, score: player.score }))
     .sort((a, b) => a.score - b.score);
@@ -111,11 +117,12 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
     return () => { window.clearTimeout(pop); window.clearTimeout(timer); };
   }, [completedHole]);
   useEffect(() => {
-    if (!roundComplete || !showResults) return;
+    if (!showResults) return;
     if (resultsHidden) {
       resultsToggle.current?.focus({ preventScroll: true });
       return;
     }
+    if (!roundComplete) return;
     const dialog = summary.current;
     if (!dialog) return;
     dialog.showModal();
@@ -178,10 +185,10 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
     </div>;
   };
 
+  const resultsLabel = `${resultsHidden ? "Show" : "Hide"} ${roundComplete ? "hole" : "game"} results`;
   const resultsButton = <button ref={resultsToggle} type="button" className="golf-results-toggle"
-    aria-label={resultsHidden ? "Show hole results" : "Hide hole results"}
-    title={resultsHidden ? "Show hole results" : "Hide hole results"}
-    aria-expanded={!resultsHidden} aria-controls="golf-hole-results"
+    aria-label={resultsLabel} title={resultsLabel}
+    aria-expanded={!resultsHidden} aria-controls={roundComplete ? "golf-hole-results" : "golf-game-results"}
     onClick={() => setHiddenResultsHole(resultsHidden ? null : completedHole)}>
     <FontAwesomeIcon icon={resultsHidden ? faEye : faEyeSlash} />
   </button>;
@@ -313,15 +320,17 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
         </footer>}
       </main>
       {motion && <CardFlight key={`${motion.kind}-${motion.seat}-${motion.index}`} flight={motion} board={board} viewedSeat={cycled ? viewedSeat : undefined} />}
-      {game.phase === "game-over" && showResults && <GameOverBlock
+      {game.phase === "game-over" && showResults && (resultsHidden ? resultsButton : <GameOverBlock
         players={game.players.map((player, seat) => ({
           name: name(seat), score: player.score, isBot: isBot(seat), icon: icon(seat),
         }))}
         onPlayAgain={table.restart}
         waiting={rematchWaiting}
+        waitingForHost={multiplayer && !isHost}
         penaltyNotice={<PenaltyBanner game={game} name={name} />}
         notice={resultNotice}
-      />}
+        visibilityToggle={resultsButton}
+      />)}
       {roundComplete && showResults && (resultsHidden ? resultsButton : (
         <dialog ref={summary} id="golf-hole-results" className="golf-round-summary" aria-labelledby="golf-summary-title" onCancel={event => event.preventDefault()}>
           <h2 id="golf-summary-title">Hole {game.hole} complete</h2>

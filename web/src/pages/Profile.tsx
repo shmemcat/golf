@@ -1,14 +1,11 @@
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleCheck } from "@fortawesome/pro-solid-svg-icons/faCircleCheck";
 import { faTriangleExclamation } from "@fortawesome/pro-solid-svg-icons/faTriangleExclamation";
 import { PageLayout } from "@/components/ui/PageLayout";
-import { Button, MenuLink } from "@/components/Buttons";
-import { AccountSummary } from "@/components/AccountSummary";
-import { DangerButton, DeleteAccountModal } from "@/components/DeleteAccountModal";
-import { clearResults } from "@/lib/results";
+import { MenuLink } from "@/components/Buttons";
 import { useAuth } from "@/context/AuthContext";
 import {
   PROFILE_ICONS,
@@ -23,9 +20,7 @@ export default function Profile() {
 }
 
 function ProfileContent() {
-  const { user, loading, error: authError, updateProfile, logout, deleteAccount } = useAuth();
-  const navigate = useNavigate();
-  const [deleting, setDeleting] = useState(false);
+  const { user, loading, error: authError, updateProfile } = useAuth();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState(user?.email ?? "");
   const [busy, setBusy] = useState(false);
@@ -59,7 +54,7 @@ function ProfileContent() {
       <PageLayout title="PROFILE">
         {user ? (
           <>
-            <h2 className="account-name">{user.name}</h2>
+            <h2>Profile Icon</h2>
             <div className={styles.iconPreview}>
               <button
                 type="button"
@@ -117,7 +112,6 @@ function ProfileContent() {
                 </div>
               </div>
             )}
-            <AccountSummary key={user.id} userId={user.id} />
             <section className={styles.emailSection}>
               <h2>Email</h2>
               <form
@@ -145,7 +139,8 @@ function ProfileContent() {
                   className={styles.emailSaveBtn}
                   type="submit"
                   disabled={
-                    busy || loading ||
+                    busy ||
+                    loading ||
                     email.trim().toLowerCase() ===
                       (user.email ?? "").toLowerCase()
                   }
@@ -181,15 +176,9 @@ function ProfileContent() {
           </p>
         )}
         <div className="button-stack">
-          {user && <Button name={loading ? "Signing Out…" : "Sign Out"} disabled={loading || busy} onClick={() => void logout()} />}
+          <MenuLink to="/user" name="Back" />
           <MenuLink to="/" name="Home" />
         </div>
-        {user && <DangerButton name="Delete Account" disabled={loading || busy} onClick={() => setDeleting(true)} />}
-        {user && deleting && <DeleteAccountModal onClose={() => setDeleting(false)} onDelete={async password => {
-          const result = await deleteAccount(password);
-          clearResults(user.id);
-          navigate("/user", { replace: true, state: { notice: result.message || "Account deleted." } });
-        }} />}
       </PageLayout>
     </>
   );

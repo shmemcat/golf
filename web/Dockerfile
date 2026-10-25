@@ -1,8 +1,10 @@
 # syntax=docker/dockerfile:1
-FROM node:22-alpine AS builder
+# Keep dependencies separate so CI can warm this stage for release tags.
+FROM node:22-alpine AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
-RUN --mount=type=secret,id=fontawesome_token,env=FONTAWESOME_PACKAGE_TOKEN,required=true npm ci --no-audit --no-fund
+RUN --mount=type=secret,id=fontawesome_token,env=FONTAWESOME_PACKAGE_TOKEN,required=true npm ci --prefer-offline --no-audit --no-fund
+FROM dependencies AS builder
 COPY . .
 ENV VITE_BASE_PATH=/golf/ VITE_ACCOUNT_API_URL=/api/account VITE_CARDS_HOME_URL=https://cards.shmem.dev/
 RUN npm run build

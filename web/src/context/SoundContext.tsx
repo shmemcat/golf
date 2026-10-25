@@ -10,8 +10,20 @@ import {
 import { Howl } from "howler";
 import { asset } from "@/lib/assets";
 import { readStorage, writeStorage } from "@/lib/storage";
-type Sound = "select" | "deal" | "flip" | "slide" | "start" | "round" | "win" | "pop" | "goingOut" | "notification";
+type Sound =
+  | "turn"
+  | "select"
+  | "deal"
+  | "flip"
+  | "slide"
+  | "start"
+  | "round"
+  | "win"
+  | "pop"
+  | "goingOut"
+  | "notification";
 const FILES: Record<Sound, string[]> = {
+  turn: ["sound-on"],
   select: ["card-place-1", "card-place-2"],
   deal: ["card-fan-1", "card-fan-2"],
   flip: ["card-place-1", "card-place-2"],
@@ -23,6 +35,28 @@ const FILES: Record<Sound, string[]> = {
   goingOut: ["going-out"],
   notification: ["notification"],
 };
+const MUSIC_FILES = [
+  "backgroundmusic.mp3",
+  "alex-morgan-jazz-restaurant-music-556244.mp3",
+  "alex-morgan-jazz-dinner-restaurant-music-556236.mp3",
+  "alex-morgan-jazz-bar-restaurant-music-564253.mp3",
+  "alex-morgan-cocktail-jazz-556233.mp3",
+  "alex-morgan-jazz-cocktail-lounge-music-556246.mp3",
+  "alex-morgan-jazz-rainy-lounge-music-556235.mp3",
+];
+function shuffleMusic(previous?: string): string[] {
+  const files = [...MUSIC_FILES];
+  for (let index = files.length - 1; index > 0; index--) {
+    const other = Math.floor(Math.random() * (index + 1));
+    [files[index], files[other]] = [files[other], files[index]];
+  }
+  // Avoid repeating the last song when a new round begins.
+  if (files[0] === previous) {
+    const other = 1 + Math.floor(Math.random() * (files.length - 1));
+    [files[0], files[other]] = [files[other], files[0]];
+  }
+  return files;
+}
 const MUSIC_VOLUME_KEY = "golf.music-volume.v1";
 const clampVolume = (value: number) =>
   Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0.15;
@@ -64,6 +98,8 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const track = useRef<Howl | null>(null);
   const musicEnabled = useRef(music);
   musicEnabled.current = music;
+  const musicLevel = useRef(musicVolume);
+  musicLevel.current = musicVolume;
   const play = useCallback(
     (sound: Sound) => {
       if (muted) return;
@@ -76,20 +112,39 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     [muted, volume]
   );
   useEffect(() => {
-    // Decode once and loop the audio buffer without a media-element restart.
-    const audio = new Howl({
-      src: [asset("sounds/backgroundmusic.mp3")],
-      loop: true,
-      preload: true,
-      onplayerror: () => {
-        audio.once("unlock", () => {
-          if (musicEnabled.current && !audio.playing()) audio.play();
-        });
-      },
-    });
-    track.current = audio;
+    let remaining: string[] = [];
+    let previous: string | undefined;
+    const loadNextTrack = (): Howl => {
+      if (remaining.length === 0) remaining = shuffleMusic(previous);
+      const file = remaining.shift()!;
+      previous = file;
+      const audio = new Howl({
+        src: [asset(`sounds/${file}`)],
+        loop: false,
+        preload: true,
+        volume: musicLevel.current,
+        onend: () => {
+          if (track.current !== audio) return;
+          audio.unload();
+          const next = loadNextTrack();
+          if (musicEnabled.current) next.play();
+        },
+        onplayerror: () => {
+          audio.once("unlock", () => {
+            if (
+              track.current === audio &&
+              musicEnabled.current &&
+              !audio.playing()
+            ) audio.play();
+          });
+        },
+      });
+      track.current = audio;
+      return audio;
+    };
+    loadNextTrack();
     return () => {
-      audio.unload();
+      track.current?.unload();
       track.current = null;
     };
   }, []);

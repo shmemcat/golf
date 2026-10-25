@@ -18,7 +18,11 @@ based only on exposed cards and public draws. Bots recognize pairs and adjacent
 four-card bonuses, use helpful discards, and discard unwanted deck draws.
 Round summaries carry totals through all nine holes; final scores show the
 winner or shared winners, with Play Again starting a fresh game of the same size.
-Online play uses private room codes, with optional bots in empty seats. Golf has
+Online play uses private room codes, with optional bots in empty seats. After
+the final results, the host can start a new game
+for everyone. Other players see “Waiting for host…” with a tooltip explaining
+that only the host can start a new game. If the host leaves, hosting passes to
+the next remaining player. Golf has
 its own multiplayer service and socket at `/golf/socket.io` (`/golf` namespace).
 Signed-in bot games and multiplayer games save server-verified account results.
 The global leaderboard has Bot and Multiplayer tabs, each with monthly and
@@ -183,8 +187,14 @@ and layout styles are adapted from the user’s Euchre and Hearts projects.
 - Icons: the same licensed Font Awesome Pro packages as the sister sites.
 - Large golf logo: editable SVG in `web/public/icons/golf.svg`. The small
   navigation brand retains the original Font Awesome Regular mark.
-- Background music: “Jazz Cocktail Bar Music” by Alex Morgan; user-supplied
-  MP3 stored as `web/public/sounds/backgroundmusic.mp3`.
+- Background music: seven user-supplied tracks by Alex Morgan, stored in
+  `web/public/sounds/`: “Jazz Cocktail Bar Music” (`backgroundmusic.mp3`),
+  “Jazz Restaurant Music” (556244), “Jazz Dinner Restaurant Music” (556236),
+  “Jazz Bar Restaurant Music” (564253), “Cocktail Jazz” (556233),
+  “Jazz Cocktail Lounge Music” (556246), and “Jazz Rainy Lounge Music” (556235).
+  Each shuffled round plays every track once, then reshuffles without repeating
+  the previous round’s last song first. The music toggle pauses and resumes
+  the current track without resetting the rotation.
 - Argyle card back: native SVG preserving the approved preview’s translucent
   diamonds, stitching, and border. Regenerate the regular and miniature assets
   with `node scripts/generate-card-back.mjs`.

@@ -21,6 +21,7 @@ const Context = createContext<{
   updateProfile: (data: {
     profile_icon?: string;
     email?: string;
+    turn_sound?: { game: "golf" | "euchre" | "hearts"; enabled: boolean };
   }) => Promise<AccountSession>;
   deleteAccount: (password: string) => Promise<AccountSession>;
 } | null>(null);
@@ -94,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (data: {
     profile_icon?: string;
     email?: string;
+    turn_sound?: { game: "golf" | "euchre" | "hearts"; enabled: boolean };
   }) => {
     if (!client) throw new Error("Accounts are not configured.");
     const fresh = await client.session();

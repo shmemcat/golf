@@ -1,8 +1,10 @@
 import { Suspense, lazy, useEffect, type ReactNode } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { MotionConfig } from "framer-motion";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { GearOverlay } from "@/components/SettingsGear";
+import { TurnSoundProvider } from "@/context/TurnSoundContext";
 import { SoundProvider } from "@/context/SoundContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import Home from "@/pages/Home";
@@ -11,6 +13,7 @@ import Rules from "@/pages/Rules";
 import User from "@/pages/User";
 import { About, NotFound } from "@/pages/Info";
 const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
+const Options = lazy(() => import("@/pages/Options"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const GamePage = lazy(() => import("@/pages/GamePage"));
 const OnlineGame = lazy(() => import("@/pages/OnlineGame"));
@@ -26,7 +29,9 @@ export function Providers({ children }: { children: ReactNode }) {
       <MotionConfig reducedMotion="user">
         <ThemeProvider>
           <AuthProvider>
-            <SoundProvider>{children}</SoundProvider>
+            <TurnSoundProvider>
+              <SoundProvider>{children}</SoundProvider>
+            </TurnSoundProvider>
           </AuthProvider>
         </ThemeProvider>
       </MotionConfig>
@@ -39,7 +44,7 @@ export function App() {
     window.scrollTo(0, 0);
   }, [pathname]);
   return (
-    <>
+    <div style={{ position: "relative" }}>
       <a className="skip-link" href="#page-content">
         Skip to content
       </a>
@@ -68,10 +73,11 @@ export function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/user" element={<User />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/options" element={<Navigate to="/profile" replace />} />
+          <Route path="/options" element={<Options />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
-    </>
+      <GearOverlay />
+    </div>
   );
 }

@@ -404,7 +404,7 @@ def test_monthly_rankings_and_deletion_no_resurrection(app, clients):
     assert clients().get('/api/golf/leaderboard').json['all_time'] == []
 
 
-def test_fill_bots_leave_host_transfer_and_readiness(app, clients):
+def test_fill_bots_host_replay_and_host_transfer(app, clients):
     a, b = clients(1), clients(2)
     value = create(a, 4, 'multiplayer'); code = value['code']
     assert action(a, code, 'start', fillBots=True).status_code == 400
@@ -412,17 +412,80 @@ def test_fill_bots_leave_host_transfer_and_readiness(app, clients):
     assert action(a, code, 'start', fillBots=True).status_code == 200
     assert sum(p['isBot'] for p in state(a, code)['seats']) == 2
     complete(app, code)
+    finished = state(a, code)
+    denied = action(b, code, 'restart')
+    assert denied.status_code == 400
+    assert denied.json['error'] == 'Only the host can start a new game.'
+    assert state(a, code) == finished
     assert action(a, code, 'restart').status_code == 200
-    assert state(a, code)['game']['phase'] == 'game-over'
-    assert action(b, code, 'restart').status_code == 200
     assert state(a, code)['game']['phase'] == 'opening'
+    assert state(a, code)['game']['id'] != finished['game']['id']
+    assert state(b, code)['game']['id'] == state(a, code)['game']['id']
     assert action(a, code, 'leave').status_code == 200
     assert a.get('/api/golf/stats').json['statistics']['all_time']['games_abandoned'] == 1
     assert state(b, code)['seats'][0]['isBot']
+    assert state(b, code)['isHost']
     empty = create(a, 2, 'multiplayer')['code']
     assert action(a, empty, 'leave').status_code == 200
     post(b, '/lobbies/join', {'code': empty})
     assert state(b, empty)['isHost']
+
+
+def test_host_replay_notifies_guests_and_retries_do_not_deal_twice(app, clients):
+    host, guest = clients(1), clients(2)
+    code = create(host, 2, 'multiplayer')['code']
+    post(guest, '/lobbies/join', {'code': code})
+    action(host, code, 'start'); complete(app, code)
+    socket = app.extensions['socketio'].test_client(app, namespace='/golf',
+        headers={'Origin': 'http://localhost:3003'}, flask_test_client=guest,
+        auth={'csrf_token': guest.golf_token})
+    try:
+        socket.emit('golf:subscribe', {'code': code}, namespace='/golf', callback=True)
+        socket.get_received('/golf')
+        payload = {'action': 'restart', 'actionId': str(uuid.uuid4()), 'revision': state(host, code)['revision']}
+        replay = post(host, f'/rooms/{code}/actions', payload)
+        assert replay.status_code == 200
+        game_id = replay.json['state']['game']['id']
+        updates = [event['args'][0] for event in socket.get_received('/golf') if event['name'] == 'golf:state']
+        assert updates[-1]['game']['id'] == game_id
+        assert updates[-1]['game']['phase'] == 'opening'
+        assert post(host, f'/rooms/{code}/actions', payload).json['state']['game']['id'] == game_id
+        with app.app_context():
+            assert Result.query.filter_by(user_id=1).count() == 2
+            assert Result.query.filter_by(user_id=2).count() == 2
+    finally:
+        socket.disconnect(namespace='/golf')
+
+
+def test_new_host_can_replay_after_finished_game_host_leaves(app, clients):
+    host, next_host, guest = clients(1), clients(2), clients(3)
+    code = create(host, 3, 'multiplayer')['code']
+    post(next_host, '/lobbies/join', {'code': code}); post(guest, '/lobbies/join', {'code': code})
+    action(host, code, 'start'); complete(app, code)
+    finished_id = state(next_host, code)['game']['id']
+    assert action(host, code, 'leave').status_code == 200
+    assert state(next_host, code)['isHost']
+    assert not state(guest, code)['isHost']
+    assert action(guest, code, 'restart').status_code == 400
+    assert action(next_host, code, 'restart').status_code == 200
+    assert state(next_host, code)['game']['id'] != finished_id
+    assert state(next_host, code)['seats'][0]['isBot']
+
+
+def test_host_replay_still_needs_two_people_but_bot_games_do_not(app, clients):
+    host, guest = clients(1), clients(2)
+    code = create(host, 2, 'multiplayer')['code']
+    post(guest, '/lobbies/join', {'code': code})
+    action(host, code, 'start'); complete(app, code)
+    action(guest, code, 'leave')
+    finished = state(host, code)
+    assert action(host, code, 'restart').status_code == 400
+    assert state(host, code) == finished
+    action(host, code, 'leave')
+    solo = create(host)['code']; complete(app, solo)
+    finished_id = state(host, solo)['game']['id']
+    assert action(host, solo, 'restart').status_code == 200
+    assert state(host, solo)['game']['id'] != finished_id
 
 
 @pytest.mark.parametrize('uid', [None, 1])
@@ -626,19 +689,20 @@ def test_discard_stays_visible_during_placement_but_other_hidden_cards_stay_priv
     assert value['game']['discard'][-1] == old_card
 
 
-@pytest.mark.parametrize('leave_first', [True, False])
-def test_departed_players_do_not_get_new_results_in_other_players_rematches(app, clients, leave_first):
+@pytest.mark.parametrize('legacy_ready', [True, False])
+def test_departed_players_do_not_get_new_results_in_host_rematches(app, clients, legacy_ready):
     a, b, c = clients(1), clients(2), clients(3)
     code = create(a, 3, 'multiplayer')['code']
     post(b, '/lobbies/join', {'code': code}); post(c, '/lobbies/join', {'code': code})
     action(a, code, 'start'); complete(app, code)
-    if leave_first:
-        assert action(c, code, 'leave').status_code == 200
+    if legacy_ready:
+        with app.app_context():
+            row = db.session.get(Room, code); data = copy.deepcopy(row.data)
+            data['rematchReady'] = [0, 1]
+            row.data = data; db.session.commit()
+    assert action(c, code, 'leave').status_code == 200
+    assert state(a, code)['game']['phase'] == 'game-over'
     assert action(a, code, 'restart').status_code == 200
-    assert action(b, code, 'restart').status_code == 200
-    if not leave_first:
-        assert state(a, code)['game']['phase'] == 'game-over'
-        assert action(c, code, 'leave').status_code == 200
     assert state(a, code)['game']['phase'] == 'opening'
     assert state(a, code)['seats'][2]['isBot']
     assert state(a, code)['seats'][2]['name'] == 'Clover'

@@ -45,6 +45,48 @@ it("keeps the local player at seat zero and rotates turns, scores and animation 
   expect(result.game.players[0].cards[0].card.id).toBe(state.game!.players[2].cards[0].card.id);
 });
 
+it.each([false, true])("uses server host status for end-game replays and follows new games (host=%s)", async isHost => {
+  Object.defineProperties(HTMLDialogElement.prototype, {
+    showModal: { configurable: true, value: function (this: HTMLDialogElement) { this.open = true; } },
+    close: { configurable: true, value: function (this: HTMLDialogElement) { this.open = false; } },
+  });
+  const finished = roomFixture(3, isHost ? 0 : 1);
+  finished.game!.phase = "game-over";
+  finished.game!.hole = 9;
+  finished.game!.history = Array.from({ length: 9 }, () => [1, 2, 3]);
+  finished.game!.players.forEach(player => player.cards.forEach(card => { card.faceUp = true; }));
+  transport.reply = finished;
+  const next = roomFixture(3, finished.mySeat);
+  next.revision = finished.revision + 1;
+  const actions: string[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (path: string, init: RequestInit = {}) => {
+    if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
+    if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
+    if (path.endsWith("/actions")) {
+      actions.push(JSON.parse(String(init.body)).action);
+      return response({ state: next });
+    }
+    return response({ state: finished });
+  }));
+  render(<MemoryRouter initialEntries={["/game/multiplayer/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  await screen.findByRole("dialog", {}, { timeout: 6000 });
+  if (isHost) {
+    act(() => { transport.handlers.disconnect(); });
+    expect(screen.getByRole("button", { name: "Starting game…" })).toBeDisabled();
+    act(() => { transport.handlers.connect(); });
+    fireEvent.click(screen.getByRole("button", { name: "Play Again", exact: true }));
+    await waitFor(() => expect(actions).toEqual(["restart"]));
+  } else {
+    const waiting = screen.getByRole("button", { name: "Waiting for host…" });
+    expect(waiting).toBeDisabled();
+    fireEvent.click(waiting);
+    expect(actions).toEqual([]);
+    act(() => { transport.handlers["golf:state"](next); });
+  }
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(screen.getByRole("main", { name: "3-player Golf table" })).toBeVisible();
+}, 10000);
+
 it("shows server account totals under All Time and exactly two separate categories, without importing local scores", async () => {
   const local = createGame(2);
   recordResult({ ...local, phase: "game-over", hole: 9, history: Array.from({ length: 9 }, () => [1, 2]) }, "1");
