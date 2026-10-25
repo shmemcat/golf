@@ -42,6 +42,8 @@ services:
   golf-web:
     image: ${GOLF_WEB_IMAGE:?}
   gateway:
+    volumes:
+      - ${SPLIT_GOLF_PROXY_FILE:?}:/etc/nginx/cards-proxy.conf:ro
     depends_on:
       golf: {condition: service_healthy}
       golf-web: {condition: service_healthy}
