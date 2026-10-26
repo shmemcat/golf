@@ -3,7 +3,7 @@ export const SUITS = ["S", "H", "C", "D"] as const;
 export type Rank = (typeof RANKS)[number];
 export type Suit = (typeof SUITS)[number];
 export interface GolfCard { id: string; rank: Rank; suit: Suit }
-export interface GridCard { card: GolfCard; faceUp: boolean }
+export interface GridCard { card: GolfCard; faceUp: boolean; revealedAtEnd?: boolean }
 export type DrawSource = "deck" | "discard";
 export interface Player { cards: GridCard[]; score: number }
 export interface Game {
@@ -120,7 +120,7 @@ function finishTurn(game: Game): Game {
       phase: game.hole === 9 ? "game-over" : "round-over",
       history: [...game.history, scores],
       players: game.players.map((player, seat) => ({
-        score: player.score + scores[seat], cards: player.cards.map(card => ({ ...card, faceUp: true })),
+        score: player.score + scores[seat], cards: player.cards.map(card => ({ ...card, faceUp: true, revealedAtEnd: !card.faceUp })),
       })),
     };
   }

@@ -140,6 +140,18 @@ describe("Golf rules and table seats", () => {
     expect(next.history).toEqual(game.history);
   });
 
+  it.each([1, 9])("remembers only the hidden cards exposed after the last replacement on hole %i", hole => {
+    const game: Game = { ...ready(2), hole, turn: 1, finalTurns: [1] };
+    game.players[0].cards = game.players[0].cards.map(cell => ({ ...cell, faceUp: true }));
+    game.players[1].cards = game.players[1].cards.map((cell, index) => ({ ...cell, faceUp: [0, 4].includes(index) }));
+    const finished = replaceCard(drawCard(game, "deck"), 2);
+    expect(finished.players[0].cards.some(cell => cell.revealedAtEnd)).toBe(false);
+    expect(finished.players[1].cards.flatMap((cell, index) => cell.revealedAtEnd ? [index] : [])).toEqual([1, 3, 5]);
+    expect(finished.players.every(player => player.cards.every(cell => cell.faceUp))).toBe(true);
+    expect(game.players[1].cards[2].faceUp).toBe(false);
+    if (hole === 1) expect(nextHole(finished).players.every(player => player.cards.every(cell => !cell.revealedAtEnd))).toBe(true);
+  });
+
   it("scores pairs, twos and both adjacent blocks, with one bonus for six matching cards", () => {
     expect(["A", "2", "3", "J", "Q", "K"].map(rank => cardValue(rank as Rank))).toEqual([1, -2, 3, 10, 10, 0]);
     expect(scoreGrid(grid(["2", "A", "K", "2", "3", "Q"]))).toBe(10);

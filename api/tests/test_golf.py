@@ -214,6 +214,24 @@ def test_going_out_penalty_after_last_turn_for_every_seat(count, went_out, hole,
         assert following['finalTurns'] is None
 
 
+@pytest.mark.parametrize('hole', [1, 9])
+def test_end_reveal_marks_only_cards_hidden_after_the_last_replacement(hole):
+    game = engine.deal(2, hole=hole)
+    game.update(phase='draw', turn=1, finalTurns=[1])
+    for cell in game['players'][0]['cards']:
+        cell['faceUp'] = True
+    for index, cell in enumerate(game['players'][1]['cards']):
+        cell['faceUp'] = index in (0, 4)
+    engine.draw(game, 'deck')
+    engine.replace(game, 2)
+    assert not any(cell['revealedAtEnd'] for cell in game['players'][0]['cards'])
+    assert [i for i, cell in enumerate(game['players'][1]['cards']) if cell['revealedAtEnd']] == [1, 3, 5]
+    assert all(cell['faceUp'] for player in game['players'] for cell in player['cards'])
+    if hole == 1:
+        following = engine.next_hole(game)
+        assert not any(cell.get('revealedAtEnd') for player in following['players'] for cell in player['cards'])
+
+
 @pytest.mark.parametrize('out,other,penalty', [
     (['K', 'A', '3', 'K', 'A', '3'], ['K', 'A', '3', 'K', 'A', '4'], 0),
     (['K', 'A', '3', 'K', 'A', '4'], ['K', 'A', '3', 'K', 'A', '4'], 10),

@@ -40,7 +40,7 @@ import "@/styles/mobile-table.css";
 
 const describeCard = (card: GolfCard) => `${card.rank} of ${{ S: "spades", H: "hearts", C: "clubs", D: "diamonds" }[card.suit]}`;
 const location = (index: number) => `${index < 3 ? "top" : "bottom"} row, column ${index % 3 + 1}`;
-const BOARD_REVIEW_MS = 5000;
+const BOARD_REVIEW_MS = 4000;
 const SCORE_POP_BEAT_MS = 250;
 export type DrawLayout = "beside" | "below" | "piles";
 export const drawLayoutFrom = (value: string | null): DrawLayout => value === "below" || value === "piles" ? value : "beside";
@@ -159,7 +159,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   if (stage === "announcing") hint = game.starter === 0 ? "You go first!" : `${name(game.starter)} goes first!`;
   if (stage === "playing") {
     if (motion) hint = `${motion.seat ? `${name(motion.seat)} is` : "You are"} ${motion.kind === "draw" ? "drawing a card" : motion.kind === "toss" ? "discarding the draw" : "swapping cards"}…`;
-    else if (complete) hint = "All cards revealed. Let’s count them up.";
+    else if (complete) hint = "All cards revealed. Pink outlines mark the last hidden cards.";
     else if (game.turn !== 0) hint = `${name(game.turn)} is ${game.phase === "draw" ? "drawing" : "choosing a card"}…`;
     else hint = game.phase === "draw" ? mobile ? "Your turn. Draw from either pile." : "Your turn. Draw from the deck or discard pile."
       : game.drawn?.source === "deck" ? "Replace a card, or tap the draw to discard." : "Choose a card on your board to replace.";
@@ -295,9 +295,10 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
                     const valid = seat === 0 && ((stage === "opening" && canOpen(game, index)) || table.canReplace);
                     const enabled = seat === 0 && (table.canReveal(index) || table.canReplace);
                     const hidden = motion?.seat === seat && motion.index === index && ["discard", "place"].includes(motion.kind);
-                    const description = cell.faceUp ? describeCard(cell.card) : "face down";
+                    const revealedAtEnd = complete && cell.revealedAtEnd === true;
+                    const description = `${cell.faceUp ? describeCard(cell.card) : "face down"}${revealedAtEnd ? ", revealed at end of hole" : ""}`;
                     return (
-                      <div className="golf-card-slot" data-anchor={`card-${seat}-${index}`} key={index}
+                      <div className="golf-card-slot" data-anchor={`card-${seat}-${index}`} data-revealed-at-end={revealedAtEnd} key={index}
                         style={{ "--deal-delay": `${index * 45 + seat * 20}ms` } as React.CSSProperties}>
                         {seat === 0 ? (
                           <button type="button" className="golf-grid-card golf-selection" data-valid={valid} data-hidden={hidden}

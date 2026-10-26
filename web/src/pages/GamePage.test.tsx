@@ -82,7 +82,7 @@ it("restores a final-turn flag without replaying the going-out announcement or s
     audio instanceof HTMLMediaElement && audio.src.endsWith("/sounds/going-out.mp3"))).toBe(false);
 });
 
-it.each([1, 9])("reveals all remaining cards on hole %i and holds the board for five seconds after the flip before showing results", async hole => {
+it.each([1, 9])("reveals all remaining cards on hole %i and holds the board for four seconds after the flip before showing results", async hole => {
   vi.useFakeTimers();
   Object.defineProperties(HTMLDialogElement.prototype, {
     showModal: { configurable: true, value: function (this: HTMLDialogElement) { this.open = true; } },
@@ -99,8 +99,15 @@ it.each([1, 9])("reveals all remaining cards on hole %i and holds the board for 
     audio instanceof HTMLMediaElement && audio.src.endsWith("/sounds/pop.mp3"));
   try {
     expect(view.container.querySelectorAll('.golf-card-slot [data-face-up="false"]')).toHaveLength(16);
+    expect(view.container.querySelectorAll('[data-revealed-at-end="true"]')).toHaveLength(0);
     view.rerender(tableView(finished));
     expect(view.container.querySelectorAll('.golf-card-slot [data-face-up="true"]')).toHaveLength(24);
+    expect(view.container.querySelectorAll('[data-revealed-at-end="true"]')).toHaveLength(16);
+    lastTurn.players.forEach((player, seat) => player.cards.forEach((cell, index) => {
+      const slot = view.container.querySelector(`[data-anchor="card-${seat}-${index}"]`)!;
+      expect(slot).toHaveAttribute("data-revealed-at-end", String(!cell.faceUp));
+      if (!cell.faceUp) expect(slot.firstElementChild).toHaveAccessibleName(/revealed at end of hole/);
+    }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Draw from deck/ })).toBeDisabled();
     expect(screen.queryByRole("button", { name: /face down/ })).not.toBeInTheDocument();
@@ -123,7 +130,8 @@ it.each([1, 9])("reveals all remaining cards on hole %i and holds the board for 
     tick(750);
     // A fresh server snapshot of the same hole must not restart the review.
     view.rerender(tableView({ ...finished }));
-    tick(3999);
+    expect(view.container.querySelectorAll('[data-revealed-at-end="true"]')).toHaveLength(16);
+    tick(2999);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(pops()).toHaveLength(1);
     tick(1);
@@ -146,11 +154,11 @@ it("cancels a pending results popup when the hole changes or the table is left",
   try {
     act(() => { vi.advanceTimersByTime(FLIP_MS + 1000); });
     view.rerender(tableView(nextHole(first)));
-    act(() => { vi.advanceTimersByTime(4000); });
+    act(() => { vi.advanceTimersByTime(3000); });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(view.container.querySelector(".golf-hole-score")).not.toBeInTheDocument();
     view.rerender(tableView(first));
-    act(() => { vi.advanceTimersByTime(FLIP_MS + 4999); });
+    act(() => { vi.advanceTimersByTime(FLIP_MS + 3999); });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     view.unmount();
     expect(vi.getTimerCount()).toBe(0);
@@ -174,7 +182,7 @@ it("toggles the hole results to inspect the board and opens the next hole’s re
   await act(async () => {});
   try {
     expect(screen.queryByRole("button", { name: "Hide hole results" })).not.toBeInTheDocument();
-    act(() => { vi.advanceTimersByTime(FLIP_MS + 5000); });
+    act(() => { vi.advanceTimersByTime(FLIP_MS + 4000); });
     const hide = screen.getByRole("button", { name: "Hide hole results" });
     expect(hide).toHaveAttribute("aria-expanded", "true");
     expect(hide.querySelector("svg")).toHaveAttribute("data-icon", "eye-slash");
@@ -206,7 +214,7 @@ it("toggles the hole results to inspect the board and opens the next hole’s re
     view.rerender(tableView(next));
     expect(screen.queryByRole("button", { name: /hole results/ })).not.toBeInTheDocument();
     view.rerender(tableView(discardDraw(drawCard({ ...next, phase: "draw", turn: 0, finalTurns: [0] }, "deck"))));
-    act(() => { vi.advanceTimersByTime(FLIP_MS + 5000); });
+    act(() => { vi.advanceTimersByTime(FLIP_MS + 4000); });
     expect(screen.getByRole("dialog", { name: "Hole 2 complete" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Next Hole", exact: true })).toHaveFocus();
   } finally {
@@ -228,7 +236,7 @@ it("toggles the final results without restarting the game or losing rematch upda
   const view = render(tableView(finished));
   await act(async () => {});
   try {
-    act(() => { vi.advanceTimersByTime(FLIP_MS + 5000); });
+    act(() => { vi.advanceTimersByTime(FLIP_MS + 4000); });
     const scores = screen.getByRole("table", { name: "Final scores" }).textContent;
     const hide = screen.getByRole("button", { name: "Hide game results" });
     expect(hide.querySelector("svg")).toHaveAttribute("data-icon", "eye-slash");

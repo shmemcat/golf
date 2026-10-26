@@ -121,6 +121,7 @@ def finish_hole(game, went_out):
     for player, score in zip(game["players"], scores):
         player["score"] += score
         for cell in player["cards"]:
+            cell["revealedAtEnd"] = not cell["faceUp"]
             cell["faceUp"] = True
     game["phase"] = "game-over" if game["hole"] == 9 else "round-over"
 
