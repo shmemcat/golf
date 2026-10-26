@@ -4,9 +4,11 @@ import { MotionConfig } from "framer-motion";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { GearOverlay } from "@/components/SettingsGear";
+import { AchievementNotifications } from "@/components/AchievementNotifications";
 import { TurnSoundProvider } from "@/context/TurnSoundContext";
 import { SoundProvider } from "@/context/SoundContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { CardBackProvider } from "@/context/CardBackContext";
 import Home from "@/pages/Home";
 import { Play, CreateGame, JoinGame } from "@/pages/Play";
 import Rules from "@/pages/Rules";
@@ -14,6 +16,8 @@ import User from "@/pages/User";
 import { About, NotFound } from "@/pages/Info";
 const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
 const Options = lazy(() => import("@/pages/Options"));
+const CardBacks = lazy(() => import("@/pages/CardBacks"));
+const CardBackPickerPreview = lazy(() => import("@/pages/CardBackPickerPreview"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const GamePage = lazy(() => import("@/pages/GamePage"));
 const OnlineGame = lazy(() => import("@/pages/OnlineGame"));
@@ -29,9 +33,11 @@ export function Providers({ children }: { children: ReactNode }) {
       <MotionConfig reducedMotion="user">
         <ThemeProvider>
           <AuthProvider>
-            <TurnSoundProvider>
-              <SoundProvider>{children}</SoundProvider>
-            </TurnSoundProvider>
+            <CardBackProvider>
+              <TurnSoundProvider>
+                <SoundProvider>{children}</SoundProvider>
+              </TurnSoundProvider>
+            </CardBackProvider>
           </AuthProvider>
         </ThemeProvider>
       </MotionConfig>
@@ -64,6 +70,8 @@ export function App() {
           <Route path="/game/multiplayer/:code" element={<OnlineGame />} />
           <Route path="/game/lobby/:code" element={<OnlineGame />} />
           <Route path="/game/card-styles" element={<CardStyles />} />
+          <Route path="/game/card-backs" element={<CardBacks />} />
+          <Route path="/game/card-back-picker" element={<CardBackPickerPreview />} />
           <Route path="/game/table-layouts" element={<TableLayouts />} />
           <Route path="/game/mobile-layouts" element={<MobileLayouts />} />
           <Route path="/game/mobile-preview" element={<MobileTablePreview />} />
@@ -78,6 +86,7 @@ export function App() {
         </Routes>
       </Suspense>
       <GearOverlay />
+      <AchievementNotifications />
     </div>
   );
 }

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Celestial seal — dark mode</title>
+  <defs><clipPath id="edge"><rect x="20" y="20" width="200" height="296" rx="4"/></clipPath></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><circle cx="120" cy="168" r="77" fill="none" stroke="#7c9885" stroke-width="4" opacity="0.85"/><path d="M120 103Q130.4 157.6 185 168Q130.4 178.4 120 233Q109.6 178.4 55 168Q109.6 157.6 120 103Z" fill="#cf9f9c" opacity="0.9"/><circle cx="120" cy="66" r="5" fill="#cf9f9c" opacity="0.9"/><circle cx="120" cy="270" r="5" fill="#cf9f9c" opacity="0.9"/></g>
+  <rect x="15" y="15" width="210" height="306" rx="6" fill="none" stroke="#cf9f9c" stroke-width="2.5"/>
+</svg>

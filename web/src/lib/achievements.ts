@@ -4,7 +4,7 @@ import {
   faGolfBallTee, faDove, faFeatherPointed, faGolfFlagHole, faArrowsUpDown, faTree,
   faFlagCheckered, faSunBright, faChampagneGlasses, faCalendarHeart, faClover,
   faEgg, faSparkles, faGhost, faTurkey, faGift, faOwl, faVolumeXmark, faUserGroup,
-  faFire, faCalendarDays,
+  faFire, faCalendarDays, faDiceSix,
 } from "@fortawesome/pro-solid-svg-icons";
 import { golfPost, type Statistics } from "./golfApi";
 
@@ -45,6 +45,7 @@ const BADGES = [
   { id: "birdie", name: "Birdie", desc: "Score exactly −1 on a hole.", icon: faDove },
   { id: "eagle", name: "Eagle", desc: "Score exactly −2 on a hole.", icon: faFeatherPointed },
   { id: "hole_in_one", name: "Hole in One", desc: "Finish a hole with all three columns matched.", icon: faGolfFlagHole },
+  { id: "six_of_a_kind", name: "Six of a Kind", desc: "Finish a hole with all six board cards the same rank.", icon: faDiceSix },
   { id: "up_and_down", name: "Up and Down", desc: "Follow a positive hole with a negative one in the same game.", icon: faArrowsUpDown },
   { id: "out_of_the_rough", name: "Out of the Rough", desc: "Win after starting the final hole in last place.", icon: faTree },
   { id: "photo_finish", name: "Photo Finish", desc: "Win outright by exactly one point.", icon: faFlagCheckered },

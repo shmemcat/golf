@@ -2,14 +2,10 @@
 import copy
 import random
 import uuid
+from .bots import BotPolicy
+from .cards import RANKS, SUITS, card_value
 
-RANKS = ("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
-SUITS = ("S", "H", "C", "D")
 RNG = random.SystemRandom()
-
-
-def card_value(rank):
-    return {"A": 1, "2": -2, "J": 10, "Q": 10, "K": 0}.get(rank, int(rank) if rank.isdigit() else 0)
 
 
 def deal(count, hole=1, starter=None, scores=None, history=None, game_id=None):
@@ -69,20 +65,12 @@ def score_grid(cards):
     return grid_value([{**c, "faceUp": True} for c in cards])
 
 
-def replacement_index(game, card, must_use=False):
-    cards = game["players"][game["turn"]]["cards"]
-    average = sum(map(card_value, RANKS)) / len(RANKS)
-    before = grid_value(cards, average)
-    choices = []
-    for index, cell in enumerate(cards):
-        after = [({"card": card, "faceUp": True} if i == index else current) for i, current in enumerate(cards)]
-        choices.append((before - grid_value(after, average), not cell["faceUp"], -index))
-    gain, _, negative_index = max(choices)
-    return -negative_index if gain > 1e-9 or must_use else -1
+def replacement_index(game, card, must_use=False, bot_name=None):
+    return BotPolicy(game, bot_name).choose(RANKS.index(card["rank"]), must_use=must_use)[0]
 
 
-def bot_source(game):
-    return "discard" if game["discard"] and (not game["deck"] or replacement_index(game, game["discard"][-1]) >= 0) else "deck"
+def bot_source(game, bot_name=None):
+    return BotPolicy(game, bot_name).source(game)
 
 
 def draw(game, source):

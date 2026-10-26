@@ -1,6 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { BOT_DRAW_MS, DEAL_MS, FLIGHT_MS, FLIP_MS, OPPONENTS_MS, useGolfTable } from "./useGolfTable";
+import { createGame, type Rank } from "@/game/engine";
+import * as localGame from "@/lib/localGame";
 
 const sound = vi.hoisted(() => ({ play: vi.fn() }));
 vi.mock("@/context/SoundContext", () => ({ useSound: () => sound }));
@@ -94,6 +96,29 @@ it("discards an unwanted deck draw without exposing a tableau card and cleans up
   tick(FLIGHT_MS);
   expect(view.result.current.game.players[0].cards).toBe(cards);
   expect(view.result.current.game.discard.at(-1)).toBe(drawn);
+  view.unmount();
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it.each([1, 2, 3, 4, 5])("uses the named bot's strategy when resuming guest seat %i", seat => {
+  const game = createGame(6);
+  game.turn = seat;
+  game.phase = "draw";
+  game.players.forEach((player, index) => {
+    const ranks: (Rank | null)[] = index === seat ? ["9", "2", "K", "9", "2", null] : ["Q", "J", null, null, "K", null];
+    player.cards = ranks.map((rank, i) => ({ faceUp: rank !== null, card: { id: `${index}-${i}`, rank: rank ?? "Q", suit: "S" } }));
+  });
+  game.deck = [{ id: "deck-nine", rank: "9", suit: "H" }];
+  game.discard = [{ id: "discard-nine", rank: "9", suit: "C" }];
+  vi.spyOn(localGame, "readLocalGame").mockReturnValue({ game, stage: "playing", motion: null, pickerTick: 0, openingBusy: false });
+  vi.spyOn(localGame, "saveLocalGame").mockImplementation(() => {});
+  const view = renderHook(() => useGolfTable(6, true));
+  tick(BOT_DRAW_MS);
+  expect(view.result.current.motion?.source).toBe(seat === 3 ? "discard" : "deck");
+  tick(FLIGHT_MS);
+  tick(800);
+  expect(view.result.current.motion?.kind).toBe(seat === 3 ? "discard" : "toss");
+  expect(view.result.current.motion?.index).toBe(seat === 3 ? 1 : -1);
   view.unmount();
   expect(vi.getTimerCount()).toBe(0);
 });

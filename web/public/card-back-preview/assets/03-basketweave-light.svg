@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Basketweave — light mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><clipPath id="half"><rect width="240" height="168"/></clipPath><pattern id="pattern" x="120" y="168" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M0 0H24V24H48V48H24V24H0Z" fill="#7c9885" opacity="0.55"/><path d="M4 0V24M10 0V24M16 0V24M0 28H24M0 34H24M0 40H24M28 24V48M34 24V48M40 24V48M24 4H48M24 10H48M24 16H48" fill="none" stroke="#849d87" stroke-width="1.4" opacity="0.75" stroke-linecap="round" stroke-linejoin="round"/></pattern><g id="art"><rect width="240" height="336" fill="url(#pattern)"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#c6d5be"/>
+  <g clip-path="url(#edge)"><g clip-path="url(#half)"><use href="#art"/></g><g transform="rotate(180 120 168)"><g clip-path="url(#half)"><use href="#art"/></g></g></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#849d87" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

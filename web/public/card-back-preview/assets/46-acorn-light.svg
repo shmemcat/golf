@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Acorn — light mode</title>
+  <defs><clipPath id="edge"><rect x="20" y="20" width="200" height="296" rx="4"/></clipPath></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#c6d5be"/>
+  <g clip-path="url(#edge)"><path d="M93 92H147V114Q147 145 120 151Q93 145 93 114Z" fill="#7c9885" opacity="0.72"/><path d="M87 97Q87 66 120 66Q153 66 153 97Z" fill="#849d87" opacity="0.9"/><path d="M120 66V55" fill="none" stroke="#849d87" stroke-width="5" opacity="0.9" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(145 73) rotate(44) scale(0.5)"><path d="M0 0C-32-17-35-51 0-80C35-51 32-17 0 0Z" fill="#7c9885" opacity="0.72"/></g><g transform="rotate(180 120 168)"><path d="M93 92H147V114Q147 145 120 151Q93 145 93 114Z" fill="#7c9885" opacity="0.72"/><path d="M87 97Q87 66 120 66Q153 66 153 97Z" fill="#849d87" opacity="0.9"/><path d="M120 66V55" fill="none" stroke="#849d87" stroke-width="5" opacity="0.9" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(145 73) rotate(44) scale(0.5)"><path d="M0 0C-32-17-35-51 0-80C35-51 32-17 0 0Z" fill="#7c9885" opacity="0.72"/></g></g></g>
+  <rect x="15" y="15" width="210" height="306" rx="6" fill="none" stroke="#849d87" stroke-width="2.5"/>
+</svg>

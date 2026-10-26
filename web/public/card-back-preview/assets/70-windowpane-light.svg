@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Windowpane, larger repeat — light mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><pattern id="pattern" x="120" y="168" width="48" height="48" patternUnits="userSpaceOnUse" patternTransform="translate(120 168) scale(1.55) translate(-120 -168)"><rect x="4" y="4" width="40" height="40" fill="#a8bea4" opacity="0.6"/><path d="M0 0H48V48H0ZM5 0V48M0 5H48" fill="none" stroke="#849d87" stroke-width="1.2" opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 18 30 24 24 30 18 24Z" fill="#7c9885" opacity="0.55"/></pattern><g id="art"><rect width="240" height="336" fill="url(#pattern)"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#c6d5be"/>
+  <g clip-path="url(#edge)"><use href="#art"/></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#849d87" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

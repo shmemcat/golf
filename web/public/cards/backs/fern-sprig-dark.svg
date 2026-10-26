@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Fern sprig — dark mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><clipPath id="half"><rect width="240" height="168"/></clipPath><g id="art"><path d="M120 168V71" fill="none" stroke="#cf9f9c" stroke-width="5" opacity="0.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M120 89Q94 70 120 44Q146 70 120 89Z" fill="#7c9885" opacity="0.55"/><path d="M120 119Q67 114 68 78Q111 78 120 119ZM120 119Q173 114 172 78Q129 78 120 119Z" fill="#7c9885" opacity="0.55"/><path d="M120 155Q67 150 68 114Q111 114 120 155ZM120 155Q173 150 172 114Q129 114 120 155Z" fill="#7c9885" opacity="0.55"/><g transform="rotate(180 120 168)"><path d="M120 168V71" fill="none" stroke="#cf9f9c" stroke-width="5" opacity="0.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M120 89Q94 70 120 44Q146 70 120 89Z" fill="#7c9885" opacity="0.55"/><path d="M120 119Q67 114 68 78Q111 78 120 119ZM120 119Q173 114 172 78Q129 78 120 119Z" fill="#7c9885" opacity="0.55"/><path d="M120 155Q67 150 68 114Q111 114 120 155ZM120 155Q173 150 172 114Q129 114 120 155Z" fill="#7c9885" opacity="0.55"/></g></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><g clip-path="url(#half)"><use href="#art"/></g><g transform="rotate(180 120 168)"><g clip-path="url(#half)"><use href="#art"/></g></g></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#cf9f9c" stroke-width="2.5"/>
+</svg>

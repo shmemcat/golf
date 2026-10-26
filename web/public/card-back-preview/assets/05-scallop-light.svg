@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Scallop — light mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><clipPath id="half"><rect width="240" height="168"/></clipPath><pattern id="pattern" x="120" y="168" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M-24 24A24 24 0 0 1 24 24A24 24 0 0 1 72 24M0 0A24 24 0 0 1 48 0M0 48A24 24 0 0 1 48 48" fill="none" stroke="#849d87" stroke-width="2" opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/><path d="M-18 24A18 18 0 0 1 18 24M30 24A18 18 0 0 1 66 24M6 0A18 18 0 0 1 42 0M6 48A18 18 0 0 1 42 48" fill="none" stroke="#7c9885" stroke-width="1.5" opacity="0.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="24" r="2" fill="#faf6ee" opacity="0.7"/></pattern><g id="art"><rect width="240" height="336" fill="url(#pattern)"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#c6d5be"/>
+  <g clip-path="url(#edge)"><g clip-path="url(#half)"><use href="#art"/></g><g transform="rotate(180 120 168)"><g clip-path="url(#half)"><use href="#art"/></g></g></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#849d87" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

@@ -1,8 +1,8 @@
-import type { TurnSoundUpdate } from "@/lib/turnSound";
 import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -10,6 +10,7 @@ import {
   accountApiBase,
   createAccountClient,
   type AccountSession,
+  type ProfileUpdate,
 } from "@/lib/account";
 const base = accountApiBase();
 const Context = createContext<{
@@ -19,11 +20,7 @@ const Context = createContext<{
   error: string;
   login: (name: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (data: {
-    profile_icon?: string;
-    email?: string;
-    turn_sound?: TurnSoundUpdate & { game: "golf" | "euchre" | "hearts" };
-  }) => Promise<AccountSession>;
+  updateProfile: (data: ProfileUpdate) => Promise<AccountSession>;
   deleteAccount: (password: string) => Promise<AccountSession>;
 } | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -34,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const [loading, setLoading] = useState(!!client);
   const [error, setError] = useState("");
+  const activeAccount = useRef(session.user?.id);
+  activeAccount.current = session.user?.id;
   useEffect(() => {
     if (!client) return;
     const controller = new AbortController();
@@ -93,18 +92,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   };
-  const updateProfile = async (data: {
-    profile_icon?: string;
-    email?: string;
-    turn_sound?: TurnSoundUpdate & { game: "golf" | "euchre" | "hearts" };
-  }) => {
+  const updateProfile = async (data: ProfileUpdate) => {
     if (!client) throw new Error("Accounts are not configured.");
+    const owner = session.user?.id;
     const fresh = await client.session();
+    if (activeAccount.current !== owner)
+      throw new Error("Your account changed. Please refresh and try again.");
     if (!session.user || fresh.user?.id !== session.user.id) {
       setSession(fresh);
       throw new Error("Your account changed. Please refresh and try again.");
     }
     const next = await client.profile(data, fresh.csrf_token);
+    if (activeAccount.current !== owner)
+      throw new Error("Your account changed. Please refresh and try again.");
     setSession(next);
     return next;
   };

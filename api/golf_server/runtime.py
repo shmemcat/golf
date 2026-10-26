@@ -484,10 +484,12 @@ class GolfRuntime:
             self.next_turn(data)
         elif kind == "bot":
             seat = game["turn"]
+            person = data["seats"][seat]
+            bot_name = person["name"] if person["isBot"] else None
             if game["phase"] == "draw":
-                self.begin_motion(data, "draw", seat, source=engine.bot_source(game))
+                self.begin_motion(data, "draw", seat, source=engine.bot_source(game, bot_name))
             elif game["phase"] == "replace":
-                index = engine.replacement_index(game, game["drawn"]["card"], game["drawn"]["source"] == "discard")
+                index = engine.replacement_index(game, game["drawn"]["card"], game["drawn"]["source"] == "discard", bot_name)
                 self.begin_motion(data, "toss" if index < 0 else "discard", seat, index)
         elif kind == "arrival":
             motion = data["motion"]

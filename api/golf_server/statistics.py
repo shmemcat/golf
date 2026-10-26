@@ -38,6 +38,7 @@ def save_results(data, terminal=False, abandoned=False, cancelled=False):
             "shared_win": result.won and scores.count(min(scores)) > 1,
             "utc_offset_minutes": person.get("utcOffsetMinutes", 0),
             "hole_in_one": bool(data["metrics"][seat].get("hole_in_one")),
+            "six_of_a_kind": bool(data["metrics"][seat].get("six_of_a_kind")),
             "out_of_the_rough": bool(result.won and before_final
                                      and before_final[seat] == max(before_final)
                                      and before_final[seat] > min(before_final)),
@@ -55,6 +56,8 @@ def count_hole(data):
         data["metrics"][seat]["pairs"] = data["metrics"][seat].get("pairs", 0) + pairs
         if pairs == 3:
             data["metrics"][seat]["hole_in_one"] = True
+            if len({cell["card"]["rank"] for cell in cards}) == 1:
+                data["metrics"][seat]["six_of_a_kind"] = True
         data["metrics"][seat]["bonus_blocks"] = data["metrics"][seat].get("bonus_blocks", 0) + int(visible_bonus(cards))
 
 
@@ -92,6 +95,7 @@ def summarize(rows, unlocks=()):
             "full_house": any(row.won and row.detail.get("player_count") == 6 for row in completed),
             "birdie": -1 in holes, "eagle": -2 in holes,
             "hole_in_one": any(row.detail.get("hole_in_one", False) for row in finished),
+            "six_of_a_kind": "six_of_a_kind" in unlocks or any(row.detail.get("six_of_a_kind", False) for row in finished),
             "up_and_down": any(any(a > 0 and b < 0 for a, b in zip(row.detail.get("holes", []), row.detail.get("holes", [])[1:]))
                                for row in finished),
             "out_of_the_rough": any(row.won and row.detail.get("out_of_the_rough", False) for row in completed),

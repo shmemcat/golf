@@ -252,6 +252,7 @@ describe("Golf rules and table seats", () => {
 
   it("protects a completed four-card block of twos rather than breaking it for a king", () => {
     const game = ready(2);
+    game.players[(game.turn + 1) % 2].cards.forEach(cell => { cell.faceUp = false; });
     game.players[game.turn].cards = grid(["2", "2", "K", "2", "2", "K"]);
     const king = { id: "test-king", rank: "K" as const, suit: "H" as const };
     game.discard = [king];
@@ -262,6 +263,7 @@ describe("Golf rules and table seats", () => {
 
   it("completes and preserves paired twos for their −4 score", () => {
     const game = ready(2);
+    game.players[(game.turn + 1) % 2].cards.forEach(cell => { cell.faceUp = false; });
     game.players[game.turn].cards = grid(["2", "A", "3", "K", "A", "3"]);
     const two = { id: "test-two", rank: "2" as const, suit: "H" as const };
     game.discard = [two];

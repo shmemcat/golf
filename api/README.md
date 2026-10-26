@@ -2,7 +2,10 @@
 
 Golf owns its rules, random deck, persistent rooms, action receipts, move clock,
 results, achievements and global rankings. It has no dependency on the Hearts
-or Euchre game servers. All bot opponents use one policy based on visible cards.
+or Euchre game servers. Bot opponents use a policy based on visible cards;
+Sunny alone prioritizes chasing matching 2×2 blocks until the final turns.
+All bots weigh obvious pairs and blocks their discards could give the next
+player, using only visible ranks and public probabilities for face-down cards.
 
 The public API is `/api/golf/*`. Socket.IO uses **`/golf/socket.io`** with
 namespace **`/golf`**, and only Golf event names (`golf:subscribe`, `golf:action`,
@@ -123,13 +126,15 @@ minimal tombstone to prevent in-flight games restoring deleted statistics.
 
 ## Achievements
 
-The account page shows 30 achievement badges. The original eight retain their
+The account page shows 31 achievement badges. The original eight retain their
 names and unlock rules, including Below Zero and Under Par. A single games-finished
 badge advances through bronze Tee Time (10 completed games), silver Green Jacket
 (50), and gold Tour Pro (100); abandoned games do not advance it.
 
 Birdie and Eagle require exactly -1 and -2 on a hole. Hole in One requires all
-three columns matched on the same completed hole. Up and Down requires consecutive
+three columns matched on the same completed hole. Six of a Kind requires all six
+board cards to share one rank at the end of a hole; suits do not matter, and it
+does not change scoring or add a block bonus. Up and Down requires consecutive
 positive then negative holes in one game. Out of the Rough requires a win after
 being last (including tied last, but not an all-player tie) after eight holes.
 Photo Finish requires an outright win by one point, and Sunday Best a completed
@@ -142,7 +147,8 @@ the holiday in that player's local time. The browser sends its JavaScript UTC
 offset in `X-Golf-UTC-Offset`; Golf validates and stores it per seat, then in the
 result. Older results without an offset use their recorded UTC start. Existing
 scores and dates automatically qualify for the new retrospective awards; the
-three-column and final-hole comeback facts are recorded for new holes/results.
+three-column, six-matching-card, and final-hole comeback facts are recorded for
+new holes/results. Old hole scores alone cannot establish Six of a Kind.
 
 Night Owl requires completing a game started between midnight and 5 a.m.; Early
 Bird uses 5 a.m. through just before 8 a.m. Both use the player's recorded local
@@ -159,6 +165,12 @@ per account. The badge refreshes after saving, survives browser/device changes,
 and is removed on account deletion. Before running this version, apply the
 schema upgrade and updated `deploy/grants.sql` as the database owner.
 All achievements belong to Golf results and do not copy a Hearts player's unlocks.
+
+Six of a Kind also recognizes an operator-granted `six_of_a_kind` row in the
+existing `golf_achievement_unlocks` table. A grant belongs to the account, appears
+in all statistics views, and is removed on account deletion. This uses `golf_002`
+without another migration. The public achievements endpoint still accepts only
+`geezer`; players cannot grant themselves gameplay achievements.
 # Achievement schema rollout
 
 This release adopts `golf_002` and adds `golf_achievement_unlocks`. Deploy the

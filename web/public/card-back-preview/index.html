@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>20 new card backs · Golf</title>
+    <link rel="stylesheet" href="preview.css" />
+    <script type="module" src="preview.js"></script>
+  </head>
+  <body>
+    <main>
+      <header class="heading">
+        <div>
+          <p class="eyebrow">GOLF / DESIGN COLLECTION</p>
+          <h1 id="collection-title">More patterns. A little larger.</h1>
+          <p class="intro" id="collection-intro">The first collection’s style, with more generous repeats.<br />20 flat SVG patterns in the same palette.</p>
+        </div>
+        <aside class="original" aria-label="Current Argyle design for reference">
+          <div class="original-pair"><img src="../cards/back-light.svg" width="50" height="70" alt="Current Argyle in light mode" /><img src="../cards/back.svg" width="50" height="70" alt="Current Argyle in dark mode" /></div>
+          <p>Current Argyle <span>for reference</span></p>
+        </aside>
+      </header>
+
+      <nav class="collection-links" aria-label="Card-back collection">
+        <a href="?collection=patterns" id="collection-patterns" aria-current="page">81–100 · Larger patterns</a>
+        <a href="?collection=textiles" id="collection-textiles">61–80 · Textiles</a>
+        <a href="?collection=refined" id="collection-refined">41–60 · Botanical & classic</a>
+        <a href="?collection=large" id="collection-large">21–40 · Larger motifs</a>
+        <a href="?collection=original" id="collection-original">01–20 · First collection</a>
+      </nav>
+      <div class="approved-note"><p>Your shortlisted designs are available in the card-back picker.</p><a href="../game/card-back-picker">Preview the Options picker</a><a href="../game/card-backs">Choose a card back</a></div>
+
+      <div class="toolbar">
+        <fieldset class="mode-control">
+          <legend>Preview</legend>
+          <div class="segments">
+            <label><input type="radio" name="mode" value="both" checked /><span>Both</span></label>
+            <label><input type="radio" name="mode" value="light" /><span>Light</span></label>
+            <label><input type="radio" name="mode" value="dark" /><span>Dark</span></label>
+          </div>
+        </fieldset>
+        <div class="size-control"><label for="preview-size">Card size</label>
+          <select id="preview-size">
+            <option value="40">Compact · 40 px</option>
+            <option value="56" selected>Opponents · 56 px</option>
+            <option value="76">Your hand · 76 px</option>
+            <option value="112">Enlarged · 112 px</option>
+          </select>
+        </div>
+        <div class="shortlist-controls">
+          <button type="button" id="shortlist-filter" aria-pressed="false">Shortlist <span id="pick-count">0</span></button>
+          <button type="button" id="copy-picks" disabled>Copy picks</button>
+        </div>
+      </div>
+      <p class="gallery-note"><span id="size-caption">Shown at opponent size: 56 px wide.</span> The current Argyle above uses the same size. Click any pair to enlarge; shortlist favorites and tell me their numbers.</p>
+      <p id="announcement" class="sr-only" aria-live="polite"></p>
+      <section id="gallery" class="gallery" aria-label="20 card-back concepts" data-mode="both" data-size="56"></section>
+      <p id="empty" hidden>Your shortlist is empty. Switch back to all designs to add a favorite.</p>
+      <p class="reference-note" id="research-references">Composition references: <a href="https://blackroses.cards/pages/thevault" target="_blank" rel="noopener noreferrer">Black Roses’ deck archive</a> and <a href="https://de.bicyclecards.com/produkt/bicycle-botanica/" target="_blank" rel="noopener noreferrer">Bicycle Botanica</a>. Original artwork in the Golf palette.</p>
+      <footer><p id="picks-summary">No favorites yet.</p><p>Design preview · Shortlisting saves your picks in this browser.</p></footer>
+    </main>
+
+    <dialog id="detail" aria-labelledby="detail-title" aria-describedby="detail-description">
+      <div class="detail-header"><div><p class="eyebrow" id="detail-family"></p><h2 id="detail-title"></h2></div><button type="button" id="close-detail" aria-label="Close preview">Close</button></div>
+      <p id="detail-description"></p>
+      <div id="detail-pair" class="detail-pair"></div>
+      <div class="detail-footer"><button type="button" id="detail-pick" aria-pressed="false">Shortlist</button><div class="detail-navigation"><button type="button" id="previous">Previous</button><button type="button" id="next">Next</button></div></div>
+    </dialog>
+  </body>
+</html>

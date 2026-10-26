@@ -70,6 +70,94 @@ def test_matching_all_columns_is_remembered_and_requires_one_complete_hole():
     assert data["metrics"][0]["hole_in_one"] is True
 
 
+@pytest.mark.parametrize("rank", engine.RANKS)
+def test_six_of_a_kind_accepts_every_rank_and_keeps_existing_scoring(rank):
+    game = engine.deal(2)
+    data = {"game": game, "metrics": [{}, {}]}
+    for index, cell in enumerate(game["players"][0]["cards"]):
+        cell.update(card={"rank": rank, "suit": engine.SUITS[index % 4]}, faceUp=True)
+    before = copy.deepcopy(game)
+    count_hole(data)
+    assert data["metrics"][0]["six_of_a_kind"] is True
+    assert data["metrics"][0]["hole_in_one"] is True
+    assert data["metrics"][0]["bonus_blocks"] == 1
+    assert game == before
+    assert engine.score_grid(game["players"][0]["cards"]) == (-32 if rank == "2" else -20)
+    # A later hole must not erase the achievement.
+    game["players"][0]["cards"][0]["card"]["rank"] = "Q" if rank != "Q" else "K"
+    count_hole(data)
+    assert data["metrics"][0]["six_of_a_kind"] is True
+
+
+@pytest.mark.parametrize("ranks", [
+    ("A", "2", "K", "A", "2", "K"),  # Three pairs with different ranks.
+    ("9", "9", "A", "9", "9", "K"),  # A matching block.
+    ("9", "9", "9", "9", "9", "K"),  # One card short.
+    ("10", "J", "Q", "10", "J", "Q"),  # Equal values are not equal ranks.
+])
+def test_six_of_a_kind_cannot_accumulate_matches_across_holes(ranks):
+    game = engine.deal(2)
+    data = {"game": game, "metrics": [{}, {}]}
+    for cell, rank in zip(game["players"][0]["cards"], ranks):
+        cell.update(card={"rank": rank}, faceUp=True)
+    for _ in range(3):
+        count_hole(data)
+    assert not data["metrics"][0].get("six_of_a_kind", False)
+
+
+@pytest.mark.parametrize("status", ["completed", "abandoned", "cancelled"])
+@pytest.mark.parametrize("mode", ["bot", "multiplayer"])
+def test_six_of_a_kind_survives_result_reload_and_is_scoped_to_player_and_mode(app, clients, status, mode):
+    game = engine.deal(2)
+    data = {"game": game, "mode": mode, "startedAt": time.time(), "humanCount": 2,
+            "seats": [{"userId": 1}, {"userId": 2}], "metrics": [{}, {}]}
+    for player, ranks in zip(game["players"], [("K",) * 6, ("A", "2", "K", "A", "2", "K")]):
+        for cell, rank in zip(player["cards"], ranks):
+            cell["card"]["rank"] = rank
+    with app.app_context():
+        engine.finish_hole(game, went_out=None)
+        app.extensions["golf_runtime"].next_turn(data)
+        db.session.commit()
+        assert db.session.get(Result, (game["id"], 1)).detail["six_of_a_kind"]
+        assert not clients(1).get("/api/golf/stats").json["statistics"]["all_time"]["achievements"]["six_of_a_kind"]
+        save_results(data, terminal=status == "completed", abandoned=status == "abandoned", cancelled=status == "cancelled")
+        db.session.commit()
+        # Repeated terminal saves cannot rewrite a previously earned badge.
+        data["metrics"][0]["six_of_a_kind"] = False
+        save_results(data, terminal=True)
+        db.session.commit()
+        db.session.remove()
+    stats = clients(1).get("/api/golf/stats").json["statistics"]
+    assert stats["all_time"]["achievements"]["six_of_a_kind"]
+    assert stats[mode]["achievements"]["six_of_a_kind"]
+    other_mode = "multiplayer" if mode == "bot" else "bot"
+    assert not stats[other_mode]["achievements"]["six_of_a_kind"]
+    assert not clients(2).get("/api/golf/stats").json["statistics"]["all_time"]["achievements"]["six_of_a_kind"]
+    with app.app_context():
+        stored = db.session.get(Result, (game["id"], 1))
+        assert stored.score == -20
+        assert stored.detail["holes"] == [-20]
+        assert stored.status == status
+
+
+def test_operator_granted_six_of_a_kind_needs_no_fake_results_and_is_deleted_with_account(app, clients):
+    player, other = clients(1), clients(2)
+    with app.app_context():
+        db.session.add(AchievementUnlock(user_id=1, achievement_id="six_of_a_kind"))
+        db.session.commit()
+        db.session.remove()
+    for stats in player.get("/api/golf/stats").json["statistics"].values():
+        assert stats["achievements"]["six_of_a_kind"]
+        assert stats["games_started"] == 0
+    assert not other.get("/api/golf/stats").json["statistics"]["all_time"]["achievements"]["six_of_a_kind"]
+    response = player.post("/_internal/games/v1/golf/delete-user", json={"user_id": 1, "request_id": "delete-six-of-a-kind"},
+                           headers={"X-Cards-Service": "accounts", "Authorization": "Bearer " + app.config["GAME_ACCOUNT_TOKENS"]["golf"]})
+    assert response.status_code == 200
+    with app.app_context():
+        assert AchievementUnlock.query.count() == 0
+        assert Result.query.count() == 0
+
+
 @pytest.mark.parametrize("before, final, won, expected", [
     ([8, 0], [-10, 0], True, True),
     ([0, 8], [0, -10], False, False),
@@ -248,7 +336,7 @@ def test_settings_unlocks_require_account_csrf_origin_and_allowlisted_id(app, cl
     assert guest.post(path, json={"id": "geezer"}, headers=guest.golf_headers).status_code == 401
     assert player.post(path, json={"id": "geezer"}).status_code == 403
     assert player.post(path, json={"id": "geezer"}, headers={**player.golf_headers, "Origin": "https://evil.example"}).status_code == 403
-    for value in ["night_owl", "better_with_friends", "hot_streak", "all_year_round", None, []]:
+    for value in ["six_of_a_kind", "night_owl", "better_with_friends", "hot_streak", "all_year_round", None, []]:
         assert player.post(path, json={"id": value}, headers=player.golf_headers).status_code == 400
     with app.app_context():
         assert AchievementUnlock.query.count() == 0

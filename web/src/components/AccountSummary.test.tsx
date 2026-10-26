@@ -38,7 +38,7 @@ it("keeps existing achievements and shows all new Golf and holiday badges from a
   render(<AccountSummary userId="golfer" />);
   await screen.findByLabelText("Your statistics");
   const achievements = screen.getByRole("region", { name: "Achievements" });
-  expect(within(achievements).getAllByRole("button")).toHaveLength(30);
+  expect(within(achievements).getAllByRole("button")).toHaveLength(31);
   expect(screen.getByRole("button", { name: "Below Zero: Unlocked" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Under Par: Unlocked" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Birdie: Unlocked" })).toBeVisible();
@@ -46,9 +46,19 @@ it("keeps existing achievements and shows all new Golf and holiday badges from a
   for (const name of ["Geezer", "Night Owl", "Better with Friends"]) {
     expect(screen.getByRole("button", { name: `${name}: Unlocked` })).toBeVisible();
   }
-  for (const name of ["Eagle", "Hole in One", "Up and Down", "Out of the Rough", "Photo Finish", "Sunday Best",
+  for (const name of ["Eagle", "Hole in One", "Six of a Kind", "Up and Down", "Out of the Rough", "Photo Finish", "Sunday Best",
     "Auld Lang Syne", "Lonely Heart", "Lucky Clover", "Easter Egg", "Fireworks", "Thankful", "Christmas Spirit",
     "Early Bird", "Hot Streak", "All Year Round"]) {
     expect(screen.getByRole("button", { name: `${name}: Locked` })).toBeVisible();
   }
+});
+
+it("shows Six of a Kind as earned with its matching-rank requirement", async () => {
+  const statistics = statisticsFixture(1);
+  statistics.all_time.achievements.six_of_a_kind = true;
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ statistics }))));
+  render(<AccountSummary userId="golfer" />);
+  const badge = await screen.findByRole("button", { name: "Six of a Kind: Unlocked" });
+  fireEvent.click(badge);
+  expect(await screen.findByRole("tooltip")).toHaveTextContent("Finish a hole with all six board cards the same rank.");
 });

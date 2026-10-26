@@ -1,0 +1,173 @@
+[
+  {
+    "name": "improve the screenshot hand without going out against a strong opponent",
+    "boards": [["4", "A", "5", "3", "2", null], ["K", "A", "3", "K", "A", null]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 2
+  },
+  {
+    "name": "use the final turn to minimize points without a going-out penalty",
+    "boards": [["4", "A", "5", "3", "2", null], ["K", "A", "3", "K", "A", "3"]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "deck", "finalTurns": [0],
+    "expectedSource": "discard", "expectedReplacement": 5
+  },
+  {
+    "name": "go out with three pairs when safely ahead",
+    "boards": [["K", "A", "3", "K", "A", null], ["Q", "J", "10", "8", "9", null]],
+    "discard": ["3"], "drawRank": "3", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 5
+  },
+  {
+    "name": "go out with a strong block and paired twos",
+    "boards": [["9", "9", "2", "9", "9", null], ["Q", "J", null, null, "9", null]],
+    "discard": ["2"], "drawRank": "2", "drawSource": "discard", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 5
+  },
+  {
+    "name": "prefer the deck and toss a four rather than feed a pair of nines",
+    "boards": [["9", "A", null, null, "K", null], ["Q", "J", null, null, "9", null]],
+    "discard": ["4"], "drawRank": "4", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "deck", "expectedReplacement": -1
+  },
+  {
+    "name": "take a discard that pairs a high card",
+    "boards": [["9", "A", null, null, "K", null], ["Q", "J", null, null, "9", null]],
+    "discard": ["9"], "drawRank": "9", "drawSource": "discard", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 3
+  },
+  {
+    "name": "complete a block rather than another low-value replacement",
+    "boards": [["8", "8", null, "8", null, "A"], ["Q", "J", null, null, "9", null]],
+    "discard": ["8"], "drawRank": "8", "drawSource": "discard", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 4
+  },
+  {
+    "name": "preserve a completed block of twos",
+    "boards": [["2", "2", "K", "2", "2", "K"], ["Q", "J", null, null, "9", null]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "deck", "finalTurns": [0],
+    "expectedSource": "deck", "expectedReplacement": -1
+  },
+  {
+    "name": "use a forced discard in the least harmful slot with an empty deck",
+    "boards": [["2", "2", "K", "2", "2", "K"], ["Q", "J", null, null, "9", null]],
+    "discard": ["Q"], "drawRank": "Q", "drawSource": "discard", "finalTurns": [0], "emptyDeck": true,
+    "expectedSource": "discard", "expectedReplacement": 2
+  },
+  {
+    "name": "discard a high deck draw when all cards are unknown",
+    "boards": [[null, null, null, null, null, null], [null, null, null, null, null, null]],
+    "discard": ["Q"], "drawRank": "Q", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "deck", "expectedReplacement": -1
+  },
+  {
+    "name": "Sunny takes a third block card even though it breaks paired twos",
+    "botName": "Sunny",
+    "boards": [["9", "2", "K", "9", "2", null], ["A", "3", null, null, "4", null]],
+    "discard": ["9"], "drawRank": "9", "drawSource": "discard", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 1
+  },
+  {
+    "name": "Sunny builds across adjacent columns without feeding a pair of kings",
+    "botName": "Sunny",
+    "boards": [["9", "K", "9", "9", "2", null], ["Q", "J", null, null, "K", null]],
+    "discard": ["9"], "drawRank": "9", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 4
+  },
+  {
+    "name": "Sunny protects his setup and keeps a king that would feed a pair",
+    "botName": "Sunny",
+    "boards": [["9", "9", "2", "9", "K", null], ["Q", "J", null, null, "K", null]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "deck", "expectedReplacement": 2
+  },
+  {
+    "name": "Sunny completes a block on the right",
+    "botName": "Sunny",
+    "boards": [["K", "9", "9", null, "9", "K"], ["Q", "J", null, null, "K", null]],
+    "discard": ["9"], "drawRank": "9", "drawSource": "discard", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 5
+  },
+  {
+    "name": "Sunny goes out after completing his block",
+    "botName": "Sunny",
+    "boards": [["2", "2", "K", "2", "2", null], ["Q", "J", null, null, "K", null]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "discard", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 5
+  },
+  {
+    "name": "Sunny stops setting up a block on his final turn",
+    "botName": "Sunny",
+    "boards": [["9", "2", "K", "9", "2", null], ["Q", "J", null, null, "K", null]],
+    "discard": ["9"], "drawRank": "9", "drawSource": "deck", "finalTurns": [0],
+    "expectedSource": "deck", "expectedReplacement": -1
+  },
+  {
+    "name": "Sunny abandons a block rank when the remaining copies are unavailable",
+    "botName": "Sunny",
+    "boards": [["9", "2", "K", "9", "2", null], ["Q", "J", null, null, "K", null]],
+    "discard": ["9", "9", "9", "9", "9", "K"], "drawRank": "9", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "deck", "expectedReplacement": -1
+  },
+  {
+    "name": "discard an eight instead of a nine that completes the next player's pair",
+    "boards": [["9", "8", "A", "3", "2", null], ["9", "A", "4", "K", "3", null]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 1
+  },
+  {
+    "name": "avoid giving away a four-card block after taking a discard",
+    "boards": [["9", "8", "A", "3", "2", null], ["9", "9", "4", "9", "K", null]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "discard", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 1
+  },
+  {
+    "name": "keep an unwanted deck draw instead of gifting a four-card block",
+    "boards": [["K", "A", "3", "2", "A", null], ["9", "9", "4", "9", "K", null]],
+    "discard": ["9"], "drawRank": "9", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "deck", "expectedReplacement": 2
+  },
+  {
+    "name": "ignore defensive discarding on the last turn of the hole",
+    "boards": [["K", "A", "3", "2", "A", null], ["9", "9", "4", "9", "K", "5"]],
+    "discard": ["9"], "drawRank": "9", "drawSource": "deck", "finalTurns": [0],
+    "expectedSource": "deck", "expectedReplacement": -1
+  },
+  {
+    "name": "defend the next player's remaining final turn",
+    "boards": [["9", "8", "A", "3", "2", null], ["9", "9", "4", "9", "K", null], ["K", "A", "3", "K", "A", "3"]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "deck", "finalTurns": [0, 1],
+    "expectedSource": "discard", "expectedReplacement": 1
+  },
+  {
+    "name": "do not defend a later seat that cannot take this discard immediately",
+    "boards": [["9", "8", "A", "3", "2", null], ["K", "A", "4", "3", "5", null], ["9", "9", "4", "9", "K", null]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 0
+  },
+  {
+    "name": "defend the next player when turn order wraps around the table",
+    "turn": 2,
+    "boards": [["9", "9", "4", "9", "K", null], ["K", "A", "4", "3", "5", null], ["9", "8", "A", "3", "2", null]],
+    "discard": ["K"], "drawRank": "K", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 1
+  },
+  {
+    "name": "Sunny still advances his block when that means feeding the next player's block",
+    "botName": "Sunny",
+    "boards": [["9", "2", "K", "9", "2", null], ["2", "2", "4", "2", "K", null]],
+    "discard": ["9"], "drawRank": "9", "drawSource": "discard", "finalTurns": null,
+    "expectedSource": "discard", "expectedReplacement": 1
+  },
+  {
+    "name": "choose a safer outgoing card when forced to use a discard with an empty deck",
+    "boards": [["9", "8", "A", "3", "2", null], ["9", "A", "4", "K", "3", null]],
+    "discard": ["Q"], "drawRank": "Q", "drawSource": "discard", "finalTurns": null, "emptyDeck": true,
+    "expectedSource": "discard", "expectedReplacement": 1
+  },
+  {
+    "name": "draw instead of repeatedly swapping identical safe nines",
+    "boards": [["9", "2", "K", "9", "2", null], ["Q", "J", null, null, "K", null]],
+    "discard": ["9"], "drawRank": "9", "drawSource": "deck", "finalTurns": null,
+    "expectedSource": "deck", "expectedReplacement": -1
+  }
+]

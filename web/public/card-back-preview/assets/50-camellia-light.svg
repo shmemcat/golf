@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Camellia — light mode</title>
+  <defs><clipPath id="edge"><rect x="20" y="20" width="200" height="296" rx="4"/></clipPath></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#c6d5be"/>
+  <g clip-path="url(#edge)"><g transform="rotate(0 120 168)"><ellipse cx="120" cy="126" rx="26" ry="39" fill="#7c9885" opacity="0.72"/></g><g transform="rotate(45 120 168)"><ellipse cx="120" cy="126" rx="26" ry="39" fill="#7c9885" opacity="0.72"/></g><g transform="rotate(90 120 168)"><ellipse cx="120" cy="126" rx="26" ry="39" fill="#7c9885" opacity="0.72"/></g><g transform="rotate(135 120 168)"><ellipse cx="120" cy="126" rx="26" ry="39" fill="#7c9885" opacity="0.72"/></g><g transform="rotate(180 120 168)"><ellipse cx="120" cy="126" rx="26" ry="39" fill="#7c9885" opacity="0.72"/></g><g transform="rotate(225 120 168)"><ellipse cx="120" cy="126" rx="26" ry="39" fill="#7c9885" opacity="0.72"/></g><g transform="rotate(270 120 168)"><ellipse cx="120" cy="126" rx="26" ry="39" fill="#7c9885" opacity="0.72"/></g><g transform="rotate(315 120 168)"><ellipse cx="120" cy="126" rx="26" ry="39" fill="#7c9885" opacity="0.72"/></g><circle cx="120" cy="168" r="25" fill="#c6d5be" opacity="1"/><circle cx="120" cy="168" r="16" fill="#849d87" opacity="0.9"/></g>
+  <rect x="15" y="15" width="210" height="306" rx="6" fill="none" stroke="#849d87" stroke-width="2.5"/>
+</svg>

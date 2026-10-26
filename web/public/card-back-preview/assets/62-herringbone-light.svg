@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Herringbone, larger repeat — light mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><pattern id="pattern" x="120" y="168" width="36" height="48" patternUnits="userSpaceOnUse" patternTransform="translate(120 168) scale(1.55) translate(-120 -168)"><path d="M0 0 18 12V36L0 24ZM18 12 36 0V24L18 36Z" fill="#7c9885" opacity="0.55"/><path d="M0 0 18 12 36 0M0 24 18 36 36 24M0 48 18 60 36 48M18 12V36" fill="none" stroke="#849d87" stroke-width="1.5" opacity="0.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M0 6 18 18 36 6M0 18 18 30 36 18M0 42 18 54 36 42" fill="none" stroke="#faf6ee" stroke-width="0.8" opacity="0.35" stroke-linecap="round" stroke-linejoin="round"/></pattern><g id="art"><rect width="240" height="336" fill="url(#pattern)"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#c6d5be"/>
+  <g clip-path="url(#edge)"><use href="#art"/></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#849d87" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

@@ -1,4 +1,5 @@
 import {
+  act,
   render,
   screen,
   waitFor,
@@ -12,6 +13,7 @@ import { vi, expect, it, beforeEach } from "vitest";
 import { createGame } from "@/game/engine";
 import { readResults, recordResult } from "@/lib/results";
 import { statisticsFixture } from "@/test/golfFixtures";
+import { useAuth } from "@/context/AuthContext";
 const account = {
   id: "shared-id",
   name: "Golfer",
@@ -19,6 +21,7 @@ const account = {
   profile_icon: "user",
   email_verified: true,
   turn_sound: { golf: false, euchre: false, hearts: false },
+  card_backs: { golf: "argyle" },
 };
 let current: typeof account | null;
 let failLogin: boolean;
@@ -68,7 +71,9 @@ beforeEach(() => {
                 [data.turn_sound.game]: data.turn_sound.enabled,
               },
             }
-          : { ...current, ...data };
+          : data.card_back
+            ? { ...current, card_backs: { ...current.card_backs, [data.card_back.game]: data.card_back.design } }
+            : { ...current, ...data };
       }
       if (path === "/delete") {
         if (JSON.parse(String(init.body)).password !== "delete-password")
@@ -207,6 +212,20 @@ const open = (path: string) =>
       </Providers>
     </MemoryRouter>
   );
+
+it("shows achievement toasts from saved game results across the app", async () => {
+  current = account;
+  open("/");
+  await waitFor(() =>
+    expect(
+      localStorage.getItem(`golf.achievements-seen.v1:${account.id}`)
+    ).toBe("[]")
+  );
+  savedGames = 1;
+  fireEvent(window, new Event("golf:results"));
+  expect(await screen.findByRole("status")).toHaveTextContent("Newcomer");
+  expect(screen.getByRole("status")).toHaveTextContent("First Light");
+});
 
 it("navigates home, setup menus, and rules without creating a game", async () => {
   const user = userEvent.setup();
@@ -549,4 +568,48 @@ it("explains the six-card grid, special scores, and the end of a deal", async ()
   expect(screen.getByText("−20 points")).toBeVisible();
   expect(screen.getByText(/Grid total:/)).toHaveTextContent("−17 points");
   expect(screen.getAllByRole("img", { name: /^8 of/ })).toHaveLength(4);
+});
+
+it("automatically saves the compact Options chooser to the signed-in profile and restores it after remount", async () => {
+  current = { ...account };
+  mockAccountDialog();
+  const first = render(<MemoryRouter initialEntries={["/options"]}><Providers><App /></Providers></MemoryRouter>);
+  await userEvent.click(await screen.findByRole("button", { name: "Change design" }));
+  const dialog = screen.getByRole("dialog", { name: "Choose a Card Back" });
+  await userEvent.click(within(dialog).getByRole("radio", { name: "Ginkgo", exact: true }));
+  await waitFor(() => expect(current?.card_backs.golf).toBe("ginkgo"));
+  expect(fetcher.mock.calls.some(([url, init]) => url === "/api/account/profile" && JSON.parse(String(init?.body)).card_back?.design === "ginkgo")).toBe(true);
+  expect(dialog).toBeInTheDocument();
+  await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+  first.unmount();
+  render(<MemoryRouter initialEntries={["/options"]}><Providers><App /></Providers></MemoryRouter>);
+  expect(await screen.findByRole("heading", { name: "Ginkgo", exact: true })).toBeInTheDocument();
+});
+
+it("does not sign a user back in when an earlier profile save finishes after logout", async () => {
+  current = { ...account };
+  const original = fetcher.getMockImplementation()!;
+  let release!: () => void;
+  fetcher.mockImplementation(async (url: string, init: RequestInit = {}) => {
+    const response = await original(url, init);
+    if (url === "/api/account/profile")
+      return new Promise<Response>(resolve => { release = () => resolve(response); });
+    return response;
+  });
+  function Harness() {
+    const { user, updateProfile, logout } = useAuth();
+    return <>
+      <p>{user ? `Account: ${user.name}` : "Account: Guest"}</p>
+      <button onClick={() => void updateProfile({ card_back: { game: "golf", design: "ginkgo" } }).catch(() => {})}>Save back</button>
+      <button onClick={() => void logout()}>Sign out</button>
+    </>;
+  }
+  render(<Providers><Harness /></Providers>);
+  await screen.findByText("Account: Golfer");
+  await userEvent.click(screen.getByRole("button", { name: "Save back" }));
+  await waitFor(() => expect(release).toBeTypeOf("function"));
+  await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
+  await screen.findByText("Account: Guest");
+  await act(async () => release());
+  expect(screen.getByText("Account: Guest")).toBeInTheDocument();
 });

@@ -11,6 +11,13 @@ export type AccountUser = {
   profile_icon?: string;
   turn_sound?: Partial<Record<"golf" | "euchre" | "hearts", boolean>>;
   turn_sound_options?: GameTurnSoundOptions;
+  card_backs?: Partial<Record<"golf" | "euchre" | "hearts", string>>;
+};
+export type ProfileUpdate = {
+  profile_icon?: string;
+  email?: string;
+  turn_sound?: TurnSoundUpdate & { game: "golf" | "euchre" | "hearts" };
+  card_back?: { game: "golf"; design: string };
 };
 export type AccountSession = {
   user: AccountUser | null;
@@ -69,11 +76,7 @@ export function createAccountClient(
         headers: { "X-CSRF-Token": csrf },
       }),
     profile: (
-      data: {
-        profile_icon?: string;
-        email?: string;
-        turn_sound?: TurnSoundUpdate & { game: "golf" | "euchre" | "hearts" };
-      },
+      data: ProfileUpdate,
       csrf: string,
     ) =>
       request("/profile", {

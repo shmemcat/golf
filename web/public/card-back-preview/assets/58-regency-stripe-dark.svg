@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Regency stripe — dark mode</title>
+  <defs><clipPath id="edge"><rect x="20" y="20" width="200" height="296" rx="4"/></clipPath><pattern id="pattern" x="120" y="168" width="84" height="84" patternUnits="userSpaceOnUse"><rect x="22" width="40" height="84" fill="#7c9885" opacity="0.46199999999999997"/><path d="M12 0V84M72 0V84" fill="none" stroke="#cf9f9c" stroke-width="3" opacity="0.75" stroke-linecap="round" stroke-linejoin="round"/></pattern></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><rect width="240" height="336" fill="url(#pattern)"/></g>
+  <rect x="15" y="15" width="210" height="306" rx="6" fill="none" stroke="#cf9f9c" stroke-width="2.5"/>
+</svg>

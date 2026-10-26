@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Starlight, larger repeat — dark mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><pattern id="pattern" x="120" y="168" width="56" height="56" patternUnits="userSpaceOnUse" patternTransform="translate(120 168) scale(1.55) translate(-120 -168)"><path d="M28.00 15.00L29.69 23.92L37.19 18.81L32.08 26.31L41.00 28.00L32.08 29.69L37.19 37.19L29.69 32.08L28.00 41.00L26.31 32.08L18.81 37.19L23.92 29.69L15.00 28.00L23.92 26.31L18.81 18.81L26.31 23.92Z" fill="#cf9f9c" opacity="0.85"/><circle cx="0" cy="0" r="2" fill="#cf9f9c" opacity="0.7"/><circle cx="56" cy="0" r="2" fill="#cf9f9c" opacity="0.7"/><circle cx="0" cy="56" r="2" fill="#cf9f9c" opacity="0.7"/><circle cx="56" cy="56" r="2" fill="#cf9f9c" opacity="0.7"/><path d="M28 4V9M28 47V52M4 28H9M47 28H52" fill="none" stroke="#7c9885" stroke-width="1.6" opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/></pattern><g id="art"><rect width="240" height="336" fill="url(#pattern)"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><use href="#art"/></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#cf9f9c" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

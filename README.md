@@ -16,7 +16,7 @@ Part of [Cards](https://cards.shmem.dev/), alongside
 - **Single-player vs. bots** — play against 1–5 opponents using a fair policy based on visible cards
 - **Online multiplayer** — share a six-character room code or invitation link, play as a guest or account holder, and optionally fill empty seats with bots
 - **Nine-hole scorecards** — running totals, hole summaries, going-out penalties, and shared wins
-- **Achievements & statistics** — 30 badges, tiered milestones, and combined or separate bot/multiplayer statistics
+- **Achievements & statistics** — 31 badges, tiered milestones, and combined or separate bot/multiplayer statistics
 - **Global leaderboards** — Bot and Multiplayer rankings, with monthly and all-time winners
 - **Shared accounts** — one Cards sign-in, profile icons, email editing, password recovery, and account deletion
 - **Auto-save & resume** — browser saves for guest solo games; persistent rooms and server-verified results for signed-in and online play
@@ -87,11 +87,27 @@ The in-app Rules page explains this variant. The general reference is
 
 ## Bot Strategy
 
-Every bot uses the same policy; Golf has no difficulty tiers. Bots compare
-visible board values, recognize matching pairs and adjacent blocks, take useful
-discards, and discard deck draws that do not improve their board. Unknown cards
-are evaluated by average value, without inspecting their actual ranks or the
-remaining deck order.
+Golf has no difficulty tiers. Bots compare
+the best use of a discard with the expected value of a deck draw, including the
+option to discard it. They count currently public ranks, estimate hidden pairs
+and adjacent blocks, and look one draw ahead when weighing replacements. They
+weigh their own improvement against the points a known discard would give the
+next player through an obvious pair or matching 2×2 block. Face-down outgoing
+cards use public rank probabilities; bots never peek. Defensive discarding also
+applies when choosing a draw pile and stops on the hole's last turn, when nobody
+can use the discard. Before going out, bots estimate the 10-point penalty risk
+after opponents' final turns. Sunny has an
+Easter egg: he stubbornly prioritizes building a matching 2×2 block, preserving
+his progress and holding off going out while a block is still possible. He uses
+the regular scoring strategy once someone else goes out.
+
+Guest and server bots share decision fixtures and use the same strategy. They
+never inspect hidden card identities or deck order. Run a repeatable comparison
+against the previous greedy policy with synthetic nine-hole games:
+
+```powershell
+uv run --directory api python ../scripts/benchmark-bots.py --games 100
+```
 
 ## Multiplayer
 
@@ -207,7 +223,8 @@ win streaks, and matching pairs. Global leaderboards rank completed wins in Bot
 and Multiplayer, with monthly UTC and all-time top tens. Guest solo saves remain
 in the browser; guest games and layout previews earn no account results.
 
-The account dashboard displays 30 achievement badges, including scoring
+The account dashboard displays 31 achievement badges, including Six of a Kind for
+finishing a hole with all six board cards the same rank, scoring
 challenges, comebacks, close wins, holiday games, and the familiar Geezer,
 Night Owl, Early Bird, Better with Friends, Hot Streak, and All Year Round.
 A games-finished badge

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Clubhouse bold — light mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><clipPath id="half"><rect width="240" height="168"/></clipPath><g id="art"><circle cx="120" cy="168" r="84" fill="none" stroke="#7c9885" stroke-width="5" opacity="0.9"/><path d="M78 112 162 224M162 112 78 224" fill="none" stroke="#849d87" stroke-width="7" opacity="0.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M69 108Q62 104 67 97L76 88Q82 84 87 90L98 106Q102 114 94 118L82 121Z" fill="#849d87" opacity="0.95"/><path d="M171 108Q178 104 173 97L164 88Q158 84 153 90L142 106Q138 114 146 118L158 121Z" fill="#849d87" opacity="0.95"/><g transform="rotate(180 120 168)"><path d="M69 108Q62 104 67 97L76 88Q82 84 87 90L98 106Q102 114 94 118L82 121Z" fill="#849d87" opacity="0.95"/><path d="M171 108Q178 104 173 97L164 88Q158 84 153 90L142 106Q138 114 146 118L158 121Z" fill="#849d87" opacity="0.95"/></g><circle cx="120" cy="168" r="20" fill="#c6d5be" opacity="1"/><circle cx="120" cy="168" r="14" fill="#faf6ee" opacity="0.95"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#c6d5be"/>
+  <g clip-path="url(#edge)"><g clip-path="url(#half)"><use href="#art"/></g><g transform="rotate(180 120 168)"><g clip-path="url(#half)"><use href="#art"/></g></g></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#849d87" stroke-width="2.5"/>
+</svg>

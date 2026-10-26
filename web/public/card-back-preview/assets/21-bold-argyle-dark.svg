@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Bold Argyle — dark mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><clipPath id="half"><rect width="240" height="168"/></clipPath><pattern id="pattern" x="120" y="168" width="168" height="168" patternUnits="userSpaceOnUse"><path d="M0 0 42 42 0 84-42 42ZM84 0 126 42 84 84 42 42ZM168 0 210 42 168 84 126 42ZM42 84 84 126 42 168 0 126ZM126 84 168 126 126 168 84 126Z" fill="#7c9885" opacity="0.55"/><path d="M0 84 84 0 168 84 84 168Z" fill="none" stroke="#cf9f9c" stroke-width="4.5" opacity="0.75" stroke-linecap="round" stroke-linejoin="round"/></pattern><g id="art"><rect width="240" height="336" fill="url(#pattern)"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><g clip-path="url(#half)"><use href="#art"/></g><g transform="rotate(180 120 168)"><g clip-path="url(#half)"><use href="#art"/></g></g></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#cf9f9c" stroke-width="2.5"/>
+</svg>

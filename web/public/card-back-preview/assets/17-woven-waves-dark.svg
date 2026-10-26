@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Woven waves — dark mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><clipPath id="half"><rect width="240" height="168"/></clipPath><pattern id="pattern" x="120" y="168" width="64" height="48" patternUnits="userSpaceOnUse"><path d="M0 12C16-4 48 28 64 12V24C48 40 16 8 0 24ZM0 36C16 20 48 52 64 36V48C48 64 16 32 0 48Z" fill="#7c9885" opacity="0.34"/><path d="M0 12C16-4 48 28 64 12M0 36C16 20 48 52 64 36" fill="none" stroke="#cf9f9c" stroke-width="1.4" opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/><path d="M0 18C16 2 48 34 64 18M0 42C16 26 48 58 64 42" fill="none" stroke="#faf6ee" stroke-width="1" opacity="0.4" stroke-linecap="round" stroke-linejoin="round"/></pattern><g id="art"><rect width="240" height="336" fill="url(#pattern)"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><g clip-path="url(#half)"><use href="#art"/></g><g transform="rotate(180 120 168)"><g clip-path="url(#half)"><use href="#art"/></g></g></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#cf9f9c" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSound } from "@/context/SoundContext";
 import { readLocalGame, saveLocalGame } from "@/lib/localGame";
+import { BOT_NAMES } from "@/game/seats";
 import {
   botSource, canOpen, createGame, discardDraw, drawCard, nextHole, openCard,
   openOpponents, replaceCard, replacementIndex, startPlay, turnUpDeck,
@@ -134,9 +135,10 @@ export function useGolfTable(playerCount: number, persist = false) {
   useEffect(() => {
     if (stage !== "playing" || motion || game.turn === 0 || !["draw", "replace"].includes(game.phase)) return;
     const timer = window.setTimeout(() => {
-      if (game.phase === "draw") setMotion(drawing(game, botSource(game)));
+      const botName = BOT_NAMES[game.turn - 1];
+      if (game.phase === "draw") setMotion(drawing(game, botSource(game, botName)));
       else if (game.drawn) {
-        const index = replacementIndex(game, game.drawn.card);
+        const index = replacementIndex(game, game.drawn.card, botName);
         setMotion(index < 0 && game.drawn.source === "deck" ? tossing(game) : discarding(game, Math.max(0, index)));
       }
       sound.current("slide");

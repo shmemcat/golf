@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 import { PageLayout } from "@/components/ui/PageLayout";
 import { MenuLink } from "@/components/Buttons";
 import { useAuth } from "@/context/AuthContext";
+import { CardBackOption } from "@/components/CardBackOption";
 export default function Options() {
   const { user, loading } = useAuth();
   if (!user)
@@ -12,12 +13,17 @@ export default function Options() {
     ) : (
       <Navigate to="/user" replace />
     );
+  return <OptionsContent />;
+}
+
+export function OptionsContent() {
   return (
     <>
       <Helmet>
         <title>Options | Golf</title>
       </Helmet>
       <PageLayout title="OPTIONS">
+        <CardBackOption />
         <TurnSoundOption />
         <div className="button-stack">
           <MenuLink to="/user" name="Back" />

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Petal quilt — dark mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><clipPath id="half"><rect width="240" height="168"/></clipPath><pattern id="pattern" x="120" y="168" width="96" height="96" patternUnits="userSpaceOnUse"><g transform="translate(48 48) rotate(45)"><path d="M0 0Q-30-25 0-59Q30-25 0 0Z" fill="#7c9885" opacity="0.55"/></g><g transform="translate(48 48) rotate(135)"><path d="M0 0Q-30-25 0-59Q30-25 0 0Z" fill="#7c9885" opacity="0.55"/></g><g transform="translate(48 48) rotate(225)"><path d="M0 0Q-30-25 0-59Q30-25 0 0Z" fill="#7c9885" opacity="0.55"/></g><g transform="translate(48 48) rotate(315)"><path d="M0 0Q-30-25 0-59Q30-25 0 0Z" fill="#7c9885" opacity="0.55"/></g><circle cx="48" cy="48" r="5" fill="#cf9f9c" opacity="0.9"/></pattern><g id="art"><rect width="240" height="336" fill="url(#pattern)"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><g clip-path="url(#half)"><use href="#art"/></g><g transform="rotate(180 120 168)"><g clip-path="url(#half)"><use href="#art"/></g></g></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#cf9f9c" stroke-width="2.5"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Clover link — dark mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><pattern id="pattern" x="120" y="168" width="96" height="96" patternUnits="userSpaceOnUse"><path d="M28 28A20 20 0 0 1 68 28A20 20 0 0 1 68 68A20 20 0 0 1 28 68A20 20 0 0 1 28 28Z" fill="none" stroke="#cf9f9c" stroke-width="2" opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="48" r="3" fill="#7c9885" opacity="0.8"/></pattern></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><rect width="240" height="336" fill="url(#pattern)"/></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#cf9f9c" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

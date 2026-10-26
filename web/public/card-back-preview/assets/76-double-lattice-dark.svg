@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Double lattice — dark mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><pattern id="pattern" x="120" y="168" width="72" height="96" patternUnits="userSpaceOnUse"><path d="M-36 0 36 96 108 0M-36 96 36 0 108 96" fill="none" stroke="#cf9f9c" stroke-width="2" opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/><path d="M-29 0 43 96M29 0 101 96M-29 96 43 0M29 96 101 0" fill="none" stroke="#7c9885" stroke-width="1.2" opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/></pattern></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><rect width="240" height="336" fill="url(#pattern)"/></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#cf9f9c" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

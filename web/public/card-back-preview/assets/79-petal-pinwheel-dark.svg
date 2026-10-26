@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Petal pinwheel — dark mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><pattern id="pattern" x="120" y="168" width="96" height="96" patternUnits="userSpaceOnUse"><g transform="translate(48 48) rotate(0)"><path d="M0 0Q-7-37 22-35Q38-10 0 0Z" fill="#7c9885" opacity="0.34"/></g><g transform="translate(48 48) rotate(90)"><path d="M0 0Q-7-37 22-35Q38-10 0 0Z" fill="#7c9885" opacity="0.34"/></g><g transform="translate(48 48) rotate(180)"><path d="M0 0Q-7-37 22-35Q38-10 0 0Z" fill="#7c9885" opacity="0.34"/></g><g transform="translate(48 48) rotate(270)"><path d="M0 0Q-7-37 22-35Q38-10 0 0Z" fill="#7c9885" opacity="0.34"/></g><circle cx="48" cy="48" r="3" fill="#cf9f9c" opacity="0.85"/></pattern></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><rect width="240" height="336" fill="url(#pattern)"/></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#cf9f9c" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

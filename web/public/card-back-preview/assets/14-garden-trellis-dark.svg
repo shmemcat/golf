@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Garden trellis — dark mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><clipPath id="half"><rect width="240" height="168"/></clipPath><pattern id="pattern" x="120" y="168" width="48" height="80" patternUnits="userSpaceOnUse"><path d="M24 0C24 20 0 20 0 40S24 60 24 80M24 0C24 20 48 20 48 40S24 60 24 80" fill="none" stroke="#cf9f9c" stroke-width="1.8" opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(24 40) rotate(0) scale(0.65)"><path d="M0 0Q-13-13 0-29Q13-13 0 0Z" fill="#7c9885" opacity="0.34"/><path d="M0-3V-24" fill="none" stroke="#cf9f9c" stroke-width="0.9" opacity="0.6" stroke-linecap="round" stroke-linejoin="round"/></g><g transform="translate(24 40) rotate(180) scale(0.65)"><path d="M0 0Q-13-13 0-29Q13-13 0 0Z" fill="#7c9885" opacity="0.34"/><path d="M0-3V-24" fill="none" stroke="#cf9f9c" stroke-width="0.9" opacity="0.6" stroke-linecap="round" stroke-linejoin="round"/></g><circle cx="24" cy="0" r="2" fill="#faf6ee" opacity="0.65"/><circle cx="24" cy="80" r="2" fill="#faf6ee" opacity="0.65"/></pattern><g id="art"><rect width="240" height="336" fill="url(#pattern)"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><g clip-path="url(#half)"><use href="#art"/></g><g transform="rotate(180 120 168)"><g clip-path="url(#half)"><use href="#art"/></g></g></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#cf9f9c" stroke-width="1.5"/>
+  <rect x="19" y="19" width="202" height="298" rx="4" fill="none" stroke="#faf6ee" stroke-opacity=".45" stroke-width=".8"/>
+</svg>

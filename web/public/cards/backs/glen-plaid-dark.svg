@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>Glen plaid — dark mode</title>
+  <defs><clipPath id="edge"><rect x="20" y="20" width="200" height="296" rx="4"/></clipPath><pattern id="pattern" x="120" y="168" width="120" height="120" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="60" height="60" fill="#7c9885" opacity="0.35"/><rect x="60" y="60" width="60" height="60" fill="#7c9885" opacity="0.35"/><path d="M12 0V120M24 0V120M96 0V120M108 0V120M0 12H120M0 24H120M0 96H120M0 108H120" fill="none" stroke="#7c9885" stroke-width="3" opacity="0.45" stroke-linejoin="round"/><path d="M60 0V120M0 60H120" fill="none" stroke="#cf9f9c" stroke-width="3.5" opacity="0.75" stroke-linejoin="round"/></pattern></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#344c40"/>
+  <g clip-path="url(#edge)"><rect width="240" height="336" fill="url(#pattern)"/></g>
+  <rect x="15" y="15" width="210" height="306" rx="6" fill="none" stroke="#cf9f9c" stroke-width="2.5"/>
+</svg>

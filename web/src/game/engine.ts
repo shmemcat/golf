@@ -1,9 +1,6 @@
-export const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"] as const;
-export const SUITS = ["S", "H", "C", "D"] as const;
-export type Rank = (typeof RANKS)[number];
-export type Suit = (typeof SUITS)[number];
-export interface GolfCard { id: string; rank: Rank; suit: Suit }
-export interface GridCard { card: GolfCard; faceUp: boolean; revealedAtEnd?: boolean }
+import { RANKS, SUITS, cardValue, type GolfCard, type GridCard } from "./cards";
+import { BotPolicy } from "./bots";
+export { RANKS, SUITS, cardValue, type Rank, type Suit, type GolfCard, type GridCard } from "./cards";
 export type DrawSource = "deck" | "discard";
 export interface Player { cards: GridCard[]; score: number }
 export interface Game {
@@ -78,13 +75,6 @@ export function startPlay(game: Game): Game {
   return game.phase === "opening" && game.discard.length ? { ...game, phase: "draw" } : game;
 }
 
-export function cardValue(rank: Rank): number {
-  if (rank === "K") return 0;
-  if (rank === "A") return 1;
-  if (rank === "2") return -2;
-  return rank === "Q" || rank === "J" ? 10 : Number(rank);
-}
-
 export function scoreGrid(cards: readonly GridCard[]): number {
   const rank = (i: number) => cards[i].card.rank;
   const column = (i: number) => rank(i) === rank(i + 3) && rank(i) !== "2"
@@ -153,46 +143,10 @@ export function nextHole(game: Game): Game {
     game.players.map(player => player.score), game.history);
 }
 
-// Every bot uses the same policy. Unknown cards have the average value of a
-// standard deck; their actual ranks are never inspected when choosing a move.
-const UNKNOWN_CARD_VALUE = RANKS.reduce((sum, rank) => sum + cardValue(rank), 0) / RANKS.length;
-function visibleGridValue(cards: readonly GridCard[]): number {
-  const value = (cell: GridCard) => cell.faceUp ? cardValue(cell.card.rank) : UNKNOWN_CARD_VALUE;
-  const column = (index: number) => {
-    const top = cards[index];
-    const bottom = cards[index + 3];
-    return top.faceUp && bottom.faceUp && top.card.rank === bottom.card.rank && top.card.rank !== "2"
-      ? 0 : value(top) + value(bottom);
-  };
-  for (const start of [0, 1]) {
-    const first = cards[start];
-    if (first.faceUp && [start + 1, start + 3, start + 4].every(index =>
-      cards[index].faceUp && cards[index].card.rank === first.card.rank)) {
-      return (first.card.rank === "2" ? -28 : -20) + column(start === 0 ? 2 : 0);
-    }
-  }
-  return column(0) + column(1) + column(2);
+export function replacementIndex(game: Game, drawn: GolfCard, botName?: string): number {
+  return new BotPolicy(game, botName).choose(RANKS.indexOf(drawn.rank), undefined, game.drawn?.source === "discard")[0];
 }
 
-export function replacementIndex(game: Game, drawn: GolfCard): number {
-  const cards = game.players[game.turn].cards;
-  const before = visibleGridValue(cards);
-  let best = 0;
-  let bestGain = -Infinity;
-  cards.forEach((cell, index) => {
-    const after = cards.map((current, i) => i === index ? { card: drawn, faceUp: true } : current);
-    const gain = before - visibleGridValue(after);
-    // Prefer uncovering a card when two replacements have the same value.
-    if (gain > bestGain + 1e-9 || (Math.abs(gain - bestGain) < 1e-9 && !cell.faceUp && cards[best].faceUp)) {
-      best = index;
-      bestGain = gain;
-    }
-  });
-  // A discard-pile draw must be used, even if it cannot improve the board.
-  return bestGain > 1e-9 || game.drawn?.source === "discard" ? best : -1;
-}
-
-export function botSource(game: Game): DrawSource {
-  const top = game.discard[game.discard.length - 1];
-  return top && (!game.deck.length || replacementIndex(game, top) >= 0) ? "discard" : "deck";
+export function botSource(game: Game, botName?: string): DrawSource {
+  return new BotPolicy(game, botName).source(game);
 }

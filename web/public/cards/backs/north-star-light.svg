@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336" viewBox="0 0 240 336">
+  <title>North star — light mode</title>
+  <defs><clipPath id="edge"><rect x="19" y="19" width="202" height="298" rx="4"/></clipPath><clipPath id="half"><rect width="240" height="168"/></clipPath><g id="art"><circle cx="120" cy="168" r="85" fill="none" stroke="#7c9885" stroke-width="5" opacity="0.8"/><path d="M120 67 141 147 202 168 141 189 120 269 99 189 38 168 99 147Z" fill="#849d87" opacity="0.95"/><path d="M120 67V168H38L99 147ZM120 269V168H202L141 189Z" fill="#7c9885" opacity="0.8"/><circle cx="120" cy="168" r="10" fill="#faf6ee" opacity="0.8"/></g></defs>
+  <rect width="240" height="336" rx="16" fill="#faf6ee"/>
+  <rect x="7" y="7" width="226" height="322" rx="11" fill="#c6d5be"/>
+  <g clip-path="url(#edge)"><g clip-path="url(#half)"><use href="#art"/></g><g transform="rotate(180 120 168)"><g clip-path="url(#half)"><use href="#art"/></g></g></g>
+  <rect x="14" y="14" width="212" height="308" rx="7" fill="none" stroke="#849d87" stroke-width="2.5"/>
+</svg>
