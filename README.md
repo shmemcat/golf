@@ -16,7 +16,7 @@ Part of [Cards](https://cards.shmem.dev/), alongside
 - **Single-player vs. bots** — play against 1–5 opponents using a fair policy based on visible cards
 - **Online multiplayer** — share a six-character room code or invitation link, play as a guest or account holder, and optionally fill empty seats with bots
 - **Nine-hole scorecards** — running totals, hole summaries, going-out penalties, and shared wins
-- **Achievements & statistics** — 31 badges, tiered milestones, and combined or separate bot/multiplayer statistics
+- **Achievements & statistics** — 32 badges, tiered milestones, and combined or separate bot/multiplayer statistics
 - **Global leaderboards** — Bot and Multiplayer rankings, with monthly and all-time winners
 - **Shared accounts** — one Cards sign-in, profile icons, email editing, password recovery, and account deletion
 - **Auto-save & resume** — browser saves for guest solo games; persistent rooms and server-verified results for signed-in and online play
@@ -223,9 +223,10 @@ win streaks, and matching pairs. Global leaderboards rank completed wins in Bot
 and Multiplayer, with monthly UTC and all-time top tens. Guest solo saves remain
 in the browser; guest games and layout previews earn no account results.
 
-The account dashboard displays 31 achievement badges, including Six of a Kind for
-finishing a hole with all six board cards the same rank, scoring
-challenges, comebacks, close wins, holiday games, and the familiar Geezer,
+The account dashboard displays 32 achievement badges. Six of a Kind requires all
+six board cards to share a rank at the end of a hole; Deuce Almighty requires a
+matching 2×2 block of twos. Other badges cover scoring challenges, comebacks,
+close wins, holiday games, and the familiar Geezer,
 Night Owl, Early Bird, Better with Friends, Hot Streak, and All Year Round.
 A games-finished badge
 progresses from bronze Tee Time at 10 completed games to silver Green Jacket at

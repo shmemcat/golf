@@ -131,7 +131,7 @@ minimal tombstone to prevent in-flight games restoring deleted statistics.
 
 ## Achievements
 
-The account page shows 31 achievement badges. The original eight retain their
+The account page shows 32 achievement badges. The original eight retain their
 names and unlock rules, including Below Zero and Under Par. A single games-finished
 badge advances through bronze Tee Time (10 completed games), silver Green Jacket
 (50), and gold Tour Pro (100); abandoned games do not advance it.
@@ -139,7 +139,10 @@ badge advances through bronze Tee Time (10 completed games), silver Green Jacket
 Birdie and Eagle require exactly -1 and -2 on a hole. Hole in One requires all
 three columns matched on the same completed hole. Six of a Kind requires all six
 board cards to share one rank at the end of a hole; suits do not matter, and it
-does not change scoring or add a block bonus. Up and Down requires consecutive
+does not change scoring or add a block bonus. Deuce Almighty requires an adjacent
+2×2 block of twos at the end of a hole, in either pair of neighboring columns.
+Six twos also qualify; the existing block and board scores remain unchanged.
+Up and Down requires consecutive
 positive then negative holes in one game. Out of the Rough requires a win after
 being last (including tied last, but not an all-player tie) after eight holes.
 Photo Finish requires an outright win by one point, and Sunday Best a completed
@@ -152,8 +155,9 @@ the holiday in that player's local time. The browser sends its JavaScript UTC
 offset in `X-Golf-UTC-Offset`; Golf validates and stores it per seat, then in the
 result. Older results without an offset use their recorded UTC start. Existing
 scores and dates automatically qualify for the new retrospective awards; the
-three-column, six-matching-card, and final-hole comeback facts are recorded for
-new holes/results. Old hole scores alone cannot establish Six of a Kind.
+three-column, six-matching-card, matching-twos-block, and final-hole comeback facts
+are recorded for new holes/results. Historical results without board facts are
+not used to infer Six of a Kind or Deuce Almighty.
 
 Night Owl requires completing a game started between midnight and 5 a.m.; Early
 Bird uses 5 a.m. through just before 8 a.m. Both use the player's recorded local

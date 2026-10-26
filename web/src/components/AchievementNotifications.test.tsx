@@ -46,6 +46,41 @@ it("seeds historical achievements quietly and batches new game achievements with
   expect(notice).not.toHaveTextContent("+1 more");
 });
 
+it("automatically shows Six of a Kind after earlier simultaneous unlocks time out", async () => {
+  statistics = statisticsFixture(1);
+  await seed();
+  vi.useFakeTimers();
+  try {
+    statistics.all_time.achievements = { ...statistics.all_time.achievements,
+      birdie: true, eagle: true, hole_in_one: true, six_of_a_kind: true };
+    await refresh();
+    expect(screen.getByRole("status")).toHaveTextContent("+1 more");
+    expect(screen.queryByText("Six of a Kind")).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(3000));
+    expect(screen.getByRole("status")).toHaveTextContent("Six of a Kind");
+    expect(screen.queryByText("Birdie")).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(2999));
+    expect(screen.getByRole("status")).toHaveTextContent("Six of a Kind");
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  } finally { vi.useRealTimers(); }
+});
+
+it("keeps toasts inside an open results dialog and moves them back when it closes", async () => {
+  const view = render(<><AchievementNotifications /><dialog aria-label="Game results" /></>);
+  const dialog = view.container.querySelector("dialog")!;
+  await waitFor(() => expect(localStorage.getItem(key())).toBe("[]"));
+  statistics.all_time.achievements.six_of_a_kind = true;
+  await refresh();
+  expect(screen.getByRole("status").parentElement).toBe(document.body);
+  await act(async () => { dialog.open = true; });
+  expect(dialog).toContainElement(screen.getByRole("status"));
+  expect(within(dialog).getByRole("button", { name: "Dismiss Six of a Kind achievement notification" })).toBeEnabled();
+  await act(async () => { dialog.open = false; });
+  expect(screen.getByRole("status").parentElement).toBe(document.body);
+  expect(dialog).not.toContainElement(screen.getByRole("status"));
+});
+
 it.each(["golf:results", ACHIEVEMENT_EVENT, "focus", "online"])("checks new achievements on %s", async event => {
   await seed();
   statistics.all_time.achievements.geezer = true;

@@ -38,7 +38,7 @@ it("keeps existing achievements and shows all new Golf and holiday badges from a
   render(<AccountSummary userId="golfer" />);
   await screen.findByLabelText("Your statistics");
   const achievements = screen.getByRole("region", { name: "Achievements" });
-  expect(within(achievements).getAllByRole("button")).toHaveLength(31);
+  expect(within(achievements).getAllByRole("button")).toHaveLength(32);
   expect(screen.getByRole("button", { name: "Below Zero: Unlocked" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Under Par: Unlocked" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Birdie: Unlocked" })).toBeVisible();
@@ -46,11 +46,16 @@ it("keeps existing achievements and shows all new Golf and holiday badges from a
   for (const name of ["Geezer", "Night Owl", "Better with Friends"]) {
     expect(screen.getByRole("button", { name: `${name}: Unlocked` })).toBeVisible();
   }
-  for (const name of ["Eagle", "Hole in One", "Six of a Kind", "Up and Down", "Out of the Rough", "Photo Finish", "Sunday Best",
-    "Auld Lang Syne", "Lonely Heart", "Lucky Clover", "Easter Egg", "Fireworks", "Thankful", "Christmas Spirit",
-    "Early Bird", "Hot Streak", "All Year Round"]) {
+  for (const name of ["Eagle", "Hole in One", "Six of a Kind", "Deuce Almighty", "Up and Down", "Out of the Rough", "Sunday Best"]) {
     expect(screen.getByRole("button", { name: `${name}: Locked` })).toBeVisible();
   }
+  for (const name of ["Full House", "Photo Finish",
+    "Auld Lang Syne", "Lonely Heart", "Lucky Clover", "Easter Egg", "Fireworks", "Thankful", "Christmas Spirit",
+    "Early Bird", "Hot Streak", "All Year Round"]) {
+    expect(within(achievements).queryByText(name)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: `${name}: Locked` })).not.toBeInTheDocument();
+  }
+  expect(within(achievements).getAllByRole("button", { name: "Secret achievement: Locked" })).toHaveLength(12);
 });
 
 it("shows Six of a Kind as earned with its matching-rank requirement", async () => {
@@ -61,4 +66,15 @@ it("shows Six of a Kind as earned with its matching-rank requirement", async () 
   const badge = await screen.findByRole("button", { name: "Six of a Kind: Unlocked" });
   fireEvent.click(badge);
   expect(await screen.findByRole("tooltip")).toHaveTextContent("Finish a hole with all six board cards the same rank.");
+});
+
+it("shows Deuce Almighty with a lightning bolt and its matching-twos requirement", async () => {
+  const statistics = statisticsFixture(1);
+  statistics.all_time.achievements.deuce_almighty = true;
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ statistics }))));
+  render(<AccountSummary userId="golfer" />);
+  const badge = await screen.findByRole("button", { name: "Deuce Almighty: Unlocked" });
+  expect(badge.querySelector('svg[data-icon="bolt"]')).toBeInTheDocument();
+  fireEvent.click(badge);
+  expect(await screen.findByRole("tooltip")).toHaveTextContent("Finish a hole with a matching 2×2 block of twos.");
 });

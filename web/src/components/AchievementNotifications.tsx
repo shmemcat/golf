@@ -8,6 +8,7 @@ import { readStorage, writeStorage } from "@/lib/storage";
 import styles from "@/styles/achievement-notifications.module.css";
 
 const unlockId = (badge: Achievement) => badge.tier ? `${badge.id}_${badge.tier}` : badge.id;
+const MAX_VISIBLE_TOASTS = 3;
 
 export function AchievementNotifications() {
   const { user } = useAuth();
@@ -16,7 +17,24 @@ export function AchievementNotifications() {
 
 function AccountNotifications({ userId }: { userId: string }) {
   const [notice, setNotice] = useState<Achievement[]>([]);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement>(document.body);
   const seenRef = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    // Native modal dialogs cover and disable content outside their top layer.
+    let currentTarget: HTMLElement = document.body;
+    const updateTarget = () => {
+      const dialogs = document.querySelectorAll<HTMLDialogElement>("dialog[open]");
+      const target = dialogs[dialogs.length - 1] ?? document.body;
+      if (target === currentTarget) return;
+      currentTarget = target;
+      setPortalTarget(target);
+    };
+    const observer = new MutationObserver(updateTarget);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["open"] });
+    updateTarget();
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const key = `golf.achievements-seen.v1:${encodeURIComponent(userId)}`;
@@ -61,12 +79,12 @@ function AccountNotifications({ userId }: { userId: string }) {
 
   useEffect(() => {
     if (!notice.length) return;
-    const timer = window.setTimeout(() => setNotice([]), 3000);
+    const timer = window.setTimeout(() => setNotice(previous => previous.slice(MAX_VISIBLE_TOASTS)), 3000);
     return () => window.clearTimeout(timer);
   }, [notice]);
 
   if (!notice.length) return null;
-  const visible = notice.slice(0, 3);
+  const visible = notice.slice(0, MAX_VISIBLE_TOASTS);
   const extra = notice.length - visible.length;
   return createPortal(
     <div className={styles.stack} role="status" aria-live="polite" aria-atomic="true">
@@ -80,6 +98,6 @@ function AccountNotifications({ userId }: { userId: string }) {
         <button type="button" className={styles.dismiss} aria-label={`Dismiss ${badge.name} achievement notification`}
           onClick={() => setNotice(previous => previous.filter(item => unlockId(item) !== unlockId(badge)))}>×</button>
       </div>)}
-    </div>, document.body
+    </div>, portalTarget
   );
 }

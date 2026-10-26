@@ -37,7 +37,8 @@ function setup({ music = true, profile = false, sessionUserId = "1", fail = fals
 it("saves Geezer when music is turned off and immediately refreshes the account badge", async () => {
   const fetcher = setup({ profile: true });
   await screen.findByLabelText("Your statistics");
-  expect(screen.getByRole("button", { name: "Geezer: Locked" })).toBeVisible();
+  expect(screen.queryByText("Geezer")).not.toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "Secret achievement: Locked" })).toHaveLength(16);
   expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/achievements"))).toHaveLength(0);
   fireEvent.click(screen.getByRole("button", { name: "Toggle music" }));
   expect(await screen.findByRole("button", { name: "Geezer: Unlocked" })).toBeVisible();
@@ -84,6 +85,7 @@ it("keeps music controls working without showing an unlock when saving fails", a
   fireEvent.click(screen.getByRole("button", { name: "Toggle music" }));
   await waitFor(() => expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/achievements"))).toHaveLength(1));
   expect(screen.getByRole("button", { name: "Toggle music" })).toHaveAttribute("aria-pressed", "false");
-  expect(screen.getByRole("button", { name: "Geezer: Locked" })).toBeVisible();
+  expect(screen.queryByText("Geezer")).not.toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "Secret achievement: Locked" })).toHaveLength(16);
   expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/stats"))).toHaveLength(1);
 });

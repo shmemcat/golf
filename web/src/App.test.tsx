@@ -490,7 +490,7 @@ it("shows real scores and earned badges, saves profile edits, and keeps another 
     screen.getByRole("button", { name: "Under Par: Unlocked" })
   ).toBeVisible();
   expect(
-    screen.getByRole("button", { name: "Full House: Locked" })
+    screen.getByRole("button", { name: "Eagle: Locked" })
   ).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Settings menu" }));
   await user.click(screen.getByRole("link", { name: "Profile", exact: true }));

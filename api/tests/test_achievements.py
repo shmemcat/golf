@@ -105,38 +105,71 @@ def test_six_of_a_kind_cannot_accumulate_matches_across_holes(ranks):
     assert not data["metrics"][0].get("six_of_a_kind", False)
 
 
+@pytest.mark.parametrize("ranks, expected, score", [
+    (("2", "2", "K", "2", "2", "K"), True, -28),
+    (("K", "2", "2", "K", "2", "2"), True, -28),
+    (("2",) * 6, True, -32),
+    (("2", "2", "2", "2", "2", "K"), True, -30),
+    (("2", "2", "3", "2", "2", "A"), True, -24),
+    (("9", "9", "2", "9", "9", "2"), False, None),
+    (("2", "K", "2", "2", "K", "2"), False, None),
+    (("2", "2", "K", "2", "A", "K"), False, None),
+    (("A", "2", "K", "A", "2", "K"), False, None),
+])
+def test_deuce_almighty_requires_an_adjacent_block_of_twos_without_changing_scores(ranks, expected, score):
+    game = engine.deal(2)
+    data = {"game": game, "metrics": [{}, {}]}
+    for index, (cell, rank) in enumerate(zip(game["players"][0]["cards"], ranks)):
+        cell.update(card={"rank": rank, "suit": engine.SUITS[index % 4]}, faceUp=True)
+    before = copy.deepcopy(game)
+    for _ in range(3):
+        count_hole(data)
+        assert bool(data["metrics"][0].get("deuce_almighty")) == expected
+    assert game == before
+    if expected:
+        assert engine.score_grid(game["players"][0]["cards"]) == score
+        for cell in game["players"][0]["cards"]:
+            cell["card"]["rank"] = "K"
+        count_hole(data)
+        assert data["metrics"][0]["deuce_almighty"]
+
+
+@pytest.mark.parametrize("achievement, matching_ranks, expected_score", [
+    ("six_of_a_kind", ("K",) * 6, -20),
+    ("deuce_almighty", ("2", "2", "K", "2", "2", "K"), -28),
+])
 @pytest.mark.parametrize("status", ["completed", "abandoned", "cancelled"])
 @pytest.mark.parametrize("mode", ["bot", "multiplayer"])
-def test_six_of_a_kind_survives_result_reload_and_is_scoped_to_player_and_mode(app, clients, status, mode):
+def test_board_achievement_survives_result_reload_and_is_scoped_to_player_and_mode(app, clients, status, mode, achievement, matching_ranks, expected_score):
     game = engine.deal(2)
     data = {"game": game, "mode": mode, "startedAt": time.time(), "humanCount": 2,
             "seats": [{"userId": 1}, {"userId": 2}], "metrics": [{}, {}]}
-    for player, ranks in zip(game["players"], [("K",) * 6, ("A", "2", "K", "A", "2", "K")]):
+    for player, ranks in zip(game["players"], [matching_ranks, ("A", "2", "K", "A", "2", "K")]):
         for cell, rank in zip(player["cards"], ranks):
             cell["card"]["rank"] = rank
     with app.app_context():
         engine.finish_hole(game, went_out=None)
         app.extensions["golf_runtime"].next_turn(data)
         db.session.commit()
-        assert db.session.get(Result, (game["id"], 1)).detail["six_of_a_kind"]
-        assert not clients(1).get("/api/golf/stats").json["statistics"]["all_time"]["achievements"]["six_of_a_kind"]
+        assert db.session.get(Result, (game["id"], 1)).detail[achievement]
+        assert not clients(1).get("/api/golf/stats").json["statistics"]["all_time"]["achievements"][achievement]
         save_results(data, terminal=status == "completed", abandoned=status == "abandoned", cancelled=status == "cancelled")
         db.session.commit()
         # Repeated terminal saves cannot rewrite a previously earned badge.
-        data["metrics"][0]["six_of_a_kind"] = False
+        data["metrics"][0][achievement] = False
         save_results(data, terminal=True)
         db.session.commit()
         db.session.remove()
     stats = clients(1).get("/api/golf/stats").json["statistics"]
-    assert stats["all_time"]["achievements"]["six_of_a_kind"]
-    assert stats[mode]["achievements"]["six_of_a_kind"]
+    assert stats["all_time"]["achievements"][achievement]
+    assert stats[mode]["achievements"][achievement]
     other_mode = "multiplayer" if mode == "bot" else "bot"
-    assert not stats[other_mode]["achievements"]["six_of_a_kind"]
-    assert not clients(2).get("/api/golf/stats").json["statistics"]["all_time"]["achievements"]["six_of_a_kind"]
+    assert not stats[other_mode]["achievements"][achievement]
+    assert not clients(2).get("/api/golf/stats").json["statistics"]["all_time"]["achievements"][achievement]
     with app.app_context():
         stored = db.session.get(Result, (game["id"], 1))
-        assert stored.score == -20
-        assert stored.detail["holes"] == [-20]
+        assert stored.score == expected_score
+        assert stored.detail["holes"] == [expected_score]
         assert stored.status == status
 
 
@@ -336,7 +369,7 @@ def test_settings_unlocks_require_account_csrf_origin_and_allowlisted_id(app, cl
     assert guest.post(path, json={"id": "geezer"}, headers=guest.golf_headers).status_code == 401
     assert player.post(path, json={"id": "geezer"}).status_code == 403
     assert player.post(path, json={"id": "geezer"}, headers={**player.golf_headers, "Origin": "https://evil.example"}).status_code == 403
-    for value in ["six_of_a_kind", "night_owl", "better_with_friends", "hot_streak", "all_year_round", None, []]:
+    for value in ["six_of_a_kind", "deuce_almighty", "night_owl", "better_with_friends", "hot_streak", "all_year_round", None, []]:
         assert player.post(path, json={"id": value}, headers=player.golf_headers).status_code == 400
     with app.app_context():
         assert AchievementUnlock.query.count() == 0
