@@ -279,7 +279,7 @@ def test_privacy_idempotent_create_and_guardrails(app, clients):
     assert value['game']['deckCount'] == 68
     assert 'deck' not in value['game']
     assert all(set(c['card']) == {'id'} for p in value['game']['players'] for c in p['cards'])
-    assert all(set(p) == {'name', 'profileIcon', 'isBot', 'connected'} for p in value['seats'])
+    assert all(set(p) == {'name', 'profileIcon', 'isBot', 'connected', 'cardBack'} for p in value['seats'])
     assert outsider.get('/api/golf/rooms/' + value['code']).status_code == 403
     assert client.post('/api/golf/bots', json={'players': 2}).status_code == 403
     assert client.post('/api/golf/bots', json={}, headers={**client.golf_headers, 'Origin': 'https://evil.example'}).status_code == 403
@@ -502,7 +502,9 @@ def test_host_replay_still_needs_two_people_but_bot_games_do_not(app, clients):
     action(host, code, 'start'); complete(app, code)
     action(guest, code, 'leave')
     finished = state(host, code)
-    assert action(host, code, 'restart').json['code'] == 'LOBBY_CLOSED'
+    assert not finished['closed'] and finished['stage'] == 'lobby'
+    assert action(host, code, 'restart').json['code'] == 'INVALID_MOVE'
+    assert action(host, code, 'start').status_code == 400
     assert state(host, code) == finished
     action(host, code, 'leave')
     solo = create(host)['code']; complete(app, solo)

@@ -167,18 +167,14 @@ def test_account_outage_leaves_the_guest_seat_available_for_transfer(app, lobby,
 
 
 @pytest.mark.parametrize('seat', [1, 2])
-def test_disconnected_guest_and_account_lobby_seats_expire_after_sixty_seconds(app, lobby, seat):
+def test_disconnected_guest_and_account_lobby_seats_remain_until_explicit_leave(app, lobby, seat):
     people, sockets, connect, code, runtime, advance, clock = lobby
     sockets[seat].disconnect(namespace='/golf')
-    advance(59)
+    advance(30 * 24 * 3600)
     assert len(state(people[0], code)['seats']) == 3
-    advance(1)
-    value = state(people[0], code)
-    assert len(value['seats']) == 2
-    assert value['capacity'] == 4
-    assert value['game'] is None
-    assert people[seat].get('/api/golf/rooms/' + code).json['code'] == 'NOT_SEATED'
     assert post(people[seat], '/lobbies/join', {'code': code}).status_code == 200
+    connect(people[seat])
+    assert state(people[seat], code)['mySeat'] == seat
     assert len(state(people[0], code)['seats']) == 3
     with app.app_context():
         assert Result.query.count() == Event.query.count() == 0
@@ -198,80 +194,109 @@ def test_reconnecting_or_another_tab_cancels_lobby_cleanup(lobby):
     assert len(state(people[0], code)['seats']) == 3
 
 
-def test_expired_host_passes_hosting_to_the_next_player(lobby):
+def test_disconnected_host_retains_membership_until_explicitly_leaving(lobby):
     people, sockets, connect, code, runtime, advance, clock = lobby
     sockets[0].disconnect(namespace='/golf')
-    advance(60)
+    advance(86400)
+    assert state(people[0], code)['isHost']
+    assert action(people[0], code, 'leave').status_code == 200
     value = state(people[1], code)
     assert value['isHost'] and value['mySeat'] == 0
-    assert len(value['seats']) == 2
     assert action(people[1], code, 'start').status_code == 200
 
 
-def test_multiple_expired_seats_close_an_empty_lobby_without_results(app, lobby):
+def test_all_phones_can_sleep_and_only_the_last_explicit_departure_closes_lobby(app, lobby):
     people, sockets, connect, code, runtime, advance, clock = lobby
-    for socket in sockets:
+    for socket in sockets[:]:
         socket.disconnect(namespace='/golf')
-    advance(60)
+    advance(30 * 24 * 3600)
+    for index, person in enumerate(people):
+        connect(person)
+        assert state(person, code)['mySeat'] == index
+    for person in people[:-1]:
+        assert action(person, code, 'leave').status_code == 200
+        assert not state(people[-1], code)['closed']
+    assert action(people[-1], code, 'leave').status_code == 200
     with app.app_context():
-        data = db.session.get(Room, code).data
-        assert data['seats'] == []
-        assert data['closed']
-        assert data['lobbyDisconnectAt'] is None
+        assert db.session.get(Room, code).data['closed']
         assert Result.query.count() == Event.query.count() == 0
-    assert post(people[0], '/lobbies/join', {'code': code}).json['code'] == 'LOBBY_CLOSED'
 
 
-def test_other_seat_changes_do_not_restart_a_disconnected_players_grace_period(lobby):
+def test_another_departure_does_not_remove_a_sleeping_member(lobby):
     people, sockets, connect, code, runtime, advance, clock = lobby
     sockets[2].disconnect(namespace='/golf')
-    advance(30)
     assert action(people[1], code, 'leave').status_code == 200
-    advance(29)
+    advance(86400)
     assert len(state(people[0], code)['seats']) == 2
-    advance(1)
-    assert len(state(people[0], code)['seats']) == 1
+    connect(people[2])
+    assert state(people[2], code)['mySeat'] == 1
 
 
-def test_lobby_join_that_never_subscribes_also_expires(lobby, clients):
+@pytest.mark.parametrize('started', [False, True])
+def test_connected_survivor_keeps_lobby_open_indefinitely_and_can_invite_again(app, lobby, started):
+    people, sockets, connect, code, runtime, advance, clock = lobby
+    if started:
+        assert action(people[0], code, 'start').status_code == 200
+    for person in people[1:]:
+        assert action(person, code, 'leave').status_code == 200
+    advance(120 if started else 60)
+    value = state(people[0], code)
+    assert not value['closed'] and value['stage'] == 'lobby'
+    assert value['game'] is None and len(value['seats']) == 1
+    assert value['capacity'] == 4
+    # Server recovery must also preserve a lobby whose player is still online.
+    runtime.recovered = False
+    advance(30 * 24 * 60 * 60)
+    assert state(people[0], code) == value
+    with app.app_context():
+        data = db.session.get(Room, code).data
+        assert data['inactivityAt'] is None and data['lobbyDisconnectAt'] is None
+    assert post(people[1], '/lobbies/join', {'code': code}).status_code == 200
+    connect(people[1])
+    assert action(people[0], code, 'start').status_code == 200
+    assert state(people[0], code)['game'] is not None
+
+
+def test_lobby_membership_does_not_require_subscribing_to_a_socket(lobby, clients):
     people, sockets, connect, code, runtime, advance, clock = lobby
     outsider = clients(4)
     assert post(outsider, '/lobbies/join', {'code': code}).status_code == 200
-    advance(60)
-    assert len(state(people[0], code)['seats']) == 3
-    assert outsider.get('/api/golf/rooms/' + code).json['code'] == 'NOT_SEATED'
+    advance(86400)
+    assert len(state(people[0], code)['seats']) == 4
+    connect(outsider)
+    assert state(outsider, code)['mySeat'] == 3
 
 
-def test_restart_recovers_legacy_waiting_lobbies_and_allows_reconnect(app, lobby):
+def test_restart_clears_legacy_disconnect_deadlines_and_preserves_members(app, lobby):
     people, sockets, connect, code, runtime, advance, clock = lobby
     with app.app_context():
         row = db.session.get(Room, code)
         data = copy.deepcopy(row.data)
-        data.pop('lobbyDisconnects', None)
-        data.pop('lobbyDisconnectAt', None)
+        data['lobbyDisconnects'] = {'account:1': clock[0] - 1}
+        data['lobbyDisconnectAt'] = clock[0] - 1
         row.data = data
         db.session.commit()
         runtime.connections.clear()
         runtime.recovered = False
-    advance(0)
-    advance(59)
+    advance(86400)
     connect(people[0])
-    advance(1)
-    value = state(people[0], code)
-    assert value['isHost']
-    assert len(value['seats']) == 1
+    assert state(people[0], code)['isHost']
+    assert len(state(people[0], code)['seats']) == 3
+    with app.app_context():
+        assert db.session.get(Room, code).data['lobbyDisconnectAt'] is None
 
 
-def test_starting_a_game_replaces_the_lobby_deadline_with_the_game_deadline(lobby):
+def test_starting_with_a_sleeping_member_gives_them_a_full_decision_deadline(lobby):
     people, sockets, connect, code, runtime, advance, clock = lobby
     sockets[1].disconnect(namespace='/golf')
-    advance(59)
+    advance(86400)
     assert action(people[0], code, 'start').status_code == 200
-    advance(1)
-    assert not state(people[0], code)['seats'][1]['isBot']
-    advance(118)
-    assert not state(people[0], code)['seats'][1]['isBot']
-    advance(1)
-    value = state(people[0], code)
-    assert len(value['seats']) == len(value['game']['players']) == 2
-    assert not any(p['isBot'] for p in value['seats'])
+    advance(0)
+    for person in (people[0], people[2]):
+        for index in (0, 4):
+            assert action(person, code, 'reveal', index=index).status_code == 200
+    advance(540)
+    assert len(state(people[0], code)['seats']) == 3
+    assert state(people[1], code)['idleWarning']
+    advance(60)
+    assert len(state(people[0], code)['seats']) == 2

@@ -1,5 +1,6 @@
 import { OptionsContent } from "./Options";
+import { CardBackPreviewProvider } from "@/context/CardBackContext";
 
 export default function CardBackPickerPreview() {
-  return <OptionsContent />;
+  return <CardBackPreviewProvider><OptionsContent /></CardBackPreviewProvider>;
 }

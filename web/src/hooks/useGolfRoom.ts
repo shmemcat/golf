@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { GolfError, golfGet, golfPost, golfSession, newRequestId, roomPath, type RoomState } from "@/lib/golfApi";
 import { useAuth } from "@/context/AuthContext";
+import { resumeOnWake } from "@/lib/socketResume";
 
 export function useGolfRoom(code: string, initialState: RoomState | null = null) {
   const { user } = useAuth();
@@ -46,20 +47,25 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
     });
     socket.on("golf:state", (next: RoomState) => { if (alive) accept(next); });
     socket.on("golf:removed", (event: { reason?: string } = {}) => { if (alive) { noLongerSeated(event.reason || "removed"); setError("You’re no longer seated at this table."); } });
-    socket.on("connect", () => {
+    const subscribe = () => {
       socket.emit("golf:subscribe", { code }, (reply: { ok: boolean; state?: RoomState; error?: string }) => {
         if (!alive) return;
         if (reply.ok && reply.state) { accept(reply.state); setConnected(true); setError(""); }
         else { setConnected(false); setError(reply.error || "Couldn’t join the table."); if ((reply as { code?: string }).code === "NOT_SEATED") noLongerSeated("removed"); }
       });
-    });
+    };
+    socket.on("connect", subscribe);
     socket.on("disconnect", () => { if (alive) setConnected(false); });
     socket.on("connect_error", () => { if (alive) { setConnected(false); setError("Couldn’t connect to your table. Please retry."); } });
     if (latest.current) socket.connect();
     else void golfGet<{ state: RoomState }>(roomPath(code)).then(({ state: next }) => {
       if (alive) { accept(next); socket.connect(); }
     }).catch(e => { if (alive) { setError(e.message); setNeedsJoin(e instanceof GolfError && e.code === "NOT_SEATED"); } });
-    return () => { alive = false; socket.removeAllListeners(); socket.disconnect(); };
+    const stopWake = resumeOnWake(
+      () => { socket.disconnect(); socket.connect(); },
+      () => { if (socket.connected) subscribe(); else socket.connect(); },
+    );
+    return () => { alive = false; stopWake(); socket.removeAllListeners(); socket.disconnect(); };
   }, [code, accept, attempt, user?.id]);
   const command = async (action: string, detail: Record<string, unknown> = {}) => {
     if (!state || busy.current) return false;

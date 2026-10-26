@@ -2,11 +2,12 @@ import type { Game, GolfCard } from "@/game/engine";
 import type { Stage, TableMotion } from "@/hooks/useGolfTable";
 
 export type GolfMode = "bot" | "multiplayer";
-export interface Participant { name: string; profileIcon: string; isBot: boolean; connected: boolean }
+export interface Participant { name: string; profileIcon: string; isBot: boolean; connected: boolean; cardBack?: string }
 export interface RoomState {
   code: string; mode: GolfMode; capacity: number; revision: number; mySeat: number; isHost: boolean;
   actionTokens?: Record<string, string>;
   seats: Participant[]; stage: Stage | "lobby" | "closed"; closed?: boolean; closedReason?: "not_enough_players" | null;
+  lobbyReason?: "not_enough_players" | null;
   game: (Omit<Game, "deck" | "players"> & { deckCount: number; players: { score: number; cards: { faceUp: boolean; revealedAtEnd?: boolean; card: Pick<GolfCard, "id"> & Partial<GolfCard> }[] }[] }) | null;
   motion: TableMotion | null; ready: number[]; rematchReady: number[]; idleWarning?: boolean;
 }

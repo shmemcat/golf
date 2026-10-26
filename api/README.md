@@ -89,16 +89,20 @@ When a guest signs in, the signed Golf browser session transfers their waiting
 multiplayer lobby seats to the account, including hosting. An existing seat for
 that account is merged rather than duplicated. Guest sockets are disconnected
 and must reconnect with the account cookies; started games are not transferred.
-Disconnected waiting-lobby seats expire after 60 seconds, with reconnects and
-other connected tabs cancelling expiry. Actor-keyed deadlines survive restarts
-and seat changes. Expiring the host passes hosting to the next player; an empty
-abandoned lobby closes. Lobby expiry does not record results or abandonment.
+Lobby membership is kept on the server until explicitly leaving or closing the
+lobby. Locking a phone, closing the browser, or losing the network does not remove
+a member. The last human explicitly leaving closes a waiting lobby. Hosting passes
+to the next member when the host explicitly leaves, including an offline member.
 Every departure removes the seat rather than replacing the player with a bot,
 including during a game. Boards, scores, turns, final-turn queues, animations,
-and readiness follow the remaining players. If fewer than two players or no
-humans remain, the lobby closes and publishes a notice. An unfinished game is
-cancelled for the remaining players without recording a loss or abandonment.
-Finished multiplayer rooms allow two minutes to reconnect. Completed results
+and readiness follow the remaining players. Lobbies stay open indefinitely while
+at least one human remains a member. If only one player remains in a game, they
+return to the waiting lobby with the same invite code and the original lobby
+capacity. An unfinished game is cancelled for the remaining player without
+recording a loss or abandonment. New players can join and start a fresh game.
+The lobby closes automatically only when no humans remain; the host can also
+close a waiting lobby explicitly.
+Finished multiplayer rooms retain their members while offline. Completed results
 remain saved, and room cleanup never changes a completed result to abandonment.
 
 Single-player games have no time limits: starting-card choices, every draw and
@@ -106,7 +110,8 @@ replacement, and Next Hole all wait for the player, including after reconnecting
 Multiplayer matches Hearts: a sound and shake after 15 seconds of an available
 decision, a warning after 9 minutes, and seat removal after 10 minutes.
 This applies to starting cards, draws, replacements, and Next Hole while waiting
-for that player. Disconnected players have 2 minutes to return. Moves cancel the
+for that player, whether connected or offline. Disconnects and reconnects neither
+shorten nor restart this decision deadline. Moves cancel the
 warning; time spent waiting for other players or animations does not count.
 Removal records an abandonment, as does explicitly leaving. A removed seat cannot
 be reclaimed during that game. Single-player games remain untimed. Rematches require all remaining humans to agree,

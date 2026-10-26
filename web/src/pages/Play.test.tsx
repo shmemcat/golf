@@ -197,7 +197,7 @@ it("keeps the multiplayer confirmation busy until the server acknowledges leavin
   await screen.findByRole("dialog");
   await user.click(button("Leave"));
   expect(screen.getByRole("dialog")).toHaveTextContent("Your seat will be removed");
-  expect(screen.getByRole("dialog")).toHaveTextContent("If fewer than two players remain, the lobby will close");
+  expect(screen.getByRole("dialog")).toHaveTextContent("If one player remains, they’ll return to the open lobby to invite others.");
   expect(screen.getByRole("dialog")).toHaveTextContent("Only finished games count toward your statistics.");
   await user.click(button("Yes"));
   expect(button("Leaving…")).toBeDisabled();

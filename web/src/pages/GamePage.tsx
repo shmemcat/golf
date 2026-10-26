@@ -63,6 +63,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   const name = (seat: number) => participants?.[seat]?.name || (seat === 0 ? user?.name || "You" : BOT_NAMES[seat - 1]);
   const isBot = (seat: number) => participants ? participants[seat].isBot : seat !== 0;
   const icon = (seat: number) => participants?.[seat]?.profileIcon || (seat === 0 ? user?.profile_icon : undefined);
+  const cardBackFor = (seat: number) => seat === 0 ? undefined : participants?.[seat]?.cardBack ?? "argyle";
   const roundComplete = game.phase === "round-over";
   const complete = roundComplete || game.phase === "game-over";
   const completedHole = complete ? `${game.id}:${game.hole}` : null;
@@ -194,10 +195,10 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
             aria-label={game.drawn.source === "deck" ? `Discard drawn ${describeCard(game.drawn.card)}`
               : `Drawn ${describeCard(game.drawn.card)}, choose a board card to replace`}
             onClick={table.toss}>
-            <FlipCard key={game.drawn.card.id} card={game.drawn.card} faceUp />
+            <FlipCard key={game.drawn.card.id} card={game.drawn.card} faceUp ownerBack={cardBackFor(seat)} />
             <FadingIndicator active={table.canReplace && game.drawn.source === "deck"} className="golf-selection-indicator" />
           </button>
-        ) : <div role="img" aria-label={`Drawn card: ${describeCard(game.drawn.card)}`}><FlipCard key={game.drawn.card.id} card={game.drawn.card} faceUp /></div>
+        ) : <div role="img" aria-label={`Drawn card: ${describeCard(game.drawn.card)}`}><FlipCard key={game.drawn.card.id} card={game.drawn.card} faceUp ownerBack={cardBackFor(seat)} /></div>
           : shared && <span className="golf-empty-pile" />}
       </div>
       <span>Drawn card</span>
@@ -304,12 +305,12 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
                           <button type="button" className="golf-grid-card golf-selection" data-valid={valid} data-hidden={hidden}
                             disabled={!enabled} aria-label={`${stage === "opening" ? "Reveal" : "Replace"} ${location(index)}, ${description}`}
                             onClick={() => stage === "opening" ? table.reveal(index) : table.replace(index)}>
-                            <FlipCard key={cell.card.id} card={cell.card} faceUp={cell.faceUp} />
+                            <FlipCard key={cell.card.id} card={cell.card} faceUp={cell.faceUp} ownerBack={cardBackFor(seat)} />
                             <FadingIndicator active={valid} className="golf-selection-indicator" />
                           </button>
                         ) : (
                           <div className="golf-grid-card" data-hidden={hidden} role="img" aria-label={`${location(index)}, ${description}`}>
-                            <FlipCard key={cell.card.id} card={cell.card} faceUp={cell.faceUp} />
+                            <FlipCard key={cell.card.id} card={cell.card} faceUp={cell.faceUp} ownerBack={cardBackFor(seat)} />
                           </div>
                         )}
                       </div>
@@ -339,7 +340,8 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
           </button>
         </footer>}
       </main>
-      {motion && <CardFlight key={`${motion.kind}-${motion.seat}-${motion.index}`} flight={motion} board={board} viewedSeat={cycled ? viewedSeat : undefined} />}
+      {motion && <CardFlight key={`${motion.kind}-${motion.seat}-${motion.index}`} flight={motion} board={board} viewedSeat={cycled ? viewedSeat : undefined}
+        ownerBack={motion.kind === "draw" || motion.kind === "upcard" ? undefined : cardBackFor(motion.seat)} />}
       {game.phase === "game-over" && showResults && (resultsHidden ? resultsButton : <GameOverBlock
         players={game.players.map((player, seat) => ({
           name: name(seat), score: player.score, isBot: isBot(seat), icon: icon(seat),

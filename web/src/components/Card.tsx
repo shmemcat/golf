@@ -4,7 +4,7 @@ import { faClub } from "@fortawesome/pro-solid-svg-icons/faClub";
 import { faDiamond } from "@fortawesome/pro-solid-svg-icons/faDiamond";
 import { asset } from "@/lib/assets";
 import { useCardBack } from "@/context/CardBackContext";
-import { cardBackAsset, type CardBackId } from "@/lib/cardBacks";
+import { cardBackAsset, normalizeCardBack, type CardBackId } from "@/lib/cardBacks";
 const suits = {
   S: ["spades", faSpade],
   H: ["hearts", faHeart],
@@ -21,12 +21,14 @@ export function Card({
   rank,
   suit = "S",
   back,
+  ownerBack,
 }: {
   rank?: string;
   suit?: keyof typeof suits;
   back?: CardBackId;
+  ownerBack?: string;
 }) {
-  if (!rank) return <FaceDownCard back={back} />;
+  if (!rank) return <FaceDownCard back={back} ownerBack={ownerBack} />;
   const [label, icon] = suits[suit];
   const [iconWidth, iconHeight, , , paths] = icon.icon;
   return (
@@ -48,9 +50,9 @@ export function Card({
   );
 }
 
-function FaceDownCard({ back }: { back?: CardBackId }) {
-  const { cardBack } = useCardBack();
-  const selected = back ?? cardBack;
+function FaceDownCard({ back, ownerBack }: { back?: CardBackId; ownerBack?: string }) {
+  const { cardBack, displayMode } = useCardBack();
+  const selected = back ?? (displayMode === "players" && ownerBack !== undefined ? normalizeCardBack(ownerBack) : cardBack);
   return <span className="playing-card card-back" role="img" aria-label="Face-down card" data-card-back={selected}>
     <img src={asset(cardBackAsset(selected, "light"))} alt="" width="80" height="112" draggable={false} aria-hidden="true" />
     <img className="card-back-dark" src={asset(cardBackAsset(selected, "dark"))} alt="" width="80" height="112" draggable={false} aria-hidden="true" />

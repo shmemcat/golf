@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { FlipCard } from "./FlipCard";
 import { FLIGHT_MS, type TableMotion } from "@/hooks/useGolfTable";
 
-export function CardFlight({ flight, board, viewedSeat }: { flight: TableMotion; board: RefObject<HTMLDivElement | null>; viewedSeat?: number }) {
+export function CardFlight({ flight, board, viewedSeat, ownerBack }: { flight: TableMotion; board: RefObject<HTMLDivElement | null>; viewedSeat?: number; ownerBack?: string }) {
   const [rects, setRects] = useState<{ from: DOMRect; to: DOMRect; fromOffscreen: boolean; toOffscreen: boolean } | null>(null);
   const [faceUp, setFaceUp] = useState(!flight.flip);
   const reduced = useReducedMotion();
@@ -45,7 +45,7 @@ export function CardFlight({ flight, board, viewedSeat }: { flight: TableMotion;
         opacity: reduced ? 0 : rects.toOffscreen ? [1, 1, 0] : rects.fromOffscreen ? [0, 1, 1] : 1 }}
       transition={{ duration: FLIGHT_MS / 1000, ease: [0.22, 0.68, 0.26, 1] }}
     >
-      <FlipCard card={flight.card} faceUp={faceUp} />
+      <FlipCard card={flight.card} faceUp={faceUp} ownerBack={ownerBack} />
     </motion.div>
   );
 }

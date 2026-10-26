@@ -5,6 +5,7 @@ import { PageLayout } from "@/components/ui/PageLayout";
 import { MenuLink } from "@/components/Buttons";
 import { useAuth } from "@/context/AuthContext";
 import { CardBackOption } from "@/components/CardBackOption";
+import { CardBackDisplayOption } from "@/components/CardBackDisplayOption";
 export default function Options() {
   const { user, loading } = useAuth();
   if (!user)
@@ -24,6 +25,7 @@ export function OptionsContent() {
       </Helmet>
       <PageLayout title="OPTIONS">
         <CardBackOption />
+        <CardBackDisplayOption />
         <TurnSoundOption />
         <div className="button-stack">
           <MenuLink to="/user" name="Back" />

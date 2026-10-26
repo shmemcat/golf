@@ -10,6 +10,7 @@ class Accounts:
     def __init__(self):
         self.deleted = set()
         self.revoked = set()
+        self.card_backs = {}
 
     def refresh(self):
         pass
@@ -20,7 +21,7 @@ class Accounts:
         return self.identity(uid) if uid and uid not in self.revoked else None
 
     def identity(self, uid):
-        return AccountIdentity(uid, f'Player {uid}', 'user', True)
+        return AccountIdentity(uid, f'Player {uid}', 'user', True, self.card_backs.get(uid, 'argyle'))
 
     def public_profiles(self, ids):
         return {uid: self.identity(uid) for uid in ids if uid not in self.deleted}

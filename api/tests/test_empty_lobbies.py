@@ -28,6 +28,10 @@ def test_last_human_closes_room_with_bots_and_keeps_results(app, online, departu
             with app.app_context():
                 assert not db.session.get(Room, code).data.get('closed')
             advance(1)
+    if departure == 'disconnect':
+        for person in people:
+            connect(person)
+            assert action(person, code, 'leave').status_code == 200
     with app.app_context():
         data = db.session.get(Room, code).data
         assert data['closed'] and data['stage'] == 'closed'
@@ -60,8 +64,10 @@ def test_finished_reconnect_cancels_cleanup_and_restart_recovers_it(app, online)
         assert not db.session.get(Room, code).data.get('closed')
     advance(1)
     with app.app_context():
-        assert db.session.get(Room, code).data['closed']
+        assert not db.session.get(Room, code).data.get('closed')
         assert all(r.status == 'completed' for r in Result.query)
+    connect(people[0])
+    assert state(people[0], code)['isHost']
 
 
 def test_explicit_last_departure_closes_waiting_room_without_results(app, lobby):

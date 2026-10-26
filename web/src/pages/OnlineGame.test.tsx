@@ -254,7 +254,7 @@ it("opens signed-in bot tables directly from creation while the socket subscribe
   expect(creates.every(payload => payload.players === 2 && Object.keys(payload).sort().join(",") === "players,requestId")).toBe(true);
   expect(localStorage.getItem("golf.results.1")).toBeNull();
   act(() => { transport.handlers.disconnect(); });
-  expect(screen.getByText("Reconnecting to your table…")).toHaveAttribute("role", "status");
+  expect(screen.getByText(/Reconnecting to your table… Your seat is saved/)).toHaveAttribute("role", "status");
   act(() => { transport.handlers.connect_error(); });
   expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t connect to your table.");
 });
@@ -378,27 +378,32 @@ it("shows and clears the inactivity warning, then explains removal", async () =>
   expect(screen.getByRole("link", { name: "Back to Play" })).toBeInTheDocument();
 });
 
-it.each([false, true])("replaces a two-player table with a closure notice when the other player leaves (reload=%s)", async reload => {
+it.each([false, true])("returns to the open lobby when the other player leaves (reload=%s)", async reload => {
   const room = roomFixture(2, 0);
-  const closed = { ...room, revision: room.revision + 1, closed: true, closedReason: "not_enough_players",
-    stage: "closed", mySeat: 0, seats: room.seats.slice(0, 1),
-    game: { ...room.game!, players: room.game!.players.slice(0, 1), turn: 0, starter: 0 }, motion: null };
-  transport.reply = reload ? closed : room;
+  const lobby = { ...room, revision: room.revision + 1, lobbyReason: "not_enough_players",
+    stage: "lobby", mySeat: 0, seats: room.seats.slice(0, 1), game: null, motion: null };
+  transport.reply = reload ? lobby : room;
   vi.stubGlobal("fetch", vi.fn(async (path: string) => {
     if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
     if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
     if (path === "/api/golf/active") return response({ rooms: [] });
-    return response({ state: reload ? closed : room });
+    return response({ state: reload ? lobby : room });
   }));
   render(<MemoryRouter initialEntries={["/game/multiplayer/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
   if (!reload) {
     expect(await screen.findByRole("main", { name: "2-player Golf table" })).toBeInTheDocument();
-    act(() => transport.handlers["golf:state"](closed));
+    act(() => transport.handlers["golf:state"](lobby));
   }
-  expect(await screen.findByText("LOBBY CLOSED")).toBeInTheDocument();
-  expect(screen.getByRole("status")).toHaveTextContent("There aren’t enough players to continue. The lobby has closed.");
-  expect(screen.queryByRole("button", { name: /Draw from deck/ })).not.toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Back to Play" })).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByText("GAME LOBBY")).toBeInTheDocument();
+    expect(screen.getByText(/Your lobby is still open/)).toHaveAttribute("role", "status");
+    expect(screen.getByRole("textbox", { name: "Code", exact: true })).toHaveValue(room.code);
+    expect(screen.getByRole("button", { name: "Start Game" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Close Lobby" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Draw from deck/ })).not.toBeInTheDocument();
+  });
+  act(() => transport.handlers["golf:state"]({ ...lobby, revision: lobby.revision + 1, seats: room.seats }));
+  expect(screen.getByRole("button", { name: "Start Game" })).toBeEnabled();
 });
 
 it("reduces the visible table when a player leaves a three-player game", async () => {

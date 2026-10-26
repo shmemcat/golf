@@ -68,7 +68,7 @@ function ReadyTable({ room, selection }: { room: ReturnType<typeof useGolfRoom>;
   }, [completed]);
   const inactivityNotice = state.idleWarning ? <div className="golf-connection-status" role="alert">You’ll be removed for inactivity in 1 minute. Make a move to stay in the game.</div> : undefined;
   const connectionNotice = room.error || (!room.connected && wasConnected.current) ? <div className="golf-connection-status" role={room.error ? "alert" : "status"}>
-    {room.error || (state.mode === "multiplayer" ? "Reconnecting to your table… Your seat is removed after 2 minutes." : "Reconnecting to your table…")}{" "}<button className="link" type="button" onClick={room.retry}>Retry</button>
+    {room.error || "Reconnecting to your table… Your seat is saved."}{" "}<button className="link" type="button" onClick={room.retry}>Retry</button>
   </div> : inactivityNotice;
   return <GolfTableView count={state.seats.length} selection={selection} table={table} participants={participants}
     multiplayer={state.mode === "multiplayer"} isHost={state.isHost} disconnected={!room.connected} pending={room.pending}
@@ -83,7 +83,7 @@ function ConnectedGame({ code, selection = selectionStyle(null), initialState = 
   const room = useGolfRoom(code, initialState);
   const state = room.state;
   if (room.removedReason) return <PageLayout title="REMOVED FROM GAME">
-    <p role="alert">{room.removedReason === "idle" ? "You were removed for inactivity." : room.removedReason === "disconnected" ? "You were removed after disconnecting for 2 minutes." : "You’re no longer seated at this table."}</p>
+    <p role="alert">{room.removedReason === "idle" ? "You were removed for inactivity." : "You’re no longer seated at this table."}</p>
     <MenuLink to="/play" name="Back to Play" />
   </PageLayout>;
   if (state?.closed) return <LobbyRoom room={room} />;

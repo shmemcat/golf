@@ -67,24 +67,26 @@ def test_opening_warning_at_nine_minutes_clears_on_move_and_removes_at_ten(app, 
         assert Result.query.filter_by(user_id=2).one().status == 'abandoned'
 
 
-def test_disconnect_has_two_minutes_reconnect_cancels_it_and_expiry_is_final(app, online):
+def test_disconnect_and_reconnect_preserve_the_ten_minute_decision_deadline(app, online):
     people, sockets, connect, code, runtime, advance, clock = online
-    sockets[0].disconnect(namespace='/golf')
-    advance(119)
-    assert not state(people[1], code)['seats'][0]['isBot']
-    returned = connect(people[0])
-    advance(1)
-    assert not state(people[1], code)['seats'][0]['isBot']
-    returned.disconnect(namespace='/golf')
-    advance(119)
-    assert not state(people[1], code)['seats'][0]['isBot']
-    advance(1)
-    assert len(state(people[1], code)['seats']) == 2
-    assert state(people[1], code)['seats'][0]['name'] == 'Player 2'
-    assert state(people[1], code)['isHost']
-    assert people[0].get('/api/golf/rooms/' + code).json['code'] == 'NOT_SEATED'
+    for index in (0, 4):
+        assert action(people[1], code, 'reveal', index=index).status_code == 200
     with app.app_context():
-        assert db.session.get(Room, code).data['removed']['account:1'] == 'disconnected'
+        deadline = copy.deepcopy(db.session.get(Room, code).data['inactivity']['0'])
+    sockets[0].disconnect(namespace='/golf')
+    advance(539)
+    returned = connect(people[0])
+    assert state(people[0], code)['mySeat'] == 0
+    with app.app_context():
+        assert db.session.get(Room, code).data['inactivity']['0'] == deadline
+    advance(1)
+    assert state(people[0], code)['idleWarning']
+    returned.disconnect(namespace='/golf')
+    advance(60)
+    assert len(state(people[1], code)['seats']) == 2
+    with app.app_context():
+        assert db.session.get(Room, code).data['removed']['account:1'] == 'idle'
+        assert Result.query.filter_by(user_id=1).one().status == 'abandoned'
 
 
 def test_second_connection_keeps_seat_online(online):
@@ -153,7 +155,7 @@ def test_removal_pauses_for_account_outages_outside_lock_and_grants_recovery(app
     assert state(people[1], code)['seats'][0]['name'] == 'Player 2'
 
 
-def test_finished_games_have_no_idle_deadline_but_expire_disconnected_seats(app, online):
+def test_finished_games_preserve_disconnected_seats_without_an_idle_deadline(app, online):
     people, sockets, connect, code, runtime, advance, clock = online
     with app.app_context():
         row = db.session.get(Room, code)
@@ -161,15 +163,13 @@ def test_finished_games_have_no_idle_deadline_but_expire_disconnected_seats(app,
         data['game']['phase'] = 'game-over'
         data['next'] = None
         runtime.save(row, data, 'test_setup')
-    advance(10000)
-    assert all(not p['isBot'] for p in state(people[1], code)['seats'][:2])
-    sockets[0].disconnect(namespace='/golf')
-    advance(119)
-    assert not state(people[1], code)['seats'][0]['isBot']
-    advance(1)
-    assert len(state(people[1], code)['seats']) == 2
-    assert state(people[1], code)['seats'][0]['name'] == 'Player 2'
-    assert state(people[1], code)['isHost']
+    for socket in sockets[:]:
+        socket.disconnect(namespace='/golf')
+    advance(30 * 24 * 3600)
+    connect(people[0])
+    assert state(people[0], code)['mySeat'] == 0
+    assert len(state(people[0], code)['seats']) == 3
+    assert not state(people[0], code)['closed']
 
 
 @pytest.mark.parametrize('kind', ['opening_timeout', 'turn_timeout', 'round_timeout'])
@@ -186,16 +186,20 @@ def test_legacy_human_deadlines_do_not_make_automatic_moves(app, online, kind):
     assert state(people[0], code)['game'] == before
 
 
-def test_restart_converts_idle_clock_to_two_minute_reconnect_window(app, online):
+def test_restart_preserves_the_server_decision_clock_without_shortening_it(app, online):
     people, sockets, connect, code, runtime, advance, clock = online
     with app.app_context():
+        deadline = db.session.get(Room, code).data['inactivity']['0']['at']
         runtime.connections.clear()
         runtime.recovered = False
-    advance(0)
-    advance(119)
-    assert not state(people[1], code)['seats'][0]['isBot']
-    advance(1)
+    advance(120)
     with app.app_context():
         data = db.session.get(Room, code).data
-        assert all(p['left'] for p in data['seats'] if not p['isBot'])
-        assert data['next'] is None
+        assert data['inactivity']['0']['at'] == deadline
+        assert len(data['seats']) == 3
+    advance(420)
+    assert state(people[0], code)['idleWarning']
+    advance(60)
+    with app.app_context():
+        data = db.session.get(Room, code).data
+        assert data['closed'] and data['next'] is None

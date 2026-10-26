@@ -92,9 +92,10 @@ def test_every_game_phase_is_discoverable_except_completed_solo(app, clients, mo
             assert active(friend)[0]["code"] == room["code"]
             assert command(player, room, "leave").status_code == 200
             assert active(player) == []
-            assert active(friend) == []
+            assert active(friend)[0]['code'] == room['code']
             remaining = friend.get("/api/golf/rooms/" + room["code"]).json["state"]
-            assert remaining["closedReason"] == "not_enough_players"
+            assert not remaining['closed'] and remaining['stage'] == 'lobby'
+            assert remaining['game'] is None
 
 
 def test_changing_accounts_never_discovers_the_previous_accounts_games(app, clients):

@@ -1,4 +1,5 @@
 import type { GameTurnSoundOptions, TurnSoundUpdate } from "@/lib/turnSound";
+import type { CardBackDisplayMode } from "@/lib/cardBackDisplay";
 export function accountApiBase() {
   return import.meta.env.VITE_ACCOUNT_API_URL?.trim() || "/api/account";
 }
@@ -12,12 +13,13 @@ export type AccountUser = {
   turn_sound?: Partial<Record<"golf" | "euchre" | "hearts", boolean>>;
   turn_sound_options?: GameTurnSoundOptions;
   card_backs?: Partial<Record<"golf" | "euchre" | "hearts", string>>;
+  card_back_display?: Partial<Record<"golf" | "euchre" | "hearts", CardBackDisplayMode>>;
 };
 export type ProfileUpdate = {
   profile_icon?: string;
   email?: string;
   turn_sound?: TurnSoundUpdate & { game: "golf" | "euchre" | "hearts" };
-  card_back?: { game: "golf"; design: string };
+  card_back?: { game: "golf"; design?: string; display?: CardBackDisplayMode };
 };
 export type AccountSession = {
   user: AccountUser | null;

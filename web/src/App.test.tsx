@@ -22,6 +22,7 @@ const account = {
   email_verified: true,
   turn_sound: { golf: false, euchre: false, hearts: false },
   card_backs: { golf: "argyle" },
+  card_back_display: { golf: "uniform" as "uniform" | "players" },
 };
 let current: typeof account | null;
 let failLogin: boolean;
@@ -72,7 +73,9 @@ beforeEach(() => {
               },
             }
           : data.card_back
-            ? { ...current, card_backs: { ...current.card_backs, [data.card_back.game]: data.card_back.design } }
+            ? { ...current,
+                card_backs: { ...current.card_backs, [data.card_back.game]: data.card_back.design ?? current.card_backs.golf },
+                card_back_display: { ...current.card_back_display, [data.card_back.game]: data.card_back.display ?? current.card_back_display.golf } }
             : { ...current, ...data };
       }
       if (path === "/delete") {
@@ -612,4 +615,18 @@ it("does not sign a user back in when an earlier profile save finishes after log
   await screen.findByText("Account: Guest");
   await act(async () => release());
   expect(screen.getByText("Account: Guest")).toBeInTheDocument();
+});
+
+it("saves the illustrated display tiles on the actual Options page and restores the preference", async () => {
+  current = { ...account, card_backs: { golf: "ginkgo" } };
+  const first = render(<MemoryRouter initialEntries={["/options"]}><Providers><App /></Providers></MemoryRouter>);
+  const radio = await screen.findByRole("radio", { name: "Each player’s design", exact: true });
+  expect(screen.queryByRole("combobox", { name: "Preview menu design" })).not.toBeInTheDocument();
+  await userEvent.click(radio);
+  await waitFor(() => expect(current?.card_back_display.golf).toBe("players"));
+  expect(current?.card_backs.golf).toBe("ginkgo");
+  first.unmount();
+  render(<MemoryRouter initialEntries={["/options"]}><Providers><App /></Providers></MemoryRouter>);
+  await waitFor(() => expect(screen.getByRole("radio", { name: "Each player’s design", exact: true })).toBeChecked());
+  expect(screen.getByRole("heading", { name: "Ginkgo", exact: true })).toBeInTheDocument();
 });

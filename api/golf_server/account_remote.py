@@ -46,10 +46,12 @@ def decode_identity(value):
         or not isinstance(value.get("profile_icon"), str)
         or len(value["profile_icon"]) > 64
         or type(value.get("email_verified")) is not bool
+        or not isinstance(value.get("golf_card_back", "argyle"), str)
+        or len(value.get("golf_card_back", "argyle")) > 64
     ):
         raise ValueError("Malformed identity")
     return AccountIdentity(
-        value["id"], value["username"], value["profile_icon"], value["email_verified"]
+        value["id"], value["username"], value["profile_icon"], value["email_verified"], value.get("golf_card_back", "argyle")
     )
 
 

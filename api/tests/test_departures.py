@@ -151,12 +151,14 @@ def test_departure_while_reviewing_a_previous_hole_keeps_both_boards_aligned(app
 
 @pytest.mark.parametrize('started', [False, True])
 @pytest.mark.parametrize('host_leaves', [False, True])
-def test_two_player_departure_closes_with_notice_and_no_loss_for_survivor(app, clients, started, host_leaves):
+@pytest.mark.parametrize('capacity', [2, 6])
+def test_two_player_departure_keeps_lobby_joinable_with_no_loss_for_survivor(app, clients, started, host_leaves, capacity):
     host, guest = clients(1), clients(2)
-    code = create(host, 2, 'multiplayer')['code']
+    code = create(host, capacity, 'multiplayer')['code']
     post(guest, '/lobbies/join', {'code': code})
     if started:
         assert action(host, code, 'start').status_code == 200
+    original_game = state(host, code)['game']
     survivor, leaving = (guest, host) if host_leaves else (host, guest)
     socket = app.extensions['socketio'].test_client(app, namespace='/golf', flask_test_client=survivor,
                                                    auth={'csrf_token': survivor.golf_token})
@@ -165,13 +167,15 @@ def test_two_player_departure_closes_with_notice_and_no_loss_for_survivor(app, c
         socket.get_received('/golf')
         assert action(leaving, code, 'leave').status_code == 200
         value = state(survivor, code)
-        assert value['closed'] and value['stage'] == 'closed'
-        assert value['closedReason'] == 'not_enough_players'
+        assert not value['closed'] and value['stage'] == 'lobby'
+        assert value['game'] is None and value['capacity'] == capacity
+        assert value['isHost'] and value['mySeat'] == 0
+        assert value['lobbyReason'] == ('not_enough_players' if started else None)
         assert len(value['seats']) == 1 and not value['seats'][0]['isBot']
         updates = [e['args'][0] for e in socket.get_received('/golf') if e['name'] == 'golf:state']
-        assert updates[-1]['closedReason'] == 'not_enough_players'
-        assert survivor.get('/api/golf/active').json['rooms'] == []
-        assert post(survivor, '/lobbies/join', {'code': code}).json['code'] == 'LOBBY_CLOSED'
+        assert not updates[-1]['closed'] and updates[-1]['game'] is None
+        assert survivor.get('/api/golf/active').json['rooms'][0]['code'] == code
+        assert leaving.get('/api/golf/active').json['rooms'] == []
         stats = survivor.get('/api/golf/stats').json['statistics']['all_time']
         assert stats['games_played'] == stats['games_lost'] == stats['games_abandoned'] == 0
         assert survivor.get('/api/golf/results').json['results'] == []
@@ -180,6 +184,14 @@ def test_two_player_departure_closes_with_notice_and_no_loss_for_survivor(app, c
             assert data['next'] is None and data['motion'] is None
             assert data['inactivityAt'] is None and data['lobbyDisconnectAt'] is None
             assert not any(r.status == 'active' for r in Result.query)
+        assert action(survivor, code, 'start').status_code == 400
+        newcomer = clients(3)
+        assert post(newcomer, '/lobbies/join', {'code': code}).status_code == 200
+        assert action(survivor, code, 'start').status_code == 200
+        fresh = state(survivor, code)
+        assert fresh['game'] is not None and fresh['lobbyReason'] is None
+        assert not original_game or fresh['game']['id'] != original_game['id']
+        assert fresh['capacity'] == len(fresh['seats']) == 2
     finally:
         socket.disconnect(namespace='/golf')
 
@@ -191,7 +203,9 @@ def test_removal_does_not_rewrite_completed_results(app, table):
         before = [(r.user_id, r.status, r.won, r.score, copy.deepcopy(r.detail)) for r in Result.query.order_by(Result.user_id)]
     assert action(people[1], code, 'leave').status_code == 200
     assert action(people[2], code, 'leave').status_code == 200
-    assert state(people[0], code)['closed']
+    value = state(people[0], code)
+    assert not value['closed'] and value['game'] is None
+    assert value['stage'] == 'lobby' and value['capacity'] == 3
     with app.app_context():
         assert [(r.user_id, r.status, r.won, r.score, r.detail) for r in Result.query.order_by(Result.user_id)] == before
 
@@ -235,7 +249,7 @@ def test_departure_of_the_last_final_turn_scores_the_hole_once(app, table):
         assert len(ids) == len(set(ids)) == 104
 
 
-def test_multiple_expired_seats_keep_identity_and_close_for_the_survivor(app, table, monkeypatch):
+def test_multiple_idle_seats_keep_identity_and_return_survivor_to_lobby(app, table, monkeypatch):
     people, code = table
     clock = [time.time()]
     monkeypatch.setattr('golf_server.runtime.time.time', lambda: clock[0])
@@ -245,22 +259,26 @@ def test_multiple_expired_seats_keep_identity_and_close_for_the_survivor(app, ta
         row = db.session.get(Room, code)
         data = copy.deepcopy(row.data)
         data.update(stage='opening', next=None, inactivity={})
+        engine.open_bot(data['game'], 2)
         runtime.save(row, data, 'test_setup')
-        clock[0] += 120
+        clock[0] += 540
+        runtime.tick(clock[0])
+        clock[0] += 60
         runtime.tick(clock[0])
         data = db.session.get(Room, code).data
         assert [p['actor'] for p in data['seats']] == ['account:3']
-        assert data['closed'] and data['closedReason'] == 'not_enough_players'
-        assert data['removed'] == {'account:1': 'disconnected', 'account:2': 'disconnected'}
+        assert not data.get('closed') and data['game'] is None
+        assert data['lobbyReason'] == 'not_enough_players' and data['capacity'] == 3
+        assert data['removed'] == {'account:1': 'idle', 'account:2': 'idle'}
         assert Result.query.filter_by(user_id=1).one().status == 'abandoned'
         assert Result.query.filter_by(user_id=2).one().status == 'abandoned'
         assert Result.query.filter_by(user_id=3).one().status == 'cancelled'
 
 
-def test_departure_does_not_restart_another_players_disconnect_deadline(app, table, monkeypatch):
+def test_departure_does_not_restart_another_players_decision_deadline(app, table, monkeypatch):
     people, code = table
     clock = [time.time()]
-    deadline = clock[0] + 120
+    deadline = clock[0] + 540
     monkeypatch.setattr('golf_server.runtime.time.time', lambda: clock[0])
     with app.app_context():
         runtime = app.extensions['golf_runtime']
@@ -268,6 +286,7 @@ def test_departure_does_not_restart_another_players_disconnect_deadline(app, tab
         row = db.session.get(Room, code)
         data = copy.deepcopy(row.data)
         data.update(stage='opening', next=None, inactivity={})
+        engine.open_bot(data['game'], 2)
         runtime.save(row, data, 'test_setup')
     clock[0] += 60
     assert action(people[0], code, 'leave').status_code == 200
@@ -276,4 +295,36 @@ def test_departure_does_not_restart_another_players_disconnect_deadline(app, tab
         assert data['inactivity']['0']['at'] == deadline
         clock[0] = deadline
         runtime.tick(clock[0])
-    assert state(people[2], code)['closedReason'] == 'not_enough_players'
+        clock[0] += 60
+        runtime.tick(clock[0])
+    value = state(people[2], code)
+    assert not value['closed'] and value['stage'] == 'lobby'
+
+
+def test_idle_departures_in_legacy_game_keep_active_survivors_lobby_open(app, table, monkeypatch):
+    people, code = table
+    clock = [time.time()]
+    monkeypatch.setattr('golf_server.runtime.time.time', lambda: clock[0])
+    with app.app_context():
+        runtime = app.extensions['golf_runtime']
+        for seat in range(3):
+            runtime.connections[str(seat)] = (code, f'account:{seat + 1}')
+        row = db.session.get(Room, code)
+        data = copy.deepcopy(row.data)
+        # Existing games do not have a saved original lobby capacity.
+        data.pop('lobbyCapacity', None)
+        data.update(stage='opening', next=None, inactivity={})
+        engine.open_bot(data['game'], 2)
+        runtime.save(row, data, 'test_setup')
+        clock[0] += 540
+        runtime.tick(clock[0])
+        clock[0] += 60
+        runtime.tick(clock[0])
+        data = db.session.get(Room, code).data
+        assert data['removed'] == {'account:1': 'idle', 'account:2': 'idle'}
+        assert Result.query.filter_by(user_id=3).one().status == 'cancelled'
+    value = state(people[2], code)
+    assert not value['closed'] and value['stage'] == 'lobby' and value['game'] is None
+    assert value['capacity'] >= 2 and value['isHost']
+    assert post(people[0], '/lobbies/join', {'code': code}).status_code == 200
+    assert action(people[2], code, 'start').status_code == 200

@@ -31,6 +31,30 @@ function Probe() {
 
 beforeEach(() => { transport.sockets = []; transport.reply = null; });
 
+it("reconnects a sleeping phone with the saved room and fetches the latest state", async () => {
+  const lobby: RoomState = { ...roomFixture(), game: null, stage: "lobby" };
+  transport.reply = { ok: true, state: lobby };
+  vi.stubGlobal("fetch", vi.fn(async (path: string) => path === "/api/account/session"
+    ? response({ user: null, csrf_token: "shared" }) : response({ state: lobby })));
+  const { unmount } = render(<AuthProvider><Probe /></AuthProvider>);
+  await waitFor(() => expect(room.connected).toBe(true));
+  const socket = transport.sockets.at(-1);
+  const initialConnects = socket.connect.mock.calls.length;
+  const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+  act(() => document.dispatchEvent(new Event("visibilitychange")));
+  expect(socket.connect).toHaveBeenCalledTimes(initialConnects);
+  transport.reply = { ok: true, state: { ...lobby, revision: lobby.revision + 1 } };
+  visibility.mockReturnValue("visible");
+  act(() => document.dispatchEvent(new Event("visibilitychange")));
+  expect(socket.disconnect).toHaveBeenCalledOnce();
+  expect(socket.connect).toHaveBeenCalledTimes(initialConnects + 1);
+  expect(room.state?.revision).toBe(lobby.revision + 1);
+  expect(room.state?.mySeat).toBe(lobby.mySeat);
+  unmount();
+  act(() => window.dispatchEvent(new Event("online")));
+  expect(socket.connect).toHaveBeenCalledTimes(initialConnects + 1);
+});
+
 it("resumes the same seat with the updated account after signing in from another tab", async () => {
   const lobby: RoomState = { ...roomFixture(), game: null, stage: "lobby" };
   lobby.seats[1].name = "Guest";
@@ -50,7 +74,10 @@ it("resumes the same seat with the updated account after signing in from another
   current = { ...lobby, revision: lobby.revision + 1, seats: lobby.seats.map((seat, i) => i === 1 ? { ...seat, name: "Friend" } : seat) };
   transport.reply = { ok: true, state: current };
   act(() => window.dispatchEvent(new Event("focus")));
-  await waitFor(() => expect(room.state?.seats[1].name).toBe("Friend"));
+  await waitFor(() => {
+    expect(oldSocket.disconnect).toHaveBeenCalled();
+    expect(room.state?.seats[1].name).toBe("Friend");
+  });
   expect(room.state?.mySeat).toBe(1);
   expect(room.state?.seats).toHaveLength(3);
   expect(room.needsJoin).toBe(false);

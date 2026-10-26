@@ -55,6 +55,7 @@ export function LobbyRoom({ room }: { room: Room }) {
   const leave = (action: "leave" | "close") => { void room.command(action).then(done => { if (done) navigate("/play"); }); };
   return <PageLayout title={state.closed ? "LOBBY CLOSED" : "GAME LOBBY"} contentClassName={styles.page} className={styles.body}>
     {state.closed ? <div className="button-stack"><p role="status">{state.closedReason === "not_enough_players" ? "There aren’t enough players to continue. The lobby has closed." : "The host closed this lobby."}</p><MenuLink to="/play" name="Back to Play" /><MenuLink to="/" name="Home" /></div> : <div className={styles.lobby}>
+      {state.lobbyReason === "not_enough_players" && <p role="status" className={styles.message}>The game ended because there weren’t enough players. Your lobby is still open—invite someone to play again.</p>}
       <LobbySharing code={state.code} />
       <ol className={styles.seats} data-seats={state.capacity} aria-label="Players in lobby">
         {Array.from({ length: state.capacity }, (_, i) => {

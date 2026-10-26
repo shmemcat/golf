@@ -167,8 +167,7 @@ def create_app(config=None, *, accounts=None):
     @app.get("/api/golf/rooms/<code>")
     def get_room(code):
         who = actor()
-        with runtime.lock:
-            return jsonify(state=runtime.view(runtime.get(code).data, who["key"]))
+        return jsonify(state=runtime.state(who, code))
 
     @app.post("/api/golf/rooms/<code>/actions")
     def action(code):
@@ -234,7 +233,7 @@ def create_app(config=None, *, accounts=None):
                 changed = False
                 for person in data["seats"]:
                     if person.get("userId") == uid:
-                        person.update(userId=None, name="Deleted player", profileIcon="user", left=True, actor="deleted:" + secrets.token_hex(8))
+                        person.update(userId=None, name="Deleted player", profileIcon="user", cardBack="argyle", left=True, actor="deleted:" + secrets.token_hex(8))
                         changed = True
                 if changed:
                     old_key = f"account:{uid}"
