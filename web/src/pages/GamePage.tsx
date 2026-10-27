@@ -63,7 +63,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   const name = (seat: number) => participants?.[seat]?.name || (seat === 0 ? user?.name || "You" : BOT_NAMES[seat - 1]);
   const isBot = (seat: number) => participants ? participants[seat].isBot : seat !== 0;
   const icon = (seat: number) => participants?.[seat]?.profileIcon || (seat === 0 ? user?.profile_icon : undefined);
-  const cardBackFor = (seat: number) => seat === 0 ? undefined : participants?.[seat]?.cardBack ?? "argyle";
+  const cardBackFor = (seat: number) => !multiplayer || seat === 0 ? undefined : participants?.[seat]?.cardBack ?? "argyle";
   const roundComplete = game.phase === "round-over";
   const complete = roundComplete || game.phase === "game-over";
   const completedHole = complete ? `${game.id}:${game.hole}` : null;
