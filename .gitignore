@@ -5,6 +5,7 @@ web/dist/
 .env.*
 !.env.example
 .local/
+docs/
 coverage/
 api/.venv/
 api/instance/
