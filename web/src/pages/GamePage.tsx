@@ -21,13 +21,14 @@ import { FadingIndicator } from "@/components/game/FadingIndicator";
 import { GoingOutNotice } from "@/components/game/GoingOutNotice";
 import { GameOverBlock } from "@/components/game/GameOverBlock";
 import { PenaltyBanner } from "@/components/game/PenaltyBanner";
+import { HoleRecordDialog } from "@/components/game/HoleRecordDialog";
 import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
 import { FLIP_MS, useGolfTable } from "@/hooks/useGolfTable";
 import { useInactivityNudge } from "@/hooks/useInactivityNudge";
 import { useGameResults } from "@/hooks/useGameResults";
 import { seatOffset, useTableauNavigation } from "@/hooks/useTableauNavigation";
-import { canOpen, type GolfCard } from "@/game/engine";
+import { canOpen, completedHoleRecords, type GolfCard } from "@/game/engine";
 import { BOT_NAMES, SEAT_LAYOUTS } from "@/game/seats";
 import { readStorage } from "@/lib/storage";
 import { readLocalGame } from "@/lib/localGame";
@@ -45,10 +46,11 @@ const SCORE_POP_BEAT_MS = 250;
 export type DrawLayout = "beside" | "below" | "piles";
 export const drawLayoutFrom = (value: string | null): DrawLayout => value === "below" || value === "piles" ? value : "beside";
 
-export function GolfTableView({ count, selection, table, drawLayout = "beside", resultNotice, participants, rematchWaiting = false, onLeave, connectionNotice, multiplayer = false, isHost = true, disconnected = false, pending = false }: {
+export function GolfTableView({ count, selection, table, drawLayout = "beside", resultNotice, participants, rematchWaiting = false, onLeave, connectionNotice, multiplayer = false, isHost = true, disconnected = false, pending = false, onOpenHoleRecord, previewHideResults = false }: {
   count: number; selection: SelectionStyle; table: ReturnType<typeof useGolfTable>; drawLayout?: DrawLayout; resultNotice?: ReactNode;
   multiplayer?: boolean; isHost?: boolean; disconnected?: boolean; pending?: boolean;
   participants?: Participant[]; rematchWaiting?: boolean; onLeave?: () => void; connectionNotice?: ReactNode;
+  onOpenHoleRecord?: () => void; previewHideResults?: boolean;
 }) {
   const { game, stage, motion } = table;
   const { user } = useAuth();
@@ -67,9 +69,16 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   const roundComplete = game.phase === "round-over";
   const complete = roundComplete || game.phase === "game-over";
   const completedHole = complete ? `${game.id}:${game.hole}` : null;
+  const [recordGame, setRecordGame] = useState<string | null>(null);
+  const recordOpen = recordGame === game.id;
+  const records = completedHoleRecords(game).map(record => ({ ...record,
+    players: record.players.map((player, seat) => ({ ...player,
+      name: player.name ?? name(seat), isBot: player.isBot ?? isBot(seat), icon: player.icon ?? icon(seat),
+    })),
+  }));
   const [reviewedHole, setReviewedHole] = useState<string | null>(null);
   const [scorePopHole, setScorePopHole] = useState<string | null>(null);
-  const [hiddenResultsHole, setHiddenResultsHole] = useState<string | null>(null);
+  const [hiddenResultsHole, setHiddenResultsHole] = useState<string | null>(() => previewHideResults ? completedHole : null);
   const showResults = complete && reviewedHole === completedHole;
   const resultsHidden = completedHole !== null && hiddenResultsHole === completedHole;
   const showHoleScores = complete && scorePopHole === completedHole;
@@ -137,7 +146,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
     return () => { window.clearTimeout(pop); window.clearTimeout(timer); };
   }, [completedHole]);
   useEffect(() => {
-    if (!showResults) return;
+    if (!showResults || recordOpen) return;
     if (resultsHidden) {
       resultsToggle.current?.focus({ preventScroll: true });
       return;
@@ -148,7 +157,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
     dialog.showModal();
     dialog.querySelector("button")?.focus();
     return () => dialog.close();
-  }, [roundComplete, showResults, resultsHidden]);
+  }, [roundComplete, showResults, resultsHidden, recordOpen]);
 
   let hint = "Dealing your cards…";
   if (stage === "opening") hint = game.players[0].cards.filter(card => card.faceUp).length >= 2 ? "Waiting for everyone’s starting cards…" : game.players[0].cards.some(card => card.faceUp)
@@ -223,7 +232,14 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
           playerName={goingOutSeat >= 0 ? name(goingOutSeat) : ""} />
         <header className="golf-table-header">
           <div className="golf-match-status">
-            <span className="golf-info-pill">Hole {game.hole} <span>/ 9</span></span>
+            <button type="button" className="golf-info-pill golf-hole-record-trigger"
+              aria-label={`Hole ${game.hole} of 9. View hole record`} aria-haspopup="dialog" onClick={() => {
+                if (complete) setHiddenResultsHole(completedHole);
+                if (onOpenHoleRecord) onOpenHoleRecord();
+                else setRecordGame(game.id);
+              }}>
+              Hole {game.hole} <span>/ 9</span>
+            </button>
             <FadingIndicator active={!!game.finalTurns && !complete} className="golf-final-turns">Final turns</FadingIndicator>
           </div>
           <div className="golf-piles" role="group" aria-label="Draw piles">
@@ -342,7 +358,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
       </main>
       {motion && <CardFlight key={`${motion.kind}-${motion.seat}-${motion.index}`} flight={motion} board={board} viewedSeat={cycled ? viewedSeat : undefined}
         ownerBack={motion.kind === "draw" || motion.kind === "upcard" ? undefined : cardBackFor(motion.seat)} />}
-      {game.phase === "game-over" && showResults && (resultsHidden ? resultsButton : <GameOverBlock
+      {game.phase === "game-over" && showResults && !recordOpen && (resultsHidden ? resultsButton : <GameOverBlock
         players={game.players.map((player, seat) => ({
           name: name(seat), score: player.score, isBot: isBot(seat), icon: icon(seat),
         }))}
@@ -368,6 +384,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
           {resultsButton}
         </dialog>
       ))}
+      {recordOpen && <HoleRecordDialog key={game.id} records={records} onClose={() => setRecordGame(null)} />}
     </div>
   );
 }

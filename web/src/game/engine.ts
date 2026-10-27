@@ -3,6 +3,14 @@ import { BotPolicy } from "./bots";
 export { RANKS, SUITS, cardValue, type Rank, type Suit, type GolfCard, type GridCard } from "./cards";
 export type DrawSource = "deck" | "discard";
 export interface Player { cards: GridCard[]; score: number }
+export interface CompletedHole {
+  hole: number;
+  wentOut: number | null;
+  players: {
+    cards: GolfCard[]; score: number; penalty?: number;
+    name?: string; isBot?: boolean; icon?: string;
+  }[];
+}
 export interface Game {
   id: string;
   players: Player[];
@@ -15,6 +23,7 @@ export interface Game {
   phase: "opening" | "draw" | "replace" | "round-over" | "game-over";
   finalTurns: number[] | null;
   history: number[][];
+  holeRecords?: CompletedHole[];
 }
 
 export function shuffle<T>(cards: readonly T[], random = Math.random): T[] {
@@ -26,7 +35,7 @@ export function shuffle<T>(cards: readonly T[], random = Math.random): T[] {
   return result;
 }
 
-function deal(id: string, count: number, hole: number, starter: number, scores: number[], history: number[][]): Game {
+function deal(id: string, count: number, hole: number, starter: number, scores: number[], history: number[][], holeRecords: CompletedHole[] = []): Game {
   const deck = shuffle([0, 1].flatMap(deckIndex => SUITS.flatMap(suit =>
     RANKS.map(rank => ({ id: `${deckIndex}-${rank}${suit}`, rank, suit }))
   )));
@@ -34,7 +43,7 @@ function deal(id: string, count: number, hole: number, starter: number, scores: 
   for (let card = 0; card < 6; card++) {
     for (const player of players) player.cards.push({ card: deck.pop()!, faceUp: false });
   }
-  return { id, players, deck, discard: [], drawn: null, hole, starter, turn: starter, phase: "opening", finalTurns: null, history };
+  return { id, players, deck, discard: [], drawn: null, hole, starter, turn: starter, phase: "opening", finalTurns: null, history, holeRecords };
 }
 
 export function createGame(count: number): Game {
@@ -88,6 +97,21 @@ export function scoreGrid(cards: readonly GridCard[]): number {
   return column(0) + column(1) + column(2);
 }
 
+// Also recovers the current completed board from saves made before records existed.
+export function completedHoleRecords(game: Game): CompletedHole[] {
+  const records = game.holeRecords ?? [];
+  if (!["round-over", "game-over"].includes(game.phase) || records.some(record => record.hole === game.hole)) return records;
+  const scores = game.history.at(-1);
+  if (!scores || scores.length !== game.players.length) return records;
+  return [...records, {
+    hole: game.hole, wentOut: (game.turn + 1) % game.players.length,
+    players: game.players.map((player, seat) => ({
+      cards: player.cards.map(cell => ({ ...cell.card })), score: scores[seat],
+      penalty: scores[seat] > scoreGrid(player.cards) ? scores[seat] - scoreGrid(player.cards) : undefined,
+    })),
+  }];
+}
+
 export function drawCard(game: Game, source: DrawSource): Game {
   if (game.phase !== "draw" || !game[source].length) return game;
   const pile = game[source];
@@ -105,7 +129,7 @@ function finishTurn(game: Game): Game {
     // The last final turn is immediately before the player who went out.
     const wentOut = (game.turn + 1) % game.players.length;
     if (scores.some((score, seat) => seat !== wentOut && score <= scores[wentOut])) scores[wentOut] += 10;
-    return {
+    const finished: Game = {
       ...game, drawn: null, finalTurns,
       phase: game.hole === 9 ? "game-over" : "round-over",
       history: [...game.history, scores],
@@ -113,6 +137,7 @@ function finishTurn(game: Game): Game {
         score: player.score + scores[seat], cards: player.cards.map(card => ({ ...card, faceUp: true, revealedAtEnd: !card.faceUp })),
       })),
     };
+    return { ...finished, holeRecords: completedHoleRecords(finished) };
   }
   let deck = game.deck;
   let discard = game.discard;
@@ -140,7 +165,7 @@ export function discardDraw(game: Game): Game {
 export function nextHole(game: Game): Game {
   if (game.phase !== "round-over") return game;
   return deal(game.id, game.players.length, game.hole + 1, (game.starter + 1) % game.players.length,
-    game.players.map(player => player.score), game.history);
+    game.players.map(player => player.score), game.history, completedHoleRecords(game));
 }
 
 export function replacementIndex(game: Game, drawn: GolfCard, botName?: string): number {

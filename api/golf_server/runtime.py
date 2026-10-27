@@ -112,6 +112,7 @@ class GolfRuntime:
 
     def view(self, data, actor):
         mine = self.seat(data, actor)
+        self.record_completed_holes(data)
         reviewing = self.reviewing_hole(data, mine)
         seats = [{"name": p["name"], "profileIcon": p["profileIcon"], "isBot": p["isBot"] or p.get("left", False),
                   "cardBack": p.get("cardBack", "argyle"),
@@ -119,7 +120,21 @@ class GolfRuntime:
                  for p in data["seats"]]
         game = copy.deepcopy(data["previousHole"] if reviewing else data.get("game"))
         motion = None if reviewing else data.get("motion")
+        hole_records = []
         if game:
+            # Historical boards have their own roster, including departed players.
+            # Put this viewer first without exposing internal actor identifiers.
+            for record in data.get("holeRecords", []):
+                if record["hole"] > game["hole"]:
+                    continue
+                players = record["players"]
+                first = next((i for i, player in enumerate(players) if player["actor"] == actor), 0)
+                order = [(first + i) % len(players) for i in range(len(players))]
+                hole_records.append({
+                    "hole": record["hole"],
+                    "wentOut": order.index(record["wentOut"]) if record["wentOut"] is not None else None,
+                    "players": [copy.deepcopy({key: value for key, value in players[i].items() if key != "actor"}) for i in order],
+                })
             game["deckCount"] = len(game.pop("deck"))
             for seat, player in enumerate(game["players"]):
                 for index, cell in enumerate(player["cards"]):
@@ -135,6 +150,7 @@ class GolfRuntime:
                 "lobbyReason": data.get("lobbyReason"),
                 "mySeat": mine, "isHost": data["host"] == actor, "seats": seats,
                 "stage": "playing" if reviewing else data.get("stage", "lobby"), "game": game, "motion": motion,
+                "holeRecords": hole_records,
                 "ready": data.get("ready", []), "rematchReady": data.get("rematchReady", []),
                 "idleWarning": bool(data.get("inactivity", {}).get(str(mine), {}).get("warned"))}
 
@@ -198,7 +214,29 @@ class GolfRuntime:
                 for sid in old_sids:
                     self.socketio.server.disconnect(sid, namespace=NAMESPACE)
 
+    def record_completed_holes(self, data):
+        """Archive only finished boards; never include a live hole's hidden cards."""
+        records = data.setdefault("holeRecords", [])
+        for game in (data.get("previousHole"), data.get("game")):
+            if (not game or game["phase"] not in ("round-over", "game-over")
+                    or any(record["hole"] == game["hole"] for record in records)
+                    or not game["history"] or len(game["history"][-1]) != len(game["players"])):
+                continue
+            scores = game["history"][-1]
+            players = []
+            for seat, (person, player) in enumerate(zip(data["seats"], game["players"])):
+                penalty = scores[seat] - engine.score_grid(player["cards"])
+                players.append({
+                    "actor": person["actor"], "name": person["name"], "icon": person["profileIcon"],
+                    "isBot": person["isBot"] or person.get("left", False),
+                    "cards": copy.deepcopy([cell["card"] for cell in player["cards"]]), "score": scores[seat],
+                    **({"penalty": penalty} if penalty > 0 else {}),
+                })
+            records.append({"hole": game["hole"], "wentOut": game.get("wentOut", (game["turn"] + 1) % len(players)), "players": players})
+        records.sort(key=lambda record: record["hole"])
+
     def save(self, row, data, kind, seat=None, detail=None):
+        self.record_completed_holes(data)
         self.sync_inactivity(data)
         data["revision"] += 1
         row.data = copy.deepcopy(data)
@@ -256,7 +294,7 @@ class GolfRuntime:
                 data["createRequest"] = ["left", "left"]
         if not any(p["actor"] == data["host"] and not p["isBot"] for p in data["seats"]):
             data["host"] = next(p["actor"] for p in data["seats"] if not p["isBot"])
-        data.update(game=engine.deal(len(data["seats"])), stage="dealing", motion=None, previousHole=None, ready=[], rematchReady=[],
+        data.update(game=engine.deal(len(data["seats"])), holeRecords=[], stage="dealing", motion=None, previousHole=None, ready=[], rematchReady=[],
                     startedAt=time.time(), humanCount=sum(not p["isBot"] for p in data["seats"]),
                     metrics=[{} for _ in data["seats"]], revealBusy={}, turnSerial=0, lastAutoplay=None)
         self.schedule(data, "opening", self.delay("deal"))
@@ -361,6 +399,7 @@ class GolfRuntime:
         if not any(i in data["ready"] for i in humans):
             return
         # Each player keeps the completed board until choosing the next hole.
+        self.record_completed_holes(data)
         data.update(previousHole=game, game=engine.next_hole(game), stage="dealing", motion=None, revealBusy={})
         self.schedule(data, "opening", self.delay("deal"))
 
@@ -584,6 +623,7 @@ class GolfRuntime:
 
     def remove_participant(self, data, seat, reason=None):
         """Keep every seat-indexed board, animation and timer aligned after a departure."""
+        self.record_completed_holes(data)
         person = data["seats"][seat]
         game = data.get("game")
         finished = game and game["phase"] == "game-over"

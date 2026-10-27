@@ -1,3 +1,5 @@
+@import "./tableau-carousel.css";
+
 /* A phone game occupies the usable viewport. The play area stays at the top;
    cycling controls use the remaining space to settle against the bottom. */
 @media (max-width: 700px) {
@@ -140,25 +142,6 @@
     right: auto;
     transform: translateX(-50%);
   }
-  .golf-tableau-arrow {
-    position: absolute;
-    top: var(--golf-arrow-top);
-    width: 44px;
-    height: var(--golf-arrow-height);
-    display: grid;
-    place-items: center;
-    border: 0;
-    border-radius: 10px;
-    padding: 0;
-    background: transparent;
-    color: var(--link);
-    font-size: 16px;
-    opacity: .5;
-    cursor: pointer;
-  }
-  .golf-tableau-arrow:hover, .golf-tableau-arrow:focus-visible { opacity: 1; background: color-mix(in srgb, var(--infopillbg) 45%, transparent); }
-  .golf-tableau-previous { left: -12px; }
-  .golf-tableau-next { right: -12px; }
   .golf-turn-edge { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
   .golf-turn-edge[data-pulse="true"]::before, .golf-turn-edge[data-pulse="true"]::after {
     content: "";
@@ -176,12 +159,6 @@
   .golf-turn-edge::after { right: 1px; }
   @keyframes golf-turn-pulse { 0%, 100% { opacity: 0; } 25% { opacity: .7; } }
   .golf-tableau-controls { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; margin-top: auto; padding-top: 4px; }
-  .golf-tableau-pages { display: flex; justify-content: center; }
-  .golf-tableau-pages button { display: grid; place-items: center; width: 36px; height: 30px; padding: 0; border: 0; background: transparent; cursor: pointer; }
-  .golf-tableau-pages button > span { width: 6px; height: 6px; border: 1px solid var(--infopillborder); border-radius: 50%; background: var(--infopillbg); }
-  .golf-tableau-pages button[aria-pressed="true"] > span { background: var(--link); border-color: var(--link); }
-  .golf-tableau-pages button[data-turn="true"] > span { outline: 1px solid var(--lightpink); outline-offset: 4px; }
-  .golf-tableau-pages button[data-next="true"] > span { border-color: var(--link); }
   .golf-tableau-caption { font-size: 10px; letter-spacing: .4px; opacity: .7; }
   .golf-auto-follow { display: flex; align-items: center; gap: 10px; margin-top: 8px; min-height: 48px; padding: 4px 14px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font: inherit; font-size: 12px; text-align: left; letter-spacing: .2px; cursor: pointer; }
   .golf-auto-follow small { display: block; margin-top: 3px; font-size: 10px; opacity: .65; }

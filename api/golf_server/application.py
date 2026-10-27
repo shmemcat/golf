@@ -230,13 +230,19 @@ def create_app(config=None, *, accounts=None):
             AchievementUnlock.query.filter_by(user_id=uid).delete()
             for row in Room.query.all():
                 data = copy.deepcopy(row.data)
+                runtime.record_completed_holes(data)
                 changed = False
+                old_key = f"account:{uid}"
                 for person in data["seats"]:
                     if person.get("userId") == uid:
                         person.update(userId=None, name="Deleted player", profileIcon="user", cardBack="argyle", left=True, actor="deleted:" + secrets.token_hex(8))
                         changed = True
+                for record in data.get("holeRecords", []):
+                    for player in record["players"]:
+                        if player["actor"] == old_key:
+                            player.update(actor="deleted:" + secrets.token_hex(8), name="Deleted player", icon="user")
+                            changed = True
                 if changed:
-                    old_key = f"account:{uid}"
                     data["receipts"].pop(old_key, None)
                     if data["host"] == old_key:
                         data["host"] = next((p["actor"] for p in data["seats"] if not p.get("left") and not p["isBot"]), "deleted")

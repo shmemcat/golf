@@ -4,12 +4,25 @@ import { beforeEach, expect, it, vi } from "vitest";
 import type { TableMotion } from "./useGolfTable";
 import type { RoomState } from "@/lib/golfApi";
 import { roomFixture } from "@/test/golfFixtures";
-import { useServerGolfTable } from "./useServerGolfTable";
+import { projectTable, useServerGolfTable } from "./useServerGolfTable";
 
 const sound = vi.hoisted(() => ({ play: vi.fn() }));
 vi.mock("@/context/SoundContext", () => ({ useSound: () => sound }));
 beforeEach(() => sound.play.mockClear());
 const command = vi.fn(async () => true);
+
+it("keeps server record rosters intact when the current table has fewer players", () => {
+  const state = roomFixture(2, 1);
+  state.holeRecords = [{ hole: 1, wentOut: 2, players: ["Friend 1", "Departed friend", "Friend 0"].map((name, seat) => ({
+    name, isBot: false, icon: "cat", score: seat + 1,
+    cards: Array.from({ length: 6 }, (_, index) => ({ id: `old-${seat}-${index}`, rank: "A", suit: "S" })),
+  })) }];
+  const projected = projectTable(state);
+  expect(projected.participants.map(person => person.name)).toEqual(["Friend 1", "Friend 0"]);
+  expect(projected.game.holeRecords).toEqual(state.holeRecords);
+  expect(projected.game.holeRecords![0].players[1].name).toBe("Departed friend");
+  expect(projected.game.holeRecords![0].wentOut).toBe(2);
+});
 
 function moving(state: RoomState, kind: TableMotion["kind"]): RoomState {
   return { ...state, revision: state.revision + 1, motion: {

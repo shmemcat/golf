@@ -14,6 +14,19 @@ export interface LocalGame {
 const card = (value: GolfCard) => value && typeof value.id === "string" &&
   RANKS.includes(value.rank) && SUITS.includes(value.suit);
 
+function validHoleRecords(game: Game) {
+  const records = game.holeRecords;
+  if (records === undefined) return true;
+  return Array.isArray(records) && records.length <= 9 && records.every((record, index) =>
+    record && Number.isInteger(record.hole) && record.hole >= 1 &&
+    record.hole <= game.hole - (game.phase === "round-over" ? 0 : 1) &&
+    (index === 0 || record.hole > records[index - 1].hole) &&
+    (record.wentOut === null || Number.isInteger(record.wentOut) && record.wentOut >= 0 && record.wentOut < game.players.length) &&
+    Array.isArray(record.players) && record.players.length === game.players.length && record.players.every(player =>
+      player && Number.isInteger(player.score) && (player.penalty === undefined || player.penalty === 10) &&
+      Array.isArray(player.cards) && player.cards.length === 6 && player.cards.every(card)));
+}
+
 export function readLocalGame(): LocalGame | null {
   const saved = readStorage<LocalGame | null>(key, null);
   if (!saved || typeof saved !== "object") return null;
@@ -27,6 +40,7 @@ export function readLocalGame(): LocalGame | null {
     ![game.turn, game.starter].every(seat => Number.isInteger(seat) && seat >= 0 && seat < game.players.length) ||
     !["opening", "draw", "replace", "round-over"].includes(game.phase) ||
     !Array.isArray(game.history) || !game.history.every(hole => Array.isArray(hole) && hole.length === game.players.length && hole.every(Number.isInteger)) ||
+    !validHoleRecords(game) ||
     (game.finalTurns !== null && (!Array.isArray(game.finalTurns) || !game.finalTurns.every(seat => Number.isInteger(seat) && seat >= 0 && seat < game.players.length))) ||
     (game.drawn !== null && (!game.drawn || !card(game.drawn.card) || !["deck", "discard"].includes(game.drawn.source))) ||
     (game.phase === "replace" && !game.drawn) ||

@@ -19,6 +19,9 @@ export function projectTable(state: RoomState) {
   const seat = (absolute: number) => (absolute - state.mySeat + count) % count;
   const order = Array.from({ length: count }, (_, i) => (i + state.mySeat) % count);
   const game: Game = { ...source,
+    // Record rosters are already oriented to this viewer by the server and may
+    // include people who have since left the current table.
+    holeRecords: state.holeRecords,
     players: order.map(i => ({ ...source.players[i], cards: source.players[i].cards.map(cell => ({ ...cell, card: { rank: "K", suit: "S", ...cell.card } as GolfCard })) })),
     deck: Array.from({ length: source.deckCount }, (_, i) => ({ id: `deck-${i}`, rank: "K", suit: "S" })),
     turn: seat(source.turn), starter: seat(source.starter), finalTurns: source.finalTurns?.map(seat) ?? null,

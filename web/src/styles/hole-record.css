@@ -1,0 +1,70 @@
+@import "./tableau-carousel.css";
+
+.golf-hole-record-trigger { font: inherit; font-size: 14px; font-weight: 600; letter-spacing: inherit; }
+.golf-hole-record-trigger:hover { border-color: var(--link); }
+.golf-hole-record-trigger:focus-visible { outline: 2px solid var(--link); outline-offset: 4px; }
+.golf-hole-record {
+  width: min(700px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  box-sizing: border-box;
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--infopillborder);
+  border-radius: 20px;
+  background: var(--contentbox);
+  color: var(--text);
+  box-shadow: 0 20px 80px #1e302b55;
+  text-align: center;
+  outline: none;
+}
+.golf-hole-record::backdrop { background: #0006; backdrop-filter: blur(4px); }
+.golf-record-content { display: flex; flex-direction: column; max-height: calc(100dvh - 34px); box-sizing: border-box; padding: 24px 8px 20px; }
+.golf-record-header { flex-shrink: 0; margin: 0 24px 20px; }
+.golf-record-eyebrow { margin: 0 0 7px; color: var(--link); font-size: 12px; font-weight: 650; letter-spacing: 1.4px; }
+.golf-record-header h2 { margin: 0 0 8px; font-size: 28px; font-weight: 650; letter-spacing: -.6px; }
+.golf-record-header h2 > span { font-size: 23px; opacity: .45; font-weight: 450; }
+.golf-record-empty { margin: 0; font-size: 13px; opacity: .7; }
+.golf-record-carousel { --golf-arrow-top: calc(50% - 46px); --golf-arrow-height: 92px; position: relative; display: flex; flex-direction: column; min-height: 0; }
+.golf-record-carousel .golf-tableau-previous { left: 0; }
+.golf-record-carousel .golf-tableau-next { right: 0; }
+.golf-record-viewport { margin: 0 46px; overflow-y: auto; touch-action: pan-y; }
+.golf-record-boards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; animation: golf-record-arrive .2s ease-out; }
+.golf-record-boards[data-players="2"], .golf-record-boards[data-players="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.golf-record-player { min-width: 0; width: 100%; max-width: 154px; justify-self: center; }
+.golf-record-player-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+.golf-record-player-name { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 14px; font-weight: 600; }
+.golf-record-player-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.golf-record-player-name > svg { flex: 0 0 auto; width: 12px; opacity: .65; }
+.golf-record-score { flex: 0 0 auto; min-width: 30px; padding: 2px 6px; border-radius: 7px; background: var(--infopillbg); font-size: 14px; font-weight: 650; font-variant-numeric: lining-nums tabular-nums; }
+.golf-record-score[data-under="true"] { color: var(--link); background: color-mix(in srgb, var(--lightpink) 18%, transparent); }
+.golf-record-hand { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.golf-record-hand .playing-card { --card-width: 100%; width: 100%; height: auto; aspect-ratio: 5 / 7; }
+.golf-record-player-note { min-height: 16px; margin: 7px 0 0; color: var(--link); font-size: 10px; letter-spacing: .1px; }
+.golf-record-player-note svg { margin-right: 3px; font-size: 9px; }
+.golf-record-navigation { flex-shrink: 0; margin-top: 10px; }
+.golf-record-close { flex-shrink: 0; align-self: center; width: 180px; height: 40px; margin-top: 16px; }
+/* Fading without movement keeps slides inside the scroll area during a change. */
+@keyframes golf-record-arrive { from { opacity: .3; } to { opacity: 1; } }
+@media (max-width: 700px) {
+  .golf-hole-record-trigger { font-size: 12px; }
+  .golf-hole-record { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 16px; }
+  .golf-record-content { max-height: calc(100dvh - 26px); padding: 20px 4px 18px; }
+  .golf-record-header { margin: 0 18px 18px; }
+  .golf-record-header h2 { font-size: 27px; }
+  .golf-record-header h2 > span { font-size: 20px; }
+  .golf-record-empty { font-size: 11px; }
+  .golf-record-viewport { margin: 0 28px; }
+  .golf-record-boards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+  .golf-record-player-heading { gap: 3px; margin-bottom: 7px; }
+  .golf-record-player-name { gap: 4px; font-size: 12px; }
+  .golf-record-score { min-width: 24px; padding: 1px 3px; font-size: 12px; }
+  .golf-record-hand { gap: 4px; }
+  .golf-record-player-note { min-height: 13px; margin-top: 5px; font-size: 9px; }
+  .golf-record-carousel .golf-tableau-arrow { width: 28px; font-size: 14px; }
+  .golf-record-navigation { margin-top: 10px; }
+  .golf-record-navigation .golf-tableau-pages button { width: 30px; }
+  .golf-record-close { margin-top: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .golf-record-boards { animation: none; } }

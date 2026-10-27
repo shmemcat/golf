@@ -26,6 +26,7 @@ const TableLayouts = lazy(() => import("@/pages/TableLayouts"));
 const MobileLayouts = lazy(() => import("@/pages/MobileLayouts"));
 const MobileTablePreview = lazy(() => import("@/pages/MobileTablePreview"));
 const EndPreview = lazy(() => import("@/pages/EndPreview"));
+const HoleRecordPreview = lazy(() => import("@/pages/HoleRecordPreview"));
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
@@ -76,6 +77,7 @@ export function App() {
           <Route path="/game/mobile-layouts" element={<MobileLayouts />} />
           <Route path="/game/mobile-preview" element={<MobileTablePreview />} />
           <Route path="/game/end-preview" element={<EndPreview />} />
+          <Route path="/game/hole-record-preview" element={<HoleRecordPreview />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="/about" element={<About />} />
           <Route path="/leaderboard" element={<Leaderboard />} />

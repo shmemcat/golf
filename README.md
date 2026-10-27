@@ -16,6 +16,7 @@ Part of [Cards](https://cards.shmem.dev/), alongside
 - **Single-player vs. bots** — play against 1–5 opponents using a fair policy based on visible cards
 - **Online multiplayer** — share a six-character room code or invitation link, play as a guest or account holder, and optionally fill empty seats with bots
 - **Nine-hole scorecards** — running totals, hole summaries, going-out penalties, and shared wins
+- **Hole records** — click the hole badge to revisit completed hands, including the just-finished hole, with arrows, swipe gestures, and carousel dots
 - **Achievements & statistics** — 32 badges, tiered milestones, and combined or separate bot/multiplayer statistics
 - **Global leaderboards** — Bot and Multiplayer rankings, with monthly and all-time winners
 - **Shared accounts** — one Cards sign-in, profile icons, email editing, password recovery, and account deletion

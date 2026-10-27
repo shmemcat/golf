@@ -1,0 +1,27 @@
+/* Shared with the mobile player-board carousel. */
+.golf-tableau-arrow {
+  position: absolute;
+  top: var(--golf-arrow-top);
+  width: 44px;
+  height: var(--golf-arrow-height);
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  padding: 0;
+  background: transparent;
+  color: var(--link);
+  font-size: 16px;
+  opacity: .5;
+  cursor: pointer;
+}
+.golf-tableau-arrow:enabled:hover, .golf-tableau-arrow:focus-visible { opacity: 1; background: color-mix(in srgb, var(--infopillbg) 45%, transparent); }
+.golf-tableau-arrow:disabled { opacity: .18; cursor: default; }
+.golf-tableau-previous { left: -12px; }
+.golf-tableau-next { right: -12px; }
+.golf-tableau-pages { display: flex; justify-content: center; }
+.golf-tableau-pages button { display: grid; place-items: center; width: 36px; height: 30px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.golf-tableau-pages button > span { width: 6px; height: 6px; border: 1px solid var(--infopillborder); border-radius: 50%; background: var(--infopillbg); }
+.golf-tableau-pages button[aria-pressed="true"] > span { background: var(--link); border-color: var(--link); }
+.golf-tableau-pages button[data-turn="true"] > span { outline: 1px solid var(--lightpink); outline-offset: 4px; }
+.golf-tableau-pages button[data-next="true"] > span { border-color: var(--link); }

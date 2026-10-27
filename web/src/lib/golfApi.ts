@@ -1,4 +1,4 @@
-import type { Game, GolfCard } from "@/game/engine";
+import type { CompletedHole, Game, GolfCard } from "@/game/engine";
 import type { Stage, TableMotion } from "@/hooks/useGolfTable";
 
 export type GolfMode = "bot" | "multiplayer";
@@ -8,7 +8,8 @@ export interface RoomState {
   actionTokens?: Record<string, string>;
   seats: Participant[]; stage: Stage | "lobby" | "closed"; closed?: boolean; closedReason?: "not_enough_players" | null;
   lobbyReason?: "not_enough_players" | null;
-  game: (Omit<Game, "deck" | "players"> & { deckCount: number; players: { score: number; cards: { faceUp: boolean; revealedAtEnd?: boolean; card: Pick<GolfCard, "id"> & Partial<GolfCard> }[] }[] }) | null;
+  holeRecords?: CompletedHole[];
+  game: (Omit<Game, "deck" | "players" | "holeRecords"> & { deckCount: number; players: { score: number; cards: { faceUp: boolean; revealedAtEnd?: boolean; card: Pick<GolfCard, "id"> & Partial<GolfCard> }[] }[] }) | null;
   motion: TableMotion | null; ready: number[]; rematchReady: number[]; idleWarning?: boolean;
 }
 export interface Statistics {

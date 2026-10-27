@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { createGame, drawCard, openCard, openOpponents, startPlay, turnUpDeck, type Game } from "@/game/engine";
+import { createGame, discardDraw, drawCard, openCard, openOpponents, startPlay, turnUpDeck, type Game } from "@/game/engine";
 import { readLocalGame, saveLocalGame, type LocalGame } from "@/lib/localGame";
 import { DEAL_MS, FLIP_MS, FLIGHT_MS, useGolfTable, type Stage } from "./useGolfTable";
 
@@ -111,4 +111,29 @@ it("ignores invalid stored data and starts a usable table", () => {
   const view = renderHook(() => useGolfTable(2, true));
   expect(view.result.current.game.players).toHaveLength(2);
   expect(view.result.current.stage).toBe("dealing");
+});
+
+it("restores completed card records after refreshing both the results and the next deal", () => {
+  const finished = discardDraw(drawCard({ ...started(), phase: "draw", turn: 0, finalTurns: [0] }, "deck"));
+  save(finished);
+  const first = renderHook(() => useGolfTable(4, true));
+  expect(first.result.current.game.holeRecords).toEqual(finished.holeRecords);
+  act(() => first.result.current.advance());
+  first.unmount();
+  const resumed = renderHook(() => useGolfTable(4, true));
+  expect(resumed.result.current.game.hole).toBe(2);
+  expect(resumed.result.current.game.holeRecords).toEqual(finished.holeRecords);
+  expect(readLocalGame()?.game.holeRecords).toEqual(finished.holeRecords);
+});
+
+it("rejects a saved record that contains a future hole or invalid final cards", () => {
+  const finished = discardDraw(drawCard({ ...started(), phase: "draw", turn: 0, finalTurns: [0] }, "deck"));
+  const invalid = structuredClone(finished);
+  invalid.holeRecords![0].hole = 2;
+  save(invalid);
+  expect(readLocalGame()).toBeNull();
+  invalid.holeRecords![0].hole = 1;
+  invalid.holeRecords![0].players[0].cards[0].rank = "invalid" as never;
+  save(invalid);
+  expect(readLocalGame()).toBeNull();
 });
