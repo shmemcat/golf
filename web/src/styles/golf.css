@@ -385,6 +385,7 @@ input:is(:focus, :focus-visible, :active) {
 .account-name {
   overflow-wrap: anywhere;
   letter-spacing: 2px;
+  font-weight: 400;
 }
 .setup-body {
   width: 100%;

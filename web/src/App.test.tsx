@@ -285,7 +285,7 @@ it("uses a fresh shared session for login/logout and keeps credentials out of st
     screen.getByRole("button", { name: "Sign In", exact: true })
   );
   await waitFor(() =>
-    expect(screen.getByRole("heading", { name: "Golfer" })).toBeVisible()
+    expect(screen.getByRole("heading", { name: "Welcome, Golfer!" })).toBeVisible()
   );
   expect(screen.getByRole("link", { name: "Your account" })).toBeVisible();
   expect(mutations).toEqual([{ path: "/login", csrf: "csrf-2" }]);
@@ -362,7 +362,7 @@ it("shows rejected credentials, preserves them for retry, and offers shared acco
   failLogin = false;
   await user.keyboard("{Enter}");
   await waitFor(() =>
-    expect(screen.getByRole("heading", { name: "Golfer" })).toBeVisible()
+    expect(screen.getByRole("heading", { name: "Welcome, Golfer!" })).toBeVisible()
   );
   await user.click(screen.getByRole("button", { name: "Sign Out" }));
   expect(await screen.findByLabelText("Username or Email")).toHaveValue("");
@@ -377,7 +377,7 @@ it("picks up sign-ins and sign-outs from a sister site on focus", async () => {
   current = account;
   fireEvent(window, new Event("focus"));
   await waitFor(() =>
-    expect(screen.getByRole("heading", { name: "Golfer" })).toBeVisible()
+    expect(screen.getByRole("heading", { name: "Welcome, Golfer!" })).toBeVisible()
   );
   current = null;
   fireEvent(window, new Event("focus"));
@@ -505,7 +505,7 @@ it("shows real scores and earned badges, saves profile edits, and keeps another 
   fireEvent(window, new Event("focus"));
   await screen.findByRole("heading", { name: "Profile Icon" });
   await user.click(screen.getByRole("link", { name: "Back", exact: true }));
-  await screen.findByRole("heading", { name: "Another Golfer" });
+  await screen.findByRole("heading", { name: "Welcome, Another Golfer!" });
   await waitFor(() =>
     expect(
       screen.getByRole("button", { name: "Newcomer: Locked" })

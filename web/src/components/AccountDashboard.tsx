@@ -23,7 +23,9 @@ export function AccountDashboard() {
       </Helmet>
       <PageLayout title="USER">
         <div className="account-dashboard">
-          <h2 className="account-name">{user.name}</h2>
+          <h2 className="account-name">
+            Welcome, <b>{user.name}</b>!
+          </h2>
           <AccountSummary key={user.id} userId={user.id} />
           {error && (
             <p role="alert" className="inline-error">
