@@ -23,7 +23,7 @@ html {
   --rulesbuttontext: #304339;
   --rulesbuttonselected: #925d60;
   --link: #895659;
-  --linkbox: #cf9f9c4a;
+  --link-highlight-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20rx%3D%225%22%20fill%3D%22%23cf9f9c4a%22%20fill-opacity%3D%221%22%2F%3E%3C%2Fsvg%3E");
   --selectionbgcolor: #e4b4ad;
   --texthighlight: #293f35;
   --inputbox: #fafbf5;
@@ -69,7 +69,7 @@ html[data-theme="dark"] {
   --mediumpink: #405c4e;
   --lightpink: #cf9f9c;
   --sparkle: #faf6ee;
-  --hoverpink: #ddb0a8;
+  --hoverpink: #ae7b78;
   --heartslogo: #7c9885;
   --header: #f0eee1;
   --text: #f0eee1;
@@ -81,13 +81,13 @@ html[data-theme="dark"] {
   --rulesbuttontext: #f0eee1;
   --rulesbuttonselected: #e4b4ad;
   --link: #e4b4ad;
-  --linkbox: #cf9f9c26;
+  --link-highlight-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20rx%3D%225%22%20fill%3D%22%23cf9f9c26%22%20fill-opacity%3D%221%22%2F%3E%3C%2Fsvg%3E");
   --inputbox: #293f35;
   --inputboxborder: #849d87;
   --radiobutton: #cf9f9c;
   --buttontextdisabled: #b5c4b0;
   --buttonshine: #f4d6cb;
-  --buttonshinehover: #f7ded4;
+  --buttonshinehover: #d5a39c;
   --buttonboxshadow: #593b3b55;
   --button-secondary-background: #506d5c;
   --button-secondary-hover: #5b7a65;
@@ -199,6 +199,20 @@ a:focus-visible,
 .nav-home .navhearts {
   line-height: 1;
 }
+.nav-home .golf-logo,
+.nav-home .navhearts,
+.nav-user,
+.nav-user > svg,
+.icon-button {
+  transition: color 0.15s ease;
+}
+/* Inherited icon and label colors follow the control's single fade. */
+.nav-home .golf-logo *,
+.nav-user > span,
+.nav-user > svg *,
+.icon-button * {
+  transition: none;
+}
 .nav-home:is(:hover, :focus-visible) :is(.golf-logo, .navhearts) {
   color: var(--tan);
 }
@@ -239,6 +253,11 @@ a:focus-visible,
 }
 .icon-button:hover,
 .nav-user:hover {
+  color: var(--tan);
+}
+.icon-button:focus-visible,
+.nav-user:focus-visible,
+.nav-user:is(:hover, :focus-visible) > svg {
   color: var(--tan);
 }
 .menu-link {
@@ -655,18 +674,38 @@ figcaption {
   body {
     font-size: 17px;
   }
+  .site-nav {
+    --nav-logo-size: 24px;
+    width: 100%;
+    min-height: 44px;
+  }
   .nav-actions {
+    min-width: 0;
     gap: 16px;
   }
   .nav-user {
+    min-width: 0;
     max-width: min(160px, 39vw);
+    font-size: 16px;
+    line-height: 24px;
   }
   .nav-user span {
     font-size: 16px;
   }
-  .icon-button,
-  .nav-user {
+  .site-nav .icon-button {
+    width: 28px;
+    min-width: 28px;
+    height: 44px;
     min-height: 44px;
+  }
+  .site-nav .nav-user {
+    min-height: 44px;
+  }
+  .site-nav .icon-button svg,
+  .site-nav .nav-user svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
   }
   .rule-content {
     text-align: left;

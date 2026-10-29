@@ -63,6 +63,10 @@
   color: var(--hoverpink);
 }
 
+.cards-hub-link * {
+  transition: none;
+}
+
 .cards-hub-link:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 3px;

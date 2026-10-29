@@ -52,36 +52,38 @@ body {
   border: 3px solid var(--background);
 }
 
+@property --link-highlight-progress {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
 .link {
+  --link-highlight-inset: calc(10px - 8px * var(--link-highlight-progress));
   font-family: "appFont";
-  position: relative;
-  overflow: hidden;
   color: var(--link);
   font-weight: 700;
   text-decoration: none;
-  z-index: 1;
   cursor: pointer;
+  /* Keep the text in place while leaving room for the highlight to bounce. */
+  margin: 0 -2px;
+  padding: 2px;
+  /* One rounded image stays seamless throughout the bounce. */
+  background-image: var(--link-highlight-image);
+  background-repeat: no-repeat;
+  background-position: var(--link-highlight-inset) var(--link-highlight-inset);
+  background-size:
+    calc(100% - var(--link-highlight-inset) - 2px)
+    calc(100% - var(--link-highlight-inset) - 2px);
+  /* Paint the highlight separately on each line of a wrapped link. */
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition: --link-highlight-progress 0.35s cubic-bezier(0.25, 0.1, 0, 2.05);
 }
 
-.link::after {
-  content: "";
-  background: var(--linkbox);
-  position: absolute;
-  left: 8px;
-  bottom: -3px;
-  border-radius: 5px;
-  width: calc(100% - 6px);
-  height: calc(100% - 8px);
-  z-index: -1;
-  transition: 0.35s cubic-bezier(0.25, 0.1, 0, 2.05);
-  pointer-events: none;
-}
-
-.link:hover:after {
-  left: 0;
-  bottom: -2px;
-  width: 100%;
-  height: 100%;
+.link:hover,
+.link:focus-visible {
+  --link-highlight-progress: 1;
 }
 
 .navhearts {

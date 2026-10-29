@@ -31,11 +31,23 @@ export function About() {
             but we think that makes it more fun.
           </p>
           <p>
-            Golf is part of{" "}
+            Golf is part of my{" "}
             <a className="link" href={cardsHome}>
               Cards
+            </a>{" "}
+            project, alongside{" "}
+            <a className="link" href="https://cards.shmem.dev/hearts/">
+              Hearts
             </a>
-            , alongside Hearts and Euchre. Find the code on{" "}
+            ,{" "}
+            <a className="link" href="https://cards.shmem.dev/euchre/">
+              Euchre
+            </a>
+            , and{" "}
+            <a className="link" href="https://cards.shmem.dev/hand-and-foot/">
+              Hand and Foot
+            </a>
+            . Find the code on{" "}
             <a
               className="link"
               href="https://github.com/shmemcat/golf"

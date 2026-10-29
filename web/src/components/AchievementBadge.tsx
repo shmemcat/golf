@@ -11,8 +11,8 @@ export function AchievementBadge({ badge, open, onOpenChange }: {
   onOpenChange: (open: boolean) => void;
 }) {
   const hidden = badge.secret && !badge.earned;
-  const name = hidden ? "???" : badge.name;
-  const desc = hidden ? "Discover this secret by playing Golf." : badge.desc;
+  const name = hidden ? "????" : badge.name;
+  const desc = hidden ? "This is a secret achievement" : badge.desc;
   const tierLabel = !hidden && badge.tier ? badge.tier[0].toUpperCase() + badge.tier.slice(1) : "";
   return <div className={styles.achievement}>
     <Tooltip open={open} onOpenChange={onOpenChange}
@@ -22,7 +22,6 @@ export function AchievementBadge({ badge, open, onOpenChange }: {
         <span className={styles.tooltipDesc}>{desc}</span>
         {!hidden && badge.progress && <span className={styles.tooltipProgress}>{badge.progress}</span>}
         {!hidden && badge.next && <span className={styles.tooltipProgress}>{badge.next}</span>}
-        <span className={styles.tooltipStatus}>{badge.earned ? "Unlocked" : "Locked"}</span>
       </div>}>
       <button type="button" className={styles.badge} data-earned={badge.earned} data-tier={hidden ? undefined : badge.tier}
         aria-label={hidden ? "Secret achievement: Locked" : `${name}: ${tierLabel ? `${tierLabel}, ` : ""}${badge.earned ? "Unlocked" : "Locked"}`}

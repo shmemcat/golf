@@ -24,7 +24,6 @@
 .tooltipTier { font-size: 10px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
 .tooltipName { font-size: 14px; font-weight: 700; }
 .tooltipDesc { font-size: 12px; opacity: .7; font-weight: 600; }
-.tooltipStatus { font-size: 11px; opacity: .5; font-weight: 600; }
 .tooltipProgress { font-size: 11px; font-weight: 600; margin-top: 2px; }
 @keyframes sparkle { 0%, 16%, 100% { transform: scale(0) rotate(0deg); } 8% { transform: scale(1) rotate(15deg); } }
 @media (max-width: 600px) {
