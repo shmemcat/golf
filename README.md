@@ -17,7 +17,7 @@ Part of [Cards](https://cards.shmem.dev/), alongside
 - **Online multiplayer** — share a six-character room code or invitation link, play as a guest or account holder, and optionally fill empty seats with bots
 - **Nine-hole scorecards** — running totals, hole summaries, going-out penalties, and shared wins
 - **Hole records** — click the hole badge to revisit completed hands, including the just-finished hole, with arrows, swipe gestures, and carousel dots
-- **Achievements & statistics** — 32 badges, tiered milestones, and combined or separate bot/multiplayer statistics
+- **Achievements & statistics** — 33 badges, tiered milestones, and combined or separate bot/multiplayer statistics
 - **Global leaderboards** — Bot and Multiplayer rankings, with monthly and all-time winners
 - **Shared accounts** — one Cards sign-in, profile icons, email editing, password recovery, and account deletion
 - **Auto-save & resume** — browser saves for guest solo games; persistent rooms and server-verified results for signed-in and online play
@@ -224,9 +224,11 @@ win streaks, and matching pairs. Global leaderboards rank completed wins in Bot
 and Multiplayer, with monthly UTC and all-time top tens. Guest solo saves remain
 in the browser; guest games and layout previews earn no account results.
 
-The account dashboard displays 32 achievement badges. Six of a Kind requires all
+The account dashboard displays 33 achievement badges. Six of a Kind requires all
 six board cards to share a rank at the end of a hole; Deuce Almighty requires a
-matching 2×2 block of twos. Other badges cover scoring challenges, comebacks,
+matching 2×2 block of twos. Don't Quit Your Day Job unlocks at the maximum hole
+score of 70: 60 from the cards plus the 10-point going-out penalty.
+Other badges cover scoring challenges, comebacks,
 close wins, holiday games, and the familiar Geezer,
 Night Owl, Early Bird, Better with Friends, Hot Streak, and All Year Round.
 A games-finished badge

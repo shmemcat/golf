@@ -101,6 +101,7 @@ def summarize(rows, unlocks=()):
             "hole_in_one": any(row.detail.get("hole_in_one", False) for row in finished),
             "six_of_a_kind": "six_of_a_kind" in unlocks or any(row.detail.get("six_of_a_kind", False) for row in finished),
             "deuce_almighty": any(row.detail.get("deuce_almighty", False) for row in finished),
+            "dont_quit_your_day_job": "dont_quit_your_day_job" in unlocks or 70 in holes,
             "up_and_down": any(any(a > 0 and b < 0 for a, b in zip(row.detail.get("holes", []), row.detail.get("holes", [])[1:]))
                                for row in finished),
             "out_of_the_rough": any(row.won and row.detail.get("out_of_the_rough", False) for row in completed),

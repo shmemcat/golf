@@ -173,22 +173,60 @@ def test_board_achievement_survives_result_reload_and_is_scoped_to_player_and_mo
         assert stored.status == status
 
 
-def test_operator_granted_six_of_a_kind_needs_no_fake_results_and_is_deleted_with_account(app, clients):
+@pytest.mark.parametrize("achievement", ["six_of_a_kind", "dont_quit_your_day_job"])
+def test_operator_granted_achievement_needs_no_fake_results_and_is_deleted_with_account(app, clients, achievement):
     player, other = clients(1), clients(2)
     with app.app_context():
-        db.session.add(AchievementUnlock(user_id=1, achievement_id="six_of_a_kind"))
+        db.session.add(AchievementUnlock(user_id=1, achievement_id=achievement))
         db.session.commit()
         db.session.remove()
     for stats in player.get("/api/golf/stats").json["statistics"].values():
-        assert stats["achievements"]["six_of_a_kind"]
+        assert stats["achievements"][achievement]
         assert stats["games_started"] == 0
-    assert not other.get("/api/golf/stats").json["statistics"]["all_time"]["achievements"]["six_of_a_kind"]
-    response = player.post("/_internal/games/v1/golf/delete-user", json={"user_id": 1, "request_id": "delete-six-of-a-kind"},
+    assert not other.get("/api/golf/stats").json["statistics"]["all_time"]["achievements"][achievement]
+    response = player.post("/_internal/games/v1/golf/delete-user", json={"user_id": 1, "request_id": "delete-" + achievement},
                            headers={"X-Cards-Service": "accounts", "Authorization": "Bearer " + app.config["GAME_ACCOUNT_TOKENS"]["golf"]})
     assert response.status_code == 200
     with app.app_context():
         assert AchievementUnlock.query.count() == 0
         assert Result.query.count() == 0
+
+
+@pytest.mark.parametrize("holes, expected", [
+    ([70], True), ([0, 70, -20], True), ([60], False), ([69], False),
+    ([71], False), ([35, 35], False), ([], False),
+])
+@pytest.mark.parametrize("status", ["completed", "abandoned", "cancelled", "active"])
+def test_day_job_requires_exactly_seventy_on_one_finished_hole(holes, expected, status):
+    badges = summarize([result(holes, score=sum(holes), status=status)])["achievements"]
+    assert badges["dont_quit_your_day_job"] == (expected and status != "active")
+
+
+@pytest.mark.parametrize("mode", ["bot", "multiplayer"])
+@pytest.mark.parametrize("went_out, expected_score", [(0, 70), (None, 60)])
+def test_day_job_uses_the_existing_penalty_and_survives_reload(app, clients, mode, went_out, expected_score):
+    game = engine.deal(2)
+    data = {"game": game, "mode": mode, "startedAt": time.time(), "humanCount": 2,
+            "seats": [{"userId": 1}, {"userId": 2}], "metrics": [{}, {}]}
+    for player, ranks in zip(game["players"], [("Q", "J", "J", "J", "Q", "10"), ("A", "K", "3", "A", "K", "3")]):
+        for cell, rank in zip(player["cards"], ranks):
+            cell["card"]["rank"] = rank
+    assert engine.score_grid(game["players"][0]["cards"]) == 60
+    with app.app_context():
+        engine.finish_hole(game, went_out=went_out)
+        assert game["history"] == [[expected_score, 0]]
+        app.extensions["golf_runtime"].next_turn(data)
+        save_results(data, abandoned=True)
+        db.session.commit()
+        db.session.remove()
+        stored = db.session.get(Result, (game["id"], 1))
+        assert stored.score == expected_score and stored.detail["holes"] == [expected_score]
+    stats = clients(1).get("/api/golf/stats").json["statistics"]
+    assert stats["all_time"]["achievements"]["dont_quit_your_day_job"] == (went_out == 0)
+    assert stats[mode]["achievements"]["dont_quit_your_day_job"] == (went_out == 0)
+    other_mode = "multiplayer" if mode == "bot" else "bot"
+    assert not stats[other_mode]["achievements"]["dont_quit_your_day_job"]
+    assert not clients(2).get("/api/golf/stats").json["statistics"]["all_time"]["achievements"]["dont_quit_your_day_job"]
 
 
 @pytest.mark.parametrize("before, final, won, expected", [
@@ -369,7 +407,7 @@ def test_settings_unlocks_require_account_csrf_origin_and_allowlisted_id(app, cl
     assert guest.post(path, json={"id": "geezer"}, headers=guest.golf_headers).status_code == 401
     assert player.post(path, json={"id": "geezer"}).status_code == 403
     assert player.post(path, json={"id": "geezer"}, headers={**player.golf_headers, "Origin": "https://evil.example"}).status_code == 403
-    for value in ["six_of_a_kind", "deuce_almighty", "night_owl", "better_with_friends", "hot_streak", "all_year_round", None, []]:
+    for value in ["six_of_a_kind", "deuce_almighty", "dont_quit_your_day_job", "night_owl", "better_with_friends", "hot_streak", "all_year_round", None, []]:
         assert player.post(path, json={"id": value}, headers=player.golf_headers).status_code == 400
     with app.app_context():
         assert AchievementUnlock.query.count() == 0

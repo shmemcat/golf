@@ -131,7 +131,7 @@ minimal tombstone to prevent in-flight games restoring deleted statistics.
 
 ## Achievements
 
-The account page shows 32 achievement badges. The original eight retain their
+The account page shows 33 achievement badges. The original eight retain their
 names and unlock rules, including Below Zero and Under Par. A single games-finished
 badge advances through bronze Tee Time (10 completed games), silver Green Jacket
 (50), and gold Tour Pro (100); abandoned games do not advance it.
@@ -142,6 +142,10 @@ board cards to share one rank at the end of a hole; suits do not matter, and it
 does not change scoring or add a block bonus. Deuce Almighty requires an adjacent
 2×2 block of twos at the end of a hole, in either pair of neighboring columns.
 Six twos also qualify; the existing block and board scores remain unchanged.
+Don't Quit Your Day Job requires exactly 70 on one hole, including the existing
+10-point going-out penalty on a 60-point board. It is a secret achievement until
+earned, and recorded finished-hole scores qualify retrospectively. A total of
+70 spread across multiple holes does not qualify.
 Up and Down requires consecutive
 positive then negative holes in one game. Out of the Rough requires a win after
 being last (including tied last, but not an all-player tie) after eight holes.
@@ -175,8 +179,9 @@ and is removed on account deletion. Before running this version, apply the
 schema upgrade and updated `deploy/grants.sql` as the database owner.
 All achievements belong to Golf results and do not copy a Hearts player's unlocks.
 
-Six of a Kind also recognizes an operator-granted `six_of_a_kind` row in the
-existing `golf_achievement_unlocks` table. A grant belongs to the account, appears
+Six of a Kind and Don't Quit Your Day Job also recognize operator-granted
+`six_of_a_kind` and `dont_quit_your_day_job` rows in the existing
+`golf_achievement_unlocks` table. A grant belongs to the account, appears
 in all statistics views, and is removed on account deletion. This uses `golf_002`
 without another migration. The public achievements endpoint still accepts only
 `geezer`; players cannot grant themselves gameplay achievements.
