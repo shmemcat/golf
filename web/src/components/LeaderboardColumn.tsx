@@ -2,12 +2,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { getProfileIcon } from "@/lib/profileIcons";
 import styles from "@/styles/leaderboard.module.css";
 
-export type LeaderboardEntry = {
+type Player = {
    rank: number;
    username: string;
    profile_icon?: string | null;
-   games_won: number;
 };
+export type LeaderboardEntry = Player & ({ games_won: number } | { achievement_count: number });
 
 export function LeaderboardColumn({
    title,
@@ -23,18 +23,18 @@ export function LeaderboardColumn({
          <h2 className={styles.columnTitle}>{title}</h2>
          <table
             className={styles.table}
-            aria-label={`${title} ${category} winners`}
+            aria-label={category === "achievements" ? "All-Time achievements leaderboard" : `${title} ${category} winners`}
          >
             <colgroup>
                <col className={styles.rankColumn} />
                <col />
-               <col className={styles.winsColumn} />
+               <col className={category === "achievements" ? styles.achievementsColumn : styles.winsColumn} />
             </colgroup>
             <thead className="sr-only">
                <tr>
                   <th scope="col">Rank</th>
                   <th scope="col">Player</th>
-                  <th scope="col">Wins</th>
+                  <th scope="col">{category === "achievements" ? "Achievements" : "Wins"}</th>
                </tr>
             </thead>
             <tbody>
@@ -58,15 +58,16 @@ export function LeaderboardColumn({
                            </div>
                         </td>
                         <td className={styles.wins}>
-                           {entry.games_won}{" "}
-                           {entry.games_won === 1 ? "win" : "wins"}
+                           {"achievement_count" in entry
+                              ? `${entry.achievement_count} ${entry.achievement_count === 1 ? "achievement" : "achievements"}`
+                              : `${entry.games_won} ${entry.games_won === 1 ? "win" : "wins"}`}
                         </td>
                      </tr>
                   ))
                ) : (
                   <tr>
                      <td colSpan={3} className={styles.empty}>
-                        No winners yet
+                        {category === "achievements" ? "No achievements yet" : "No winners yet"}
                      </td>
                   </tr>
                )}

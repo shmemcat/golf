@@ -1,4 +1,4 @@
 .toggle { display: flex; justify-content: center; gap: 10px; margin: 0 auto 20px; }
-.tabs { display: flex; justify-content: center; gap: 0; margin: 8px auto 16px; width: fit-content; max-width: 100%; }
+.tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 0; margin: 8px auto 16px; width: fit-content; max-width: 100%; }
 .tabs button { padding: 8px 16px; min-height: 44px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text); font-family: "appFont"; font-weight: 700; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; }
 .tabs button[aria-pressed="true"] { border-color: var(--hoverpink); color: var(--header); }

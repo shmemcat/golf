@@ -87,5 +87,5 @@ it("reveals Don't Quit Your Day Job with a briefcase after scoring the maximum o
   const badge = await screen.findByRole("button", { name: "Don't Quit Your Day Job: Unlocked" });
   expect(badge.querySelector('svg[data-icon="briefcase"]')).toBeInTheDocument();
   fireEvent.click(badge);
-  expect(await screen.findByRole("tooltip")).toHaveTextContent("Score 70 points on a hole: 60 from your cards plus the 10-point going-out penalty.");
+  expect(await screen.findByRole("tooltip")).toHaveTextContent("Score the maximum amount of points possible on a single hole");
 });

@@ -326,7 +326,19 @@ it("returns through the progress prompt and restores a guest table after navigat
   let view = render(<MemoryRouter initialEntries={["/game/single?players=5"]}><Providers><App /></Providers></MemoryRouter>);
   await screen.findByRole("main", { name: "5-player Golf table" });
   const saved = readLocalGame()!;
-  fireEvent.click(screen.getByRole("button", { name: "Leave table", exact: true }));
+  fireEvent.click(screen.getByLabelText("Game information and scorecard"));
+  fireEvent.click(screen.getByRole("button", { name: "Concede", exact: true }));
+  const dialog = screen.getByRole("dialog", { name: "Concede the game?" });
+  expect(dialog).toHaveTextContent("Are you sure you want to concede?");
+  expect(readLocalGame()?.game.id).toBe(saved.game.id);
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("dialog", { name: "Concede the game?" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByLabelText("Game information and scorecard"));
+  fireEvent.click(screen.getByRole("button", { name: "Concede", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Keep playing", exact: true }));
+  expect(readLocalGame()?.game.id).toBe(saved.game.id);
+  fireEvent.click(screen.getByRole("link", { name: "Golf home" }));
+  fireEvent.click(await screen.findByRole("link", { name: "Play", exact: true }));
   expect(await screen.findByRole("dialog", { name: "Game In Progress" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Continue", exact: true }));
   await screen.findByRole("main", { name: "5-player Golf table" });
@@ -336,6 +348,12 @@ it("returns through the progress prompt and restores a guest table after navigat
   await screen.findByRole("main", { name: "5-player Golf table" });
   expect(readLocalGame()?.game.id).toBe(saved.game.id);
   expect(readLocalGame()?.game.players).toEqual(saved.game.players);
+  fireEvent.click(screen.getByLabelText("Game information and scorecard"));
+  fireEvent.click(screen.getByRole("button", { name: "Concede", exact: true }));
+  fireEvent.click(within(screen.getByRole("dialog", { name: "Concede the game?" })).getByRole("button", { name: "Concede", exact: true }));
+  await waitFor(() => expect(screen.queryByRole("main", { name: "5-player Golf table" })).not.toBeInTheDocument());
+  expect(readLocalGame()).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Game In Progress" })).not.toBeInTheDocument();
   view.unmount();
 });
 

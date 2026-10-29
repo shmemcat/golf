@@ -22,7 +22,7 @@ export interface Statistics {
   achievements: Record<string, boolean>;
 }
 export type AccountStatistics = Record<"all_time" | GolfMode, Statistics>;
-export interface Leader { rank: number; username: string; profile_icon: string; games_won: number }
+export type Leader = { rank: number; username: string; profile_icon: string } & ({ games_won: number } | { achievement_count: number });
 export interface Rankings { monthly: Leader[]; all_time: Leader[] }
 export class GolfError extends Error {
   constructor(message: string, public code = "UNAVAILABLE") { super(message); }

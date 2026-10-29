@@ -48,7 +48,7 @@ const BADGES = [
   { id: "hole_in_one", name: "Hole in One", desc: "Finish a hole with all three columns matched.", icon: faGolfFlagHole },
   { id: "six_of_a_kind", name: "Six of a Kind", desc: "Finish a hole with all six board cards the same rank.", icon: faDiceSix },
   { id: "deuce_almighty", name: "Deuce Almighty", desc: "Finish a hole with a matching 2×2 block of twos.", icon: faBolt },
-  { id: "dont_quit_your_day_job", name: "Don't Quit Your Day Job", desc: "Score 70 points on a hole: 60 from your cards plus the 10-point going-out penalty.", icon: faBriefcase, secret: true },
+  { id: "dont_quit_your_day_job", name: "Don't Quit Your Day Job", desc: "Score the maximum amount of points possible on a single hole", icon: faBriefcase, secret: true },
   { id: "up_and_down", name: "Up and Down", desc: "Follow a positive hole with a negative one in the same game.", icon: faArrowsUpDown },
   { id: "out_of_the_rough", name: "Out of the Rough", desc: "Win after starting the final hole in last place.", icon: faTree },
   { id: "photo_finish", name: "Photo Finish", desc: "Win outright by exactly one point.", icon: faFlagCheckered, secret: true },

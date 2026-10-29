@@ -167,7 +167,7 @@ it("shows global Bot and Multiplayer monthly and all-time wins to guests and rec
   render(<MemoryRouter initialEntries={["/leaderboard"]}><Providers><App /></Providers></MemoryRouter>);
   expect(await screen.findByRole("alert")).toHaveTextContent("Scores are unavailable.");
   const tabs = screen.getByRole("group", { name: "Leaderboard category" });
-  expect(within(tabs).getAllByRole("button")).toHaveLength(2);
+  expect(within(tabs).getAllByRole("button")).toHaveLength(3);
   fail = false; fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   await waitFor(() => expect(screen.getByText("CloverFan")).toBeVisible());
   expect(screen.getByText("8 wins")).toBeVisible();
@@ -278,6 +278,46 @@ it("resumes saved bot tables without showing the multiplayer joining screen", as
   expect(await screen.findByRole("main", { name: "2-player Golf table" })).toBeInTheDocument();
   expect(fetcher.mock.calls.filter(([path]) => path === "/api/golf/rooms/ABC234")).toHaveLength(1);
   expect(fetcher.mock.calls.some(([path]) => path === "/api/golf/bots")).toBe(false);
+});
+
+it("confirms a server bot concession and keeps a failed attempt available to retry", async () => {
+  const botRoom = { ...roomFixture(2, 0), mode: "bot" as const };
+  transport.reply = botRoom;
+  const actions: string[] = [];
+  let fail = true;
+  vi.stubGlobal("fetch", vi.fn(async (path: string, init: RequestInit = {}) => {
+    if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
+    if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
+    if (path === "/api/golf/active") return response({ rooms: [] });
+    if (path.endsWith("/actions")) {
+      actions.push(JSON.parse(String(init.body)).action);
+      return fail ? response({ error: "Please try again.", code: "REJECTED" }, 409) : response({ state: { left: true } });
+    }
+    return response({ state: botRoom });
+  }));
+  render(<MemoryRouter initialEntries={["/game/single?players=2&room=ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  await screen.findByRole("main", { name: "2-player Golf table" });
+  const open = () => {
+    fireEvent.click(screen.getByLabelText("Game information and scorecard"));
+    fireEvent.click(screen.getByRole("button", { name: "Concede", exact: true }));
+  };
+  open();
+  expect(screen.getByRole("dialog", { name: "Concede the game?" })).toHaveTextContent("Are you sure you want to concede?");
+  expect(actions).toEqual([]);
+  fireEvent.click(screen.getByRole("button", { name: "Keep playing", exact: true }));
+  expect(actions).toEqual([]);
+  open();
+  const dialog = within(screen.getByRole("dialog", { name: "Concede the game?" }));
+  act(() => { transport.handlers.disconnect(); });
+  expect(dialog.getByRole("button", { name: "Concede", exact: true })).toBeDisabled();
+  act(() => { transport.handlers.connect(); });
+  fireEvent.click(dialog.getByRole("button", { name: "Concede", exact: true }));
+  expect(await dialog.findByRole("alert")).toHaveTextContent("Please try again.");
+  expect(actions).toEqual(["leave"]);
+  fail = false;
+  fireEvent.click(dialog.getByRole("button", { name: "Concede", exact: true }));
+  expect(await screen.findByRole("heading", { name: "PLAY", exact: true })).toBeInTheDocument();
+  expect(actions).toEqual(["leave", "leave"]);
 });
 
 it("sends a direct new-table link to Play when an unfinished room already exists", async () => {

@@ -125,6 +125,8 @@ def account_statistics(user_id):
 
 
 def leaderboard(mode, accounts):
+    if mode == "achievements":
+        return {"monthly": [], "all_time": achievement_rankings(accounts)}
     from sqlalchemy import func
     month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -140,3 +142,27 @@ def leaderboard(mode, accounts):
         visible = [(profiles[uid], wins) for uid, wins in rows if uid in profiles][:10]
         return [{"rank": i + 1, "username": p.username, "profile_icon": p.profile_icon, "games_won": wins} for i, (p, wins) in enumerate(visible)]
     return {"monthly": rankings(True), "all_time": rankings(False)}
+
+
+def achievement_count(stats):
+    return sum(bool(value) for value in stats["achievements"].values()) + sum(
+        stats["games_completed"] >= target for target in (10, 50, 100))
+
+
+def achievement_rankings(accounts):
+    from collections import defaultdict
+
+    results, unlocks = defaultdict(list), defaultdict(set)
+    deleted = {row.user_id for row in DeletedUser.query.all()}
+    for row in Result.query.yield_per(200):
+        if row.user_id not in deleted:
+            results[row.user_id].append(row)
+    for row in AchievementUnlock.query.all():
+        if row.user_id not in deleted:
+            unlocks[row.user_id].add(row.achievement_id)
+    counts = {uid: achievement_count(summarize(results[uid], unlocks[uid])) for uid in results.keys() | unlocks.keys()}
+    profiles = accounts.public_profiles([uid for uid, count in counts.items() if count > 0])
+    visible = [(profiles[uid], count) for uid, count in counts.items() if count > 0 and uid in profiles]
+    visible.sort(key=lambda item: (-item[1], item[0].username.lower(), item[0].id))
+    return [{"rank": i + 1, "username": p.username, "profile_icon": p.profile_icon, "achievement_count": count}
+            for i, (p, count) in enumerate(visible[:10])]

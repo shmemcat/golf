@@ -8,7 +8,7 @@ import { golfGet, type GolfMode, type Rankings } from "@/lib/golfApi";
 import styles from "@/styles/leaderboard.module.css";
 
 export default function Leaderboard() {
-  const [mode, setMode] = useState<GolfMode>("bot");
+  const [mode, setMode] = useState<GolfMode | "achievements">("bot");
   const [data, setData] = useState<Rankings | null>(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
@@ -23,8 +23,9 @@ export default function Leaderboard() {
     <StatisticsTabs value={mode} onChange={setMode} leaderboard />
     {!data && !error && <p role="status">Loading scores…</p>}
     {error && <div className="button-stack"><p role="alert" className="inline-error">{error}</p><Button name="Try again" onClick={() => setAttempt(n => n + 1)} /></div>}
-    {data && <div className={styles.columns}>{(["monthly", "all_time"] as const).map(period => <LeaderboardColumn key={period}
+    {data && <div className={`${styles.columns} ${mode === "achievements" ? styles.achievementStandings : ""}`}>{(mode === "achievements" ? ["all_time"] as const : ["monthly", "all_time"] as const).map(period => <LeaderboardColumn key={period}
       title={period === "monthly" ? "Monthly" : "All-Time"} category={mode} entries={data[period]} />)}</div>}
+    {mode === "achievements" && <p className={styles.note}>Each earned tier counts separately.</p>}
     <div className="button-stack"><MenuLink to="/" name="Home" /></div>
   </PageLayout></>;
 }

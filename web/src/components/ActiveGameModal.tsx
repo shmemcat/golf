@@ -3,11 +3,12 @@ import { createPortal } from "react-dom";
 import { Button } from "./Buttons";
 import styles from "./ActiveGameModal.module.css";
 
-export function ActiveGameModal({ title, message, continueLabel, leaveLabel, confirmMessage, busy, leaveDisabled, error, onContinue, onLeave }: {
+export function ActiveGameModal({ title, message, continueLabel, leaveLabel, confirmMessage, busy, leaveDisabled, error, onContinue, onLeave, confirmationOnly = false }: {
   title: string; message: string; continueLabel: string; leaveLabel: string; confirmMessage: string;
   busy: boolean; leaveDisabled: boolean; error: string; onContinue: () => void; onLeave: () => void;
+  confirmationOnly?: boolean;
 }) {
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState(confirmationOnly);
   const body = useRef<HTMLDivElement>(null);
   const id = useId();
   useEffect(() => {
@@ -30,14 +31,22 @@ export function ActiveGameModal({ title, message, continueLabel, leaveLabel, con
     return () => { document.body.style.overflow = overflow; document.removeEventListener("keydown", trap); previous?.focus(); };
   }, []);
   useEffect(() => { body.current?.querySelector<HTMLButtonElement>(confirming ? "[data-cancel]" : "button")?.focus(); }, [confirming]);
+  useEffect(() => {
+    if (!confirmationOnly) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) { event.preventDefault(); onContinue(); }
+    };
+    document.addEventListener("keydown", escape);
+    return () => document.removeEventListener("keydown", escape);
+  }, [confirmationOnly, busy, onContinue]);
   return createPortal(<div className={styles.backdrop}>
     <div ref={body} className={styles.modal} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-message`} aria-busy={busy} tabIndex={-1}>
-      <h2 id={`${id}-title`}>{confirming ? "Are you sure?" : title}</h2>
+      <h2 id={`${id}-title`}>{confirming && !confirmationOnly ? "Are you sure?" : title}</h2>
       <p id={`${id}-message`}>{confirming ? confirmMessage : message}</p>
       <div className="button-stack">
         {confirming ? <>
-          <Button name={busy ? "Leaving…" : "Yes"} disabled={busy || leaveDisabled} onClick={onLeave} />
-          <Button name="No" disabled={busy} data-cancel onClick={() => setConfirming(false)} />
+          <Button name={busy ? (confirmationOnly ? "Conceding…" : "Leaving…") : confirmationOnly ? leaveLabel : "Yes"} disabled={busy || leaveDisabled} onClick={onLeave} />
+          <Button name={confirmationOnly ? continueLabel : "No"} disabled={busy} data-cancel onClick={confirmationOnly ? onContinue : () => setConfirming(false)} />
         </> : <>
           <Button name={continueLabel} disabled={busy} onClick={onContinue} />
           <Button name={leaveLabel} disabled={busy || leaveDisabled} onClick={() => setConfirming(true)} />

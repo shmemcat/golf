@@ -13,6 +13,7 @@ import { faEye } from "@fortawesome/pro-solid-svg-icons/faEye";
 import { faEyeSlash } from "@fortawesome/pro-solid-svg-icons/faEyeSlash";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/Buttons";
+import { ActiveGameModal } from "@/components/ActiveGameModal";
 import { Card } from "@/components/Card";
 import { ProfileIcon } from "@/components/ProfileIcon";
 import { FlipCard } from "@/components/game/FlipCard";
@@ -31,7 +32,7 @@ import { seatOffset, useTableauNavigation } from "@/hooks/useTableauNavigation";
 import { canOpen, completedHoleRecords, type GolfCard } from "@/game/engine";
 import { BOT_NAMES, SEAT_LAYOUTS } from "@/game/seats";
 import { readStorage } from "@/lib/storage";
-import { readLocalGame } from "@/lib/localGame";
+import { clearLocalGame, readLocalGame } from "@/lib/localGame";
 import { selectionStyle, type SelectionStyle } from "@/game/selectionStyles";
 import type { Participant } from "@/lib/golfApi";
 import { ServerBotGame } from "./OnlineGame";
@@ -46,10 +47,10 @@ const SCORE_POP_BEAT_MS = 250;
 export type DrawLayout = "beside" | "below" | "piles";
 export const drawLayoutFrom = (value: string | null): DrawLayout => value === "below" || value === "piles" ? value : "beside";
 
-export function GolfTableView({ count, selection, table, drawLayout = "beside", resultNotice, participants, rematchWaiting = false, onLeave, connectionNotice, multiplayer = false, isHost = true, disconnected = false, pending = false, onOpenHoleRecord, previewHideResults = false }: {
+export function GolfTableView({ count, selection, table, drawLayout = "beside", resultNotice, participants, rematchWaiting = false, onLeave, leaveError = "", connectionNotice, multiplayer = false, isHost = true, disconnected = false, pending = false, onOpenHoleRecord, previewHideResults = false }: {
   count: number; selection: SelectionStyle; table: ReturnType<typeof useGolfTable>; drawLayout?: DrawLayout; resultNotice?: ReactNode;
   multiplayer?: boolean; isHost?: boolean; disconnected?: boolean; pending?: boolean;
-  participants?: Participant[]; rematchWaiting?: boolean; onLeave?: () => void; connectionNotice?: ReactNode;
+  participants?: Participant[]; rematchWaiting?: boolean; onLeave?: () => void; leaveError?: string; connectionNotice?: ReactNode;
   onOpenHoleRecord?: () => void; previewHideResults?: boolean;
 }) {
   const { game, stage, motion } = table;
@@ -62,6 +63,18 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   const summary = useRef<HTMLDialogElement>(null);
   const resultsToggle = useRef<HTMLButtonElement>(null);
   const matchInfo = useRef<HTMLDetailsElement>(null);
+  const [conceding, setConceding] = useState(false);
+  const [concedeError, setConcedeError] = useState("");
+  const canConcede = !multiplayer && game.phase !== "game-over";
+  const leave = () => {
+    if (onLeave) { onLeave(); return; }
+    clearLocalGame(game.id);
+    if (readLocalGame()?.game.id === game.id) {
+      setConcedeError("Your saved game couldn’t be cleared. Please allow browser storage and try again.");
+      return;
+    }
+    navigate("/play");
+  };
   const name = (seat: number) => participants?.[seat]?.name || (seat === 0 ? user?.name || "You" : BOT_NAMES[seat - 1]);
   const isBot = (seat: number) => participants ? participants[seat].isBot : seat !== 0;
   const icon = (seat: number) => participants?.[seat]?.profileIcon || (seat === 0 ? user?.profile_icon : undefined);
@@ -270,7 +283,15 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
               <h2>Scorecard</h2>
               <ol>{game.players.map((player, seat) => <li key={seat}><span>{name(seat)}</span><strong>{player.score}</strong></li>)}</ol>
               <hr />
-              <Button name="Leave table" size="compact" className="golf-leave-table" onClick={onLeave ?? (() => navigate("/play"))} />
+              <Button name={canConcede ? "Concede" : "Leave table"} size="compact" className="golf-leave-table" onClick={() => {
+                if (!canConcede) { leave(); return; }
+                if (matchInfo.current) {
+                  matchInfo.current.open = false;
+                  matchInfo.current.querySelector("summary")?.focus();
+                }
+                setConcedeError("");
+                setConceding(true);
+              }} />
             </div>
           </details>
         </header>
@@ -385,6 +406,13 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
         </dialog>
       ))}
       {recordOpen && <HoleRecordDialog key={game.id} records={records} onClose={() => setRecordGame(null)} />}
+      {conceding && <ActiveGameModal confirmationOnly title="Concede the game?" message=""
+        continueLabel="Keep playing" leaveLabel="Concede"
+        confirmMessage={participants
+          ? "Are you sure you want to concede? Only finished games count toward your statistics."
+          : "Are you sure you want to concede? Your progress in this game will be lost."}
+        busy={pending} leaveDisabled={disconnected} error={concedeError || leaveError}
+        onContinue={() => setConceding(false)} onLeave={leave} />}
     </div>
   );
 }

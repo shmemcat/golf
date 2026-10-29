@@ -147,7 +147,7 @@ it("keeps the scorecard focused on player scores and leaving the table", () => {
   expect(panel.querySelectorAll("ol li")).toHaveLength(4);
   expect(panel).not.toHaveTextContent("Nine holes");
   expect(panel.querySelectorAll("a")).toHaveLength(0);
-  expect(panel.querySelector("ol + hr + button")).toHaveTextContent("Leave table");
+  expect(panel.querySelector("ol + hr + button")).toHaveTextContent("Concede");
 });
 
 it("replays a draw into the selected opponent's board and reveals it only on arrival", () => {

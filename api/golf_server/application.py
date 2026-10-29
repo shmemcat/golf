@@ -208,8 +208,8 @@ def create_app(config=None, *, accounts=None):
     @app.get("/api/golf/leaderboard")
     def leaders():
         mode = request.args.get("mode", "bot")
-        if mode not in ("bot", "multiplayer"):
-            raise Rejected("Choose Bot or Multiplayer.")
+        if mode not in ("bot", "multiplayer", "achievements"):
+            raise Rejected("Choose Bot, Multiplayer, or Achievements.")
         # Remote profile lookup is never made while a Golf mutation gate is held.
         return jsonify(leaderboard(mode, provider))
 

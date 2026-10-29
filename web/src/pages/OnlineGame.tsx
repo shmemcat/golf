@@ -74,6 +74,7 @@ function ReadyTable({ room, selection }: { room: ReturnType<typeof useGolfRoom>;
     multiplayer={state.mode === "multiplayer"} isHost={state.isHost} disconnected={!room.connected} pending={room.pending}
     rematchWaiting={room.pending || !room.connected}
     onLeave={() => { void room.command("leave").then(left => { if (left) navigate("/play"); }); }}
+    leaveError={room.error}
     connectionNotice={connectionNotice} resultNotice={connectionNotice || (user && <p className="quiet-text">Your results have been saved.</p>)} />;
 }
 
