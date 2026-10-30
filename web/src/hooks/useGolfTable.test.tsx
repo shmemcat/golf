@@ -18,7 +18,6 @@ function openTable() {
   const view = renderHook(() => useGolfTable(4));
   tick(DEAL_MS);
   act(() => view.result.current.reveal(0));
-  tick(FLIP_MS);
   act(() => view.result.current.reveal(4));
   return view;
 }
@@ -37,7 +36,6 @@ it("holds input for the deal, restricts the opening row and column, then flips e
   expect(sound.play).toHaveBeenCalledWith("deal");
   act(() => view.result.current.reveal(0));
   expect(view.result.current.canReveal(1)).toBe(false);
-  tick(FLIP_MS);
   expect(view.result.current.canReveal(3)).toBe(false);
   expect([0, 1, 2, 3].every(index => !view.result.current.canReveal(index))).toBe(true);
   expect([4, 5].every(index => view.result.current.canReveal(index))).toBe(true);
@@ -57,6 +55,30 @@ it("holds input for the deal, restricts the opening row and column, then flips e
   expect(view.result.current.game.turn).toBe(0);
   expect(view.result.current.canDraw).toBe(true);
   expect(sound.play).toHaveBeenCalledWith("start");
+});
+
+it.each(["deck", "discard"] as const)("accepts a %s draw as soon as the picker lands on the starter", source => {
+  const view = openTable();
+  tick(FLIP_MS);
+  tick(OPPONENTS_MS);
+  tick(FLIGHT_MS);
+  const lastTick = view.result.current.game.players.length * 2 + view.result.current.game.starter;
+  for (let step = 1; step < lastTick; step++) {
+    act(() => { vi.advanceTimersToNextTimer(); });
+    expect(view.result.current.stage).toBe("picking");
+    expect(view.result.current.canDraw).toBe(false);
+  }
+  act(() => { vi.advanceTimersToNextTimer(); });
+  expect(view.result.current.pickerSeat).toBe(view.result.current.game.starter);
+  expect(view.result.current.stage).toBe("playing");
+  expect(view.result.current.canDraw).toBe(true);
+  act(() => view.result.current.draw(source));
+  expect(view.result.current.motion).toMatchObject({ kind: "draw", source });
+  tick(FLIGHT_MS);
+  expect(view.result.current.game.drawn?.source).toBe(source);
+  expect(view.result.current.canReplace).toBe(true);
+  tick(1100);
+  expect(view.result.current.game.phase).toBe("replace");
 });
 
 it("animates a draw to the dock, discards the old card first, then places the new one and permits the bot turn", () => {
@@ -123,7 +145,7 @@ it.each([1, 2, 3, 4, 5])("uses the named bot's strategy when resuming guest seat
   expect(vi.getTimerCount()).toBe(0);
 });
 
-it("finishes the final turns, then deals a fresh hole and announces the clockwise starter without a second picker", () => {
+it("finishes the final turns, then starts the next hole immediately after the upcard without a second picker", () => {
   const view = playTable();
   for (const index of [1, 2, 3, 5]) {
     for (let step = 0; step < 100 && !view.result.current.canDraw; step++) tick(300);
@@ -149,8 +171,8 @@ it("finishes the final turns, then deals a fresh hole and announces the clockwis
   tick(FLIP_MS);
   tick(OPPONENTS_MS);
   tick(FLIGHT_MS);
-  expect(view.result.current.stage).toBe("announcing");
-  tick(1100);
+  expect(view.result.current.stage).toBe("playing");
+  expect(view.result.current.game.phase).toBe("draw");
   expect(view.result.current.game.turn).toBe(1);
 });
 

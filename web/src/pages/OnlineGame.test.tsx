@@ -45,6 +45,61 @@ it("keeps the local player at seat zero and rotates turns, scores and animation 
   expect(result.game.players[0].cards[0].card.id).toBe(state.game!.players[2].cards[0].card.id);
 });
 
+it.each(["bot", "multiplayer"] as const)("accepts rapid opening clicks in a %s game before the first response arrives", async mode => {
+  let current = roomFixture(3, 1);
+  current.mode = mode;
+  current.stage = "opening";
+  current.game!.phase = "opening";
+  current.actionTokens = { reveal: "first-flip" };
+  transport.reply = current;
+  const first = mode === "bot" ? 0 : 5;
+  const second = mode === "bot" ? 4 : 1;
+  const sameColumn = (first + 3) % 6;
+  const payloads: Record<string, unknown>[] = [];
+  let finishFirst!: (result: Response) => void;
+  vi.stubGlobal("fetch", vi.fn(async (path: string, init: RequestInit = {}) => {
+    if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
+    if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
+    if (path.endsWith("/actions")) {
+      const payload = JSON.parse(String(init.body));
+      payloads.push(payload);
+      current = { ...current, revision: current.revision + 1, actionTokens: { reveal: "second-flip" }, game: {
+        ...current.game!, players: current.game!.players.map((player, seat) => seat !== current.mySeat ? player : {
+          ...player, cards: player.cards.map((cell, index) => index !== payload.index ? cell : {
+            ...cell, faceUp: true, card: { ...cell.card, rank: "A", suit: "S" },
+          }),
+        }),
+      } };
+      if (payloads.length === 1) return new Promise<Response>(resolve => { finishFirst = resolve; });
+      return response({ state: current });
+    }
+    return response({ state: current });
+  }));
+  const route = mode === "bot" ? "/game/single?players=3&room=ABC234" : "/game/multiplayer/ABC234";
+  const view = render(<MemoryRouter initialEntries={[route]}><Providers><App /></Providers></MemoryRouter>);
+  const label = (index: number) => `Reveal ${index < 3 ? "top" : "bottom"} row, column ${index % 3 + 1}, face down`;
+  const firstButton = await screen.findByRole("button", { name: label(first) });
+  await waitFor(() => expect(firstButton).toBeEnabled());
+  fireEvent.click(firstButton);
+  const illegal = screen.getByRole("button", { name: label(sameColumn) });
+  expect(firstButton).toBeDisabled();
+  expect(illegal).toBeDisabled();
+  expect(illegal).toHaveAttribute("data-valid", "false");
+  fireEvent.click(illegal);
+  const secondButton = screen.getByRole("button", { name: label(second) });
+  expect(secondButton).toBeEnabled();
+  expect(secondButton).toHaveAttribute("data-valid", "true");
+  fireEvent.click(secondButton);
+  expect(secondButton).toBeDisabled();
+  await waitFor(() => expect(payloads).toHaveLength(1));
+  expect(payloads[0]).toMatchObject({ action: "reveal", index: first, revision: 4, actionToken: "first-flip" });
+  await act(async () => { finishFirst(response({ state: current })); });
+  await waitFor(() => expect(payloads).toHaveLength(2));
+  expect(payloads[1]).toMatchObject({ action: "reveal", index: second, revision: 5, actionToken: "second-flip" });
+  await waitFor(() => expect(view.container.querySelectorAll('.golf-seat-human [data-face-up="true"]')).toHaveLength(2));
+  expect(screen.getAllByRole("button", { name: /^Reveal / }).every(button => button.matches(":disabled"))).toBe(true);
+});
+
 it.each([false, true])("uses server host status for end-game replays and follows new games (host=%s)", async isHost => {
   Object.defineProperties(HTMLDialogElement.prototype, {
     showModal: { configurable: true, value: function (this: HTMLDialogElement) { this.open = true; } },
@@ -379,24 +434,60 @@ it("lets guests leave, reserves Close Lobby for the host, and explains when the 
   expect(screen.queryByRole("list", { name: "Players in lobby" })).not.toBeInTheDocument();
 });
 
-it("lets a friend join directly from a shared lobby URL", async () => {
+it.each([null, account])("automatically joins a shared lobby URL without a join form (user=%s)", async user => {
   const lobby = { ...roomFixture(3, 1), game: null, stage: "lobby" };
   transport.reply = lobby;
   let joined = false;
   const fetcher = vi.fn(async (path: string, init: RequestInit = {}) => {
-    if (path === "/api/account/session") return response({ user: null, csrf_token: "account" });
-    if (path === "/api/golf/session") return response({ user: null, csrf_token: "golf" });
+    if (path === "/api/account/session") return response({ user, csrf_token: "account" });
+    if (path === "/api/golf/session") return response({ user, csrf_token: "golf" });
     if (path === "/api/golf/lobbies/join") { joined = true; return response({ state: lobby }); }
     return joined ? response({ state: lobby }) : response({ error: "You are not seated.", code: "NOT_SEATED" }, 403);
   });
   vi.stubGlobal("fetch", fetcher);
-  render(<MemoryRouter initialEntries={["/game/lobby/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
-  const button = await screen.findByRole("button", { name: "Join Lobby", exact: true });
-  fireEvent.change(screen.getByRole("textbox", { name: "Your name" }), { target: { value: "Friend" } });
-  fireEvent.click(button);
+  render(<StrictMode><MemoryRouter initialEntries={["/game/lobby/abc234"]}><Providers><App /></Providers></MemoryRouter></StrictMode>);
   await waitFor(() => expect(screen.getByRole("textbox", { name: "Code", exact: true })).toHaveValue("ABC234"));
-  const joinedRequest = fetcher.mock.calls.find(([path]) => path === "/api/golf/lobbies/join")!;
-  expect(JSON.parse(String(joinedRequest[1].body))).toEqual({ code: "ABC234", name: "Friend" });
+  const joins = fetcher.mock.calls.filter(([path]) => path === "/api/golf/lobbies/join");
+  expect(joins).toHaveLength(1);
+  expect(JSON.parse(String(joins[0][1].body))).toEqual({ code: "ABC234" });
+  expect(transport.calls).toContainEqual({ code: "ABC234" });
+  expect(screen.queryByRole("button", { name: "Join Lobby", exact: true })).not.toBeInTheDocument();
+  expect(screen.queryByRole("textbox", { name: "Your name" })).not.toBeInTheDocument();
+});
+
+it("resumes an existing lobby seat without joining again", async () => {
+  const lobby = { ...roomFixture(3, 1), game: null, stage: "lobby" };
+  transport.reply = lobby;
+  const fetcher = vi.fn(async (path: string) => {
+    if (path === "/api/account/session" || path === "/api/golf/session") return response({ user: account, csrf_token: "token" });
+    return response({ state: lobby });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<MemoryRouter initialEntries={["/game/lobby/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  await screen.findByRole("list", { name: "Players in lobby" });
+  expect(fetcher.mock.calls.some(([path]) => path === "/api/golf/lobbies/join")).toBe(false);
+});
+
+it.each(["The host closed this lobby.", "This lobby has already started or is full."])("shows invite failures and lets the visitor retry: %s", async error => {
+  const lobby = { ...roomFixture(3, 1), game: null, stage: "lobby" };
+  transport.reply = lobby;
+  let attempts = 0;
+  const fetcher = vi.fn(async (path: string) => {
+    if (path === "/api/account/session" || path === "/api/golf/session") return response({ user: null, csrf_token: "token" });
+    if (path === "/api/golf/lobbies/join") {
+      attempts++;
+      return attempts === 1 ? response({ error, code: "LOBBY_CLOSED" }, 400) : response({ state: lobby });
+    }
+    return response({ error: "You are not seated.", code: "NOT_SEATED" }, 403);
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<MemoryRouter initialEntries={["/game/lobby/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  expect(await screen.findByRole("alert")).toHaveTextContent(error);
+  expect(attempts).toBe(1);
+  expect(screen.queryByRole("button", { name: "Join Lobby", exact: true })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+  await screen.findByRole("list", { name: "Players in lobby" });
+  expect(attempts).toBe(2);
 });
 
 it("shows and clears the inactivity warning, then explains removal", async () => {

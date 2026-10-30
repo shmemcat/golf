@@ -170,7 +170,7 @@ started with at least two humans. Hot Streak requires five consecutive wins
 (shared wins count), and stays earned after a later loss; abandoned games leave the
 streak unchanged. All Year Round requires all eight holiday badges, across any number of years.
 
-Geezer unlocks when a signed-in player turns music off or moves the music slider
+Locked in unlocks when a signed-in player turns music off or moves the music slider
 to zero while music is on. An initially disabled music setting and muting sound
 effects do not unlock it. `POST /api/golf/achievements` accepts only `geezer`,
 requires the account cookie, Golf CSRF and allowed origin, and stores one unlock

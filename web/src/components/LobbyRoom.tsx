@@ -8,10 +8,8 @@ import { faCrown } from "@fortawesome/pro-solid-svg-icons/faCrown";
 import { Button, MenuLink } from "./Buttons";
 import { ProfileIcon } from "./ProfileIcon";
 import { PageLayout } from "./ui/PageLayout";
-import { useAuth } from "@/context/AuthContext";
 import { useSound } from "@/context/SoundContext";
 import type { useGolfRoom } from "@/hooks/useGolfRoom";
-import { golfPost } from "@/lib/golfApi";
 import styles from "@/styles/lobby.module.css";
 
 type Room = ReturnType<typeof useGolfRoom>;
@@ -89,26 +87,5 @@ export function LobbyRoom({ room }: { room: Room }) {
         <div className={styles.home}><MenuLink to="/" name="Home" /></div>
       </div>
     </div>}
-  </PageLayout>;
-}
-
-export function JoinLobby({ code, retry }: { code: string; retry: () => void }) {
-  const { user } = useAuth();
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  return <PageLayout title="GAME LOBBY" contentClassName={styles.page} className={styles.body}>
-    <form className={styles.join} onSubmit={async event => {
-      event.preventDefault(); setBusy(true); setError("");
-      try { await golfPost("/lobbies/join", { code, name }); retry(); }
-      catch (e) { setError(e instanceof Error ? e.message : "Couldn’t join this lobby."); }
-      finally { setBusy(false); }
-    }}>
-      <p>Join lobby <strong>{code}</strong></p>
-      {!user && <label>Your name<input value={name} maxLength={24} placeholder="Guest" onChange={e => setName(e.target.value)} /></label>}
-      {error && <p role="alert" className={styles.message}>{error}</p>}
-      <Button name={busy ? "Joining…" : "Join Lobby"} type="submit" disabled={busy} />
-      <MenuLink to="/play" name="Back" />
-    </form>
   </PageLayout>;
 }

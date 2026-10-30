@@ -85,7 +85,7 @@ it.each(["golf:results", ACHIEVEMENT_EVENT, "focus", "online"])("checks new achi
   await seed();
   statistics.all_time.achievements.geezer = true;
   await refresh(event);
-  expect(screen.getByRole("status")).toHaveTextContent("Geezer");
+  expect(screen.getByRole("status")).toHaveTextContent("Locked in");
   expect(fetcher.mock.calls.map(([url]) => url)).toEqual(["/api/golf/stats", "/api/golf/stats"]);
 });
 
@@ -94,7 +94,7 @@ it("persists announcements across duplicate events and remounts", async () => {
   await waitFor(() => expect(localStorage.getItem(key())).toBe("[]"));
   statistics.all_time.achievements.geezer = true;
   await refresh();
-  fireEvent.click(screen.getByRole("button", { name: "Dismiss Geezer achievement notification" }));
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss Locked in achievement notification" }));
   await refresh(ACHIEVEMENT_EVENT);
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(key())!)).toContain("geezer");
@@ -130,7 +130,7 @@ it("hides a previous account's notice and ignores its delayed responses", async 
   await waitFor(() => expect(localStorage.getItem(key())).toBe("[]"));
   statistics.all_time.achievements.geezer = true;
   await refresh();
-  expect(screen.getByRole("status")).toHaveTextContent("Geezer");
+  expect(screen.getByRole("status")).toHaveTextContent("Locked in");
   let resolve!: (response: Response) => void;
   fetcher.mockImplementationOnce(() => new Promise<Response>(done => { resolve = done; }));
   await refresh();
@@ -154,9 +154,9 @@ it("ignores stale refreshes and retries after a failed request", async () => {
   statistics.all_time.achievements.geezer = true;
   await refresh();
   await act(async () => resolve(stale));
-  expect(screen.getByRole("status")).toHaveTextContent("Geezer");
+  expect(screen.getByRole("status")).toHaveTextContent("Locked in");
   expect(JSON.parse(localStorage.getItem(key())!)).toContain("geezer");
-  fireEvent.click(screen.getByRole("button", { name: "Dismiss Geezer achievement notification" }));
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss Locked in achievement notification" }));
   fetcher.mockRejectedValueOnce(new TypeError("Offline"));
   statistics.all_time.achievements.first_game = true;
   await refresh();
@@ -172,8 +172,8 @@ it("keeps duplicate protection working when browser storage is blocked", async (
   await act(async () => {});
   statistics.all_time.achievements.geezer = true;
   await refresh();
-  expect(screen.getByRole("status")).toHaveTextContent("Geezer");
-  fireEvent.click(screen.getByRole("button", { name: "Dismiss Geezer achievement notification" }));
+  expect(screen.getByRole("status")).toHaveTextContent("Locked in");
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss Locked in achievement notification" }));
   await refresh();
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
@@ -184,9 +184,9 @@ it("dismisses automatically and cleans up on sign-out", async () => {
   try {
     statistics.all_time.achievements.geezer = true;
     await refresh();
-    expect(screen.getByRole("status")).toHaveTextContent("Geezer");
+    expect(screen.getByRole("status")).toHaveTextContent("Locked in");
     act(() => vi.advanceTimersByTime(2999));
-    expect(screen.getByRole("status")).toHaveTextContent("Geezer");
+    expect(screen.getByRole("status")).toHaveTextContent("Locked in");
     act(() => vi.advanceTimersByTime(1));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     statistics.all_time.achievements.first_game = true;

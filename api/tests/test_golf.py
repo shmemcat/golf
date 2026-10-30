@@ -89,6 +89,26 @@ def grid(ranks):
     return [{'faceUp': i != 5, 'card': {'id': str(i), 'rank': rank, 'suit': 'S'}} for i, rank in enumerate(ranks)]
 
 
+@pytest.mark.parametrize('mode', ['bot', 'multiplayer'])
+@pytest.mark.parametrize('first,second', [(0, 4), (5, 1)])
+def test_opening_accepts_rapid_legal_flips_without_waiting_for_animation(app, clients, monkeypatch, mode, first, second):
+    monkeypatch.setattr('golf_server.runtime.time.time', lambda: 1000.0)
+    app.config['GOLF_TIMINGS']['flip'] = .56
+    host = clients(1)
+    code = create(host, mode=mode)['code']
+    if mode == 'multiplayer':
+        assert post(clients(2), '/lobbies/join', {'code': code}).status_code == 200
+        assert action(host, code, 'start').status_code == 200
+    tick(app)
+    assert action(host, code, 'reveal', index=first).status_code == 200
+    assert action(host, code, 'reveal', index=(first + 3) % 6).status_code == 400
+    assert action(host, code, 'reveal', index=(first // 3) * 3 + (first + 1) % 3).status_code == 400
+    assert action(host, code, 'reveal', index=second).status_code == 200
+    opened = state(host, code)['game']['players'][0]['cards']
+    assert [i for i, cell in enumerate(opened) if cell['faceUp']] == sorted([first, second])
+    assert action(host, code, 'reveal', index=(second + 1) % 6).status_code == 400
+
+
 @pytest.mark.parametrize('seat', range(6))
 @pytest.mark.parametrize('first', range(6))
 def test_opening_requires_opposite_rows_and_different_columns(seat, first):
@@ -270,6 +290,41 @@ def test_lower_score_on_last_turn_after_another_player_also_exposes_all_cards():
     engine.draw(game, 'deck')
     engine.replace(game, 5)
     assert game['history'][0] == [-9, -19, -21]
+
+
+@pytest.mark.parametrize('mode', ['bot', 'multiplayer'])
+@pytest.mark.parametrize('source', ['deck', 'discard'])
+def test_starter_can_draw_immediately_when_the_upcard_arrives(app, clients, mode, source):
+    people = [clients(1), clients(2)]
+    code = create(people[0], 2, mode)['code']
+    if mode == 'multiplayer':
+        assert post(people[1], '/lobbies/join', {'code': code}).status_code == 200
+        assert action(people[0], code, 'start').status_code == 200
+    with app.app_context():
+        runtime = app.extensions['golf_runtime']
+        row = db.session.get(Room, code)
+        data = copy.deepcopy(row.data)
+        data['game'].update(starter=0, turn=0)
+        for seat in range(2):
+            engine.open_bot(data['game'], seat)
+        runtime.step(data, 'upcard')
+        runtime.save(row, data, 'test_setup')
+
+    before = state(people[0], code)
+    assert before['stage'] == 'upcard'
+    assert before['motion']['kind'] == 'upcard'
+    assert action(people[0], code, 'draw', source=source).status_code == 400
+    tick(app)
+    ready = state(people[0], code)
+    assert ready['stage'] == 'playing'
+    assert ready['game']['phase'] == 'draw'
+    assert ready['motion'] is None
+    assert ready['game']['discard']
+    with app.app_context():
+        assert db.session.get(Room, code).data['next'] is None
+    response = action(people[0], code, 'draw', source=source)
+    assert response.status_code == 200, response.json
+    assert response.json['state']['motion']['source'] == source
 
 
 def test_privacy_idempotent_create_and_guardrails(app, clients):

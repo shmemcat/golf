@@ -34,14 +34,14 @@ function setup({ music = true, profile = false, sessionUserId = "1", fail = fals
   return fetcher;
 }
 
-it("saves Geezer when music is turned off and immediately refreshes the account badge", async () => {
+it("saves Locked in when music is turned off and immediately refreshes the account badge", async () => {
   const fetcher = setup({ profile: true });
   await screen.findByLabelText("Your statistics");
-  expect(screen.queryByText("Geezer")).not.toBeInTheDocument();
+  expect(screen.queryByText("Locked in")).not.toBeInTheDocument();
   expect(screen.getAllByRole("button", { name: "Secret achievement: Locked" })).toHaveLength(17);
   expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/achievements"))).toHaveLength(0);
   fireEvent.click(screen.getByRole("button", { name: "Toggle music" }));
-  expect(await screen.findByRole("button", { name: "Geezer: Unlocked" })).toBeVisible();
+  expect(await screen.findByRole("button", { name: "Locked in: Unlocked" })).toBeVisible();
   const calls = fetcher.mock.calls.filter(([url]) => url.endsWith("/achievements"));
   expect(calls).toHaveLength(1);
   const init = calls[0][1]!;
@@ -50,14 +50,14 @@ it("saves Geezer when music is turned off and immediately refreshes the account 
   expect(new Headers(init.headers).get("X-Golf-CSRF")).toBe("fresh-csrf");
 });
 
-it("also saves Geezer when the music slider is moved to zero", async () => {
+it("also saves Locked in when the music slider is moved to zero", async () => {
   const fetcher = setup();
   fireEvent.change(screen.getByRole("slider", { name: "Music volume" }), { target: { value: "0" } });
   await waitFor(() => expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/achievements"))).toHaveLength(1));
   expect(screen.getByRole("button", { name: "Toggle music" })).toHaveAttribute("aria-pressed", "false");
 });
 
-it("does not award Geezer for the initial music setting, enabling music, or muting effects", () => {
+it("does not award Locked in for the initial music setting, enabling music, or muting effects", () => {
   const fetcher = setup({ music: false });
   fireEvent.click(screen.getByRole("button", { name: "Toggle sound effects" }));
   fireEvent.click(screen.getByRole("button", { name: "Toggle music" }));
@@ -85,7 +85,7 @@ it("keeps music controls working without showing an unlock when saving fails", a
   fireEvent.click(screen.getByRole("button", { name: "Toggle music" }));
   await waitFor(() => expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/achievements"))).toHaveLength(1));
   expect(screen.getByRole("button", { name: "Toggle music" })).toHaveAttribute("aria-pressed", "false");
-  expect(screen.queryByText("Geezer")).not.toBeInTheDocument();
+  expect(screen.queryByText("Locked in")).not.toBeInTheDocument();
   expect(screen.getAllByRole("button", { name: "Secret achievement: Locked" })).toHaveLength(17);
   expect(fetcher.mock.calls.filter(([url]) => url.endsWith("/stats"))).toHaveLength(1);
 });

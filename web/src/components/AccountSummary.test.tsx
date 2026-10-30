@@ -43,7 +43,7 @@ it("keeps existing achievements and shows all new Golf and holiday badges from a
   expect(screen.getByRole("button", { name: "Under Par: Unlocked" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Birdie: Unlocked" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Spooky: Unlocked" })).toBeVisible();
-  for (const name of ["Geezer", "Night Owl", "Better with Friends"]) {
+  for (const name of ["Locked in", "Night Owl", "Better with Friends"]) {
     expect(screen.getByRole("button", { name: `${name}: Unlocked` })).toBeVisible();
   }
   for (const name of ["Eagle", "Hole in One", "Six of a Kind", "Deuce Almighty", "Up and Down", "Out of the Rough", "Sunday Best"]) {

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { canOpen, type Game, type GolfCard } from "@/game/engine";
+import { canOpen, openCard, type Game, type GolfCard } from "@/game/engine";
 import type { Stage, TableMotion, useGolfTable } from "./useGolfTable";
-import { FLIP_MS } from "./useGolfTable";
 import type { RoomState } from "@/lib/golfApi";
 import { useSound } from "@/context/SoundContext";
 
@@ -32,11 +31,17 @@ export function projectTable(state: RoomState) {
   return { game, motion, participants: order.map(i => state.seats[i]) };
 }
 
-export function useServerGolfTable(state: RoomState, command: (action: string, detail?: Record<string, unknown>) => Promise<boolean>, disabled: boolean) {
+export function useServerGolfTable(state: RoomState, command: (action: string, detail?: Record<string, unknown>) => Promise<boolean>, disabled: boolean, pending = false) {
   const { game, motion, participants } = projectTable(state);
   const { play } = useSound();
   const previous = useRef<RoomState | null>(null);
-  const [flipping, setFlipping] = useState(false);
+  const openingKey = `${state.code}:${game.id}:${game.hole}:${state.mySeat}`;
+  const [choices, setChoices] = useState({ key: openingKey, indices: [] as number[], sent: 0 });
+  const latestChoices = useRef(choices);
+  const sending = useRef(false);
+  const updateChoices = (next: typeof choices) => { latestChoices.current = next; setChoices(next); };
+  const openingGame = () => latestChoices.current.key === openingKey
+    ? latestChoices.current.indices.reduce(openCard, game) : game;
   useEffect(() => {
     const before = previous.current;
     if (state.game && before?.game?.id === state.game.id) {
@@ -48,18 +53,35 @@ export function useServerGolfTable(state: RoomState, command: (action: string, d
     previous.current = state;
   }, [state, play]);
   useEffect(() => {
-    if (!flipping) return;
-    const timer = window.setTimeout(() => setFlipping(false), FLIP_MS);
-    return () => window.clearTimeout(timer);
-  }, [flipping]);
+    if (disabled || pending || state.stage !== "opening" || motion || sending.current) return;
+    const selected = latestChoices.current;
+    if (selected.key !== openingKey) return;
+    const index = selected.indices[selected.sent];
+    if (index === undefined || selected.indices.slice(0, selected.sent).some(i => !game.players[0].cards[i].faceUp)) return;
+    // Send rapid selections in order, using the token returned for the previous flip.
+    sending.current = true;
+    updateChoices({ ...selected, sent: selected.sent + 1 });
+    void command("reveal", { index }).then(ok => {
+      sending.current = false;
+      const current = latestChoices.current;
+      updateChoices(!ok && current.key === openingKey ? { key: openingKey, indices: [], sent: 0 } : { ...current });
+    });
+  }, [choices, state, command, disabled, pending, openingKey]);
   const stage = state.stage as Stage;
-  const available = !disabled && !motion;
+  const available = !disabled && !pending && !motion;
+  const canReveal = (index: number) => !disabled && !motion && stage === "opening" && canOpen(openingGame(), index);
   const table: ReturnType<typeof useGolfTable> = {
     game, stage, motion, pickerSeat: game.starter,
-    canReveal: index => available && !flipping && stage === "opening" && canOpen(game, index),
+    canReveal,
     canDraw: available && stage === "playing" && game.turn === 0 && game.phase === "draw",
     canReplace: available && stage === "playing" && game.turn === 0 && game.phase === "replace",
-    reveal: index => { setFlipping(true); play("flip"); void command("reveal", { index }); },
+    reveal: index => {
+      if (!canReveal(index)) return;
+      const indices = latestChoices.current.key === openingKey ? latestChoices.current.indices : [];
+      const sent = latestChoices.current.key === openingKey ? latestChoices.current.sent : 0;
+      updateChoices({ key: openingKey, indices: [...indices, index], sent });
+      play("flip");
+    },
     draw: source => { void command("draw", { source }); },
     replace: index => { void command("replace", { index }); },
     toss: () => { void command("toss"); }, advance: () => { void command("advance"); }, restart: () => { void command("restart"); },

@@ -20,6 +20,7 @@ export interface Achievement {
   id: string;
   name: string;
   desc: string;
+  flavorText?: string;
   icon: IconDefinition;
   earned: boolean;
   secret?: boolean;
@@ -57,7 +58,7 @@ const BADGES = [
   { id: "hot_streak", name: "Hot Streak", desc: "Win five games in a row. Shared wins count, too.", icon: faFire, secret: true },
   { id: "night_owl", name: "Night Owl", desc: "Finish a game that began between midnight and 5 a.m.", icon: faOwl, secret: true },
   { id: "early_bird", name: "Early Bird", desc: "Finish a game that began between 5 and 8 a.m.", icon: faSunBright, secret: true },
-  { id: "geezer", name: "Geezer", desc: "Turn the music off.", icon: faVolumeXmark, secret: true },
+  { id: "geezer", name: "Locked in", desc: "Turn the music off.", flavorText: "Gotta turn the music down to see better", icon: faVolumeXmark, secret: true },
   { id: "all_year_round", name: "All Year Round", desc: "Collect all eight holiday achievements across any number of years.", icon: faCalendarDays, secret: true },
   { id: "new_year", name: "Auld Lang Syne", desc: "Play a game on New Year's Day.", icon: faChampagneGlasses, secret: true },
   { id: "lonely_heart", name: "Lonely Heart", desc: "Play a game on Valentine's Day.", icon: faCalendarHeart, secret: true },

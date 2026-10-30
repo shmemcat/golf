@@ -4,8 +4,8 @@ import { GolfError, golfGet, golfPost, golfSession, newRequestId, roomPath, type
 import { useAuth } from "@/context/AuthContext";
 import { resumeOnWake } from "@/lib/socketResume";
 
-export function useGolfRoom(code: string, initialState: RoomState | null = null) {
-  const { user } = useAuth();
+export function useGolfRoom(code: string, initialState: RoomState | null = null, autoJoin = false) {
+  const { user, loading } = useAuth();
   const [state, setState] = useState<RoomState | null>(() => initialState?.code === code ? initialState : null);
   const latest = useRef(state);
   const accountId = useRef(user?.id);
@@ -23,6 +23,7 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
     setState(next);
   }, [code]);
   useEffect(() => {
+    if (loading) return;
     let alive = true;
     if (latest.current?.code !== code || accountId.current !== user?.id) {
       latest.current = null;
@@ -38,7 +39,8 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
       if (latest.current && !latest.current.game) {
         latest.current = null;
         setState(null);
-        setNeedsJoin(true);
+        setNeedsJoin(!autoJoin);
+        if (autoJoin) setAttempt(n => n + 1);
       } else setRemovedReason(reason);
     };
     const socket = io("/golf", {
@@ -58,7 +60,10 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
     socket.on("disconnect", () => { if (alive) setConnected(false); });
     socket.on("connect_error", () => { if (alive) { setConnected(false); setError("Couldn’t connect to your table. Please retry."); } });
     if (latest.current) socket.connect();
-    else void golfGet<{ state: RoomState }>(roomPath(code)).then(({ state: next }) => {
+    else void golfGet<{ state: RoomState }>(roomPath(code)).catch(e => {
+      if (!alive || !autoJoin || !(e instanceof GolfError) || e.code !== "NOT_SEATED") throw e;
+      return golfPost<{ state: RoomState }>("/lobbies/join", { code });
+    }).then(({ state: next }) => {
       if (alive) { accept(next); socket.connect(); }
     }).catch(e => { if (alive) { setError(e.message); setNeedsJoin(e instanceof GolfError && e.code === "NOT_SEATED"); } });
     const stopWake = resumeOnWake(
@@ -66,7 +71,7 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null)
       () => { if (socket.connected) subscribe(); else socket.connect(); },
     );
     return () => { alive = false; stopWake(); socket.removeAllListeners(); socket.disconnect(); };
-  }, [code, accept, attempt, user?.id]);
+  }, [code, accept, attempt, user?.id, autoJoin, loading]);
   const command = async (action: string, detail: Record<string, unknown> = {}) => {
     if (!state || busy.current) return false;
     busy.current = true;

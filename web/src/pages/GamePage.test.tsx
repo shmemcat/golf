@@ -357,7 +357,7 @@ it("returns through the progress prompt and restores a guest table after navigat
   view.unmount();
 });
 
-it.each([0, 5])("only enables the opposite row and different columns after opening position %i", async first => {
+it.each([0, 1, 2, 3, 4, 5])("immediately enables only legal second flips after opening position %i", async first => {
   vi.useFakeTimers();
   const view = render(<MemoryRouter initialEntries={["/game/single?players=2"]}><Providers><GamePage /></Providers></MemoryRouter>);
   await act(async () => {});
@@ -366,14 +366,24 @@ it.each([0, 5])("only enables the opposite row and different columns after openi
     act(() => { vi.advanceTimersByTime(DEAL_MS); });
     expect(screen.getByText("Flip one top card and one bottom card, in different columns.")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: label(first) }));
-    act(() => { vi.advanceTimersByTime(FLIP_MS); });
     expect(screen.getByText(`Flip a card in the ${first < 3 ? "bottom" : "top"} row and a different column.`)).toBeVisible();
+    let second = -1;
     for (let index = 0; index < 6; index++) {
       if (index === first) continue;
       const button = screen.getByRole("button", { name: label(index) });
-      if (Math.floor(index / 3) !== Math.floor(first / 3) && index % 3 !== first % 3) expect(button).toBeEnabled();
-      else expect(button).toBeDisabled();
+      if (Math.floor(index / 3) !== Math.floor(first / 3) && index % 3 !== first % 3) {
+        expect(button).toBeEnabled();
+        expect(button).toHaveAttribute("data-valid", "true");
+        second = index;
+      } else {
+        expect(button).toBeDisabled();
+        expect(button).toHaveAttribute("data-valid", "false");
+        fireEvent.click(button);
+      }
     }
+    fireEvent.click(screen.getByRole("button", { name: label(second) }));
+    expect(view.container.querySelectorAll('.golf-seat-human [data-face-up="true"]')).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: /^Reveal / }).every(button => button.matches(":disabled"))).toBe(true);
   } finally {
     view.unmount();
     vi.useRealTimers();

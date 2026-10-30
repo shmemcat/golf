@@ -43,9 +43,8 @@ export default function Rules() {
                 </p>
                 <p>
                   Trade high cards for low ones. Matching ranks in a vertical
-                  column cancel out, except paired twos, which score −4. Four
-                  matching cards in an adjacent 2×2 block score −20 points,
-                  except four twos, which score −28.
+                  column cancel out their positive score. Four matching cards in
+                  an adjacent 2×2 block score −20 points.
                 </p>
                 <figure className="deal-figure">
                   <div className="six-card-grid">

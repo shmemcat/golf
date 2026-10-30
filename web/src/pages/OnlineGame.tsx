@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button, MenuLink } from "@/components/Buttons";
 import { PageLayout } from "@/components/ui/PageLayout";
-import { LobbyRoom, JoinLobby } from "@/components/LobbyRoom";
+import { LobbyRoom } from "@/components/LobbyRoom";
 import { useGolfRoom } from "@/hooks/useGolfRoom";
 import { useAuth } from "@/context/AuthContext";
 import { useServerGolfTable } from "@/hooks/useServerGolfTable";
@@ -57,7 +57,7 @@ function ReadyTable({ room, selection }: { room: ReturnType<typeof useGolfRoom>;
   const { user } = useAuth();
   const state = room.state!;
   const navigate = useNavigate();
-  const { table, participants } = useServerGolfTable(state, room.command, room.pending || !room.connected);
+  const { table, participants } = useServerGolfTable(state, room.command, !room.connected, room.pending);
   const completed = state.game!.phase === "game-over";
   const wasComplete = useRef(false);
   const wasConnected = useRef(room.connected);
@@ -81,7 +81,7 @@ function ReadyTable({ room, selection }: { room: ReturnType<typeof useGolfRoom>;
 function ConnectedGame({ code, selection = selectionStyle(null), initialState = null, botGame = false }: {
   code: string; selection?: SelectionStyle; initialState?: RoomState | null; botGame?: boolean;
 }) {
-  const room = useGolfRoom(code, initialState);
+  const room = useGolfRoom(code, initialState, !botGame);
   const state = room.state;
   if (room.removedReason) return <PageLayout title="REMOVED FROM GAME">
     <p role="alert">{room.removedReason === "idle" ? "You were removed for inactivity." : "You’re no longer seated at this table."}</p>
@@ -91,7 +91,6 @@ function ConnectedGame({ code, selection = selectionStyle(null), initialState = 
   if (state?.game) return <ReadyTable room={room} selection={selection} />;
   if (state) return <LobbyRoom room={room} />;
   if (botGame) return <BotTableLoading error={room.error} retry={room.retry} />;
-  if (room.needsJoin) return <JoinLobby code={code} retry={room.retry} />;
   return <PageLayout title="JOINING TABLE">
     {room.error ? <p role="alert" className="inline-error">{room.error}{" "}<button type="button" className="link" onClick={room.retry}>Try again</button></p> : <p role="status">Finding your table…</p>}
     <div className="button-stack"><MenuLink to="/play" name="Back" /></div>

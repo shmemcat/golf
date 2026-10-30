@@ -35,8 +35,6 @@
 .home > a { width: 100%; }
 .actions[data-host="false"] { display: flex; flex-direction: column; align-items: center; }
 .actions[data-host="false"] > button, .actions[data-host="false"] .home { width: 225px; flex: none; }
-.join { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 100%; max-width: 340px; }
-.join label { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 @media (max-width: 768px) {
   .body { margin-top: var(--page-title-gap, 28px); }
   .lobby { gap: 16px; }

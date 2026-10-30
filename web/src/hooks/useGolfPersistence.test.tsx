@@ -19,7 +19,7 @@ function started() {
 }
 const cards = (game: Game) => [...game.deck, ...game.discard, ...game.players.flatMap(p => p.cards.map(c => c.card)), ...(game.drawn ? [game.drawn.card] : [])];
 
-it.each<Stage>(["dealing", "opening", "opponents", "upcard", "picking", "announcing", "playing"])(
+it.each<Stage>(["dealing", "opening", "opponents", "upcard", "picking", "playing"])(
   "restores the saved %s stage and the original game identity", stage => {
     const game = stage === "playing" ? started() : createGame(4);
     const snapshot = save(game, stage, { pickerTick: 3 });
@@ -31,7 +31,16 @@ it.each<Stage>(["dealing", "opening", "opponents", "upcard", "picking", "announc
   }
 );
 
-it("saves the opening flip lock and resumes flipping without losing already revealed cards", () => {
+it("resumes an older starter announcement with drawing available immediately", () => {
+  const game = turnUpDeck(openOpponents(openCard(openCard(createGame(4), 0), 4)));
+  save(game, "announcing");
+  const view = renderHook(() => useGolfTable(4, true));
+  expect(view.result.current.game.id).toBe(game.id);
+  expect(view.result.current.stage).toBe("playing");
+  expect(view.result.current.canDraw).toBe(true);
+});
+
+it("restores an opening flip without blocking the second card or losing the first", () => {
   const first = renderHook(() => useGolfTable(3, true));
   tick(DEAL_MS);
   act(() => first.result.current.reveal(0));
@@ -41,9 +50,12 @@ it("saves the opening flip lock and resumes flipping without losing already reve
   const resumed = renderHook(() => useGolfTable(3, true));
   expect(resumed.result.current.game.id).toBe(id);
   expect(resumed.result.current.game.players[0].cards[0].faceUp).toBe(true);
-  expect(resumed.result.current.canReveal(4)).toBe(false);
-  tick(FLIP_MS);
+  expect(resumed.result.current.canReveal(3)).toBe(false);
   expect(resumed.result.current.canReveal(4)).toBe(true);
+  act(() => resumed.result.current.reveal(4));
+  expect(resumed.result.current.game.players[0].cards.filter(cell => cell.faceUp)).toHaveLength(2);
+  tick(FLIP_MS);
+  expect(resumed.result.current.stage).toBe("opponents");
 });
 
 it.each(["draw", "discard", "place", "toss"] as const)("resumes a %s flight exactly once and keeps all 104 cards", kind => {

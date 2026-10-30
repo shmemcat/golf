@@ -229,7 +229,7 @@ six board cards to share a rank at the end of a hole; Deuce Almighty requires a
 matching 2×2 block of twos. Don't Quit Your Day Job unlocks at the maximum hole
 score of 70: 60 from the cards plus the 10-point going-out penalty.
 Other badges cover scoring challenges, comebacks,
-close wins, holiday games, and the familiar Geezer,
+close wins, holiday games, and the familiar Locked in,
 Night Owl, Early Bird, Better with Friends, Hot Streak, and All Year Round.
 A games-finished badge
 progresses from bronze Tee Time at 10 completed games to silver Green Jacket at

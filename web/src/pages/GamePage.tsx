@@ -29,7 +29,7 @@ import { FLIP_MS, useGolfTable } from "@/hooks/useGolfTable";
 import { useInactivityNudge } from "@/hooks/useInactivityNudge";
 import { useGameResults } from "@/hooks/useGameResults";
 import { seatOffset, useTableauNavigation } from "@/hooks/useTableauNavigation";
-import { canOpen, completedHoleRecords, type GolfCard } from "@/game/engine";
+import { completedHoleRecords, type GolfCard } from "@/game/engine";
 import { BOT_NAMES, SEAT_LAYOUTS } from "@/game/seats";
 import { readStorage } from "@/lib/storage";
 import { clearLocalGame, readLocalGame } from "@/lib/localGame";
@@ -330,7 +330,7 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
                 {seat === 0 && !mobile && <p className="golf-phase-hint" role="status" aria-label="Turn" aria-live="polite" aria-atomic="true">{hint}</p>}
                 <div className="golf-tableau">
                   {player.cards.map((cell, index) => {
-                    const valid = seat === 0 && ((stage === "opening" && canOpen(game, index)) || table.canReplace);
+                    const valid = seat === 0 && (table.canReveal(index) || table.canReplace);
                     const enabled = seat === 0 && (table.canReveal(index) || table.canReplace);
                     const hidden = motion?.seat === seat && motion.index === index && ["discard", "place"].includes(motion.kind);
                     const revealedAtEnd = complete && cell.revealedAtEnd === true;

@@ -489,11 +489,10 @@ class GolfRuntime:
                 index = payload.get("index")
                 if self.reviewing_hole(data, seat):
                     raise Rejected("Continue to the next hole before flipping a card.")
-                if data["stage"] != "opening" or data.get("revealBusy", {}).get(str(seat), 0) > time.time():
-                    raise Rejected("Wait for the card to finish flipping.")
+                if data["stage"] != "opening":
+                    raise Rejected("Starting cards can only be flipped at the start of a hole.")
                 engine.reveal(game, seat, index)
                 self.bump(data, seat, "cards_revealed")
-                data["revealBusy"][str(seat)] = time.time() + self.delay("flip")
                 self.finish_opening(data)
             elif action in ("advance", "restart"):
                 expected = "round-over" if action == "advance" else "game-over"
@@ -575,8 +574,7 @@ class GolfRuntime:
                 self.next_turn(data)
             elif motion["kind"] == "upcard":
                 game["discard"].append(game["deck"].pop())
-                data["motion"], data["stage"] = None, "announcing"
-                self.schedule(data, "playing", self.delay("announce"))
+                self.step(data, "playing")
 
     def sync_inactivity(self, data):
         """Time decisions on the server, independently of socket presence."""

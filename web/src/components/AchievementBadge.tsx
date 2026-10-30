@@ -20,6 +20,7 @@ export function AchievementBadge({ badge, open, onOpenChange }: {
         {tierLabel && <span className={styles.tooltipTier}>{tierLabel}</span>}
         <span className={styles.tooltipName}>{name}</span>
         <span className={styles.tooltipDesc}>{desc}</span>
+        {!hidden && badge.flavorText && <span className={styles.tooltipFlavor}>{badge.flavorText}</span>}
         {!hidden && badge.progress && <span className={styles.tooltipProgress}>{badge.progress}</span>}
         {!hidden && badge.next && <span className={styles.tooltipProgress}>{badge.next}</span>}
       </div>}>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSound } from "@/context/SoundContext";
 import { readLocalGame, saveLocalGame } from "@/lib/localGame";
 import { BOT_NAMES } from "@/game/seats";
@@ -50,6 +50,11 @@ export function useGolfTable(playerCount: number, persist = false) {
   const { play } = useSound();
   const sound = useRef(play);
   sound.current = play;
+  const beginPlaying = useCallback(() => {
+    setGame(startPlay);
+    setStage("playing");
+    sound.current("start");
+  }, []);
 
   useEffect(() => {
     if (persist) saveLocalGame({ game, stage, motion, openingBusy, pickerTick });
@@ -93,21 +98,20 @@ export function useGolfTable(playerCount: number, persist = false) {
     if (stage !== "picking") return;
     const lastTick = game.players.length * 2 + game.starter;
     const timer = window.setTimeout(() => {
-      if (pickerTick === lastTick) setStage("announcing");
+      if (pickerTick + 1 >= lastTick) {
+        setPickerTick(lastTick);
+        beginPlaying();
+      }
       else { setPickerTick(tick => tick + 1); sound.current("select"); }
     }, 75 + Math.pow(pickerTick / lastTick, 2) * 185);
     return () => clearTimeout(timer);
-  }, [stage, pickerTick, game.players.length, game.starter]);
+  }, [stage, pickerTick, game.players.length, game.starter, beginPlaying]);
 
+  // Resume older saves without holding the highlighted starter's input.
   useEffect(() => {
     if (stage !== "announcing") return;
-    sound.current("start");
-    const timer = window.setTimeout(() => {
-      setGame(startPlay);
-      setStage("playing");
-    }, 1100);
-    return () => clearTimeout(timer);
-  }, [stage]);
+    beginPlaying();
+  }, [stage, beginPlaying]);
 
   // Each flight commits only on arrival. A replacement discards first, then places.
   useEffect(() => {
@@ -124,13 +128,14 @@ export function useGolfTable(playerCount: number, persist = false) {
       if (motion.kind === "toss") setGame(discardDraw);
       if (motion.kind === "upcard") {
         setGame(turnUpDeck);
-        setStage(game.hole === 1 ? "picking" : "announcing");
+        if (game.hole === 1) setStage("picking");
+        else beginPlaying();
       }
       setMotion(null);
       sound.current("select");
     }, FLIGHT_MS);
     return () => clearTimeout(timer);
-  }, [motion, game]);
+  }, [motion, game, beginPlaying]);
 
   useEffect(() => {
     if (stage !== "playing" || motion || game.turn === 0 || !["draw", "replace"].includes(game.phase)) return;
@@ -154,11 +159,11 @@ export function useGolfTable(playerCount: number, persist = false) {
   const humanTurn = stage === "playing" && game.turn === 0 && !motion;
   return {
     game, stage, motion, pickerSeat: pickerTick % game.players.length,
-    canReveal: (index: number) => stage === "opening" && !openingBusy && canOpen(game, index),
+    canReveal: (index: number) => stage === "opening" && canOpen(game, index),
     canDraw: humanTurn && game.phase === "draw",
     canReplace: humanTurn && game.phase === "replace",
     reveal(index: number) {
-      if (stage !== "opening" || openingBusy || !canOpen(game, index)) return;
+      if (stage !== "opening" || !canOpen(game, index)) return;
       setGame(current => openCard(current, index));
       setOpeningBusy(true);
       sound.current("flip");

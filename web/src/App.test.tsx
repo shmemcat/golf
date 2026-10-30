@@ -525,10 +525,10 @@ it("explains the six-card grid, special scores, and the end of a deal", async ()
     "two standard 52-card decks (104 cards total)"
   );
   expect(screen.getByText(/Trade high cards/)).toHaveTextContent(
-    "paired twos, which score −4"
+    "Matching ranks in a vertical column cancel out their positive score."
   );
   expect(screen.getByText(/Trade high cards/)).toHaveTextContent(
-    "four twos, which score −28"
+    "adjacent 2×2 block score −20 points."
   );
   await user.click(screen.getByRole("button", { name: "The Deal" }));
   expect(screen.getAllByRole("img")).toHaveLength(6);

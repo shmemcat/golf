@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { StrictMode } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { TableMotion } from "./useGolfTable";
@@ -10,6 +10,50 @@ const sound = vi.hoisted(() => ({ play: vi.fn() }));
 vi.mock("@/context/SoundContext", () => ({ useSound: () => sound }));
 beforeEach(() => sound.play.mockClear());
 const command = vi.fn(async () => true);
+
+it("clears both rapid selections when the first request fails so the player can retry", async () => {
+  const initial = roomFixture();
+  initial.stage = "opening";
+  initial.game!.phase = "opening";
+  let finish!: (ok: boolean) => void;
+  const reveal = vi.fn(() => new Promise<boolean>(resolve => { finish = resolve; }));
+  const view = renderHook(() => useServerGolfTable(initial, reveal, false), { wrapper: StrictMode });
+  act(() => {
+    view.result.current.table.reveal(0);
+    view.result.current.table.reveal(3);
+    view.result.current.table.reveal(4);
+    view.result.current.table.reveal(5);
+  });
+  expect(reveal).toHaveBeenCalledExactlyOnceWith("reveal", { index: 0 });
+  expect(Array.from({ length: 6 }, (_, index) => view.result.current.table.canReveal(index))).toEqual(Array(6).fill(false));
+  await act(async () => { finish(false); });
+  expect(reveal).toHaveBeenCalledTimes(1);
+  expect(view.result.current.table.canReveal(0)).toBe(true);
+  expect(view.result.current.table.canReveal(4)).toBe(true);
+});
+
+it("drops queued flips when the hole changes and keeps disconnected opening cards disabled", async () => {
+  const initial = roomFixture();
+  initial.stage = "opening";
+  initial.game!.phase = "opening";
+  let finish!: (ok: boolean) => void;
+  const reveal = vi.fn(() => new Promise<boolean>(resolve => { finish = resolve; }));
+  const view = renderHook(({ state, disabled }) => useServerGolfTable(state, reveal, disabled), {
+    initialProps: { state: initial, disabled: false },
+  });
+  act(() => { view.result.current.table.reveal(0); view.result.current.table.reveal(4); });
+  const next = { ...initial, revision: initial.revision + 1, game: { ...initial.game!, hole: 2 } };
+  view.rerender({ state: next, disabled: false });
+  act(() => view.result.current.table.reveal(1));
+  await act(async () => { finish(true); });
+  expect(reveal.mock.calls).toEqual([["reveal", { index: 0 }], ["reveal", { index: 1 }]]);
+  await act(async () => { finish(false); });
+  expect(view.result.current.table.canReveal(0)).toBe(true);
+  view.rerender({ state: next, disabled: true });
+  expect(view.result.current.table.canReveal(0)).toBe(false);
+  act(() => view.result.current.table.reveal(0));
+  expect(reveal).toHaveBeenCalledTimes(2);
+});
 
 it("keeps server record rosters intact when the current table has fewer players", () => {
   const state = roomFixture(2, 1);

@@ -20,7 +20,7 @@ from .runtime import GolfRuntime, Rejected, NAMESPACE, SOCKET_PATH
 from .schema import schema_ready
 from .statistics import account_statistics, leaderboard
 
-TIMINGS = {"deal": .9, "flip": .56, "flight": .6, "opponents": .75, "announce": 1.1,
+TIMINGS = {"deal": .9, "flip": .56, "flight": .6, "opponents": .75,
            "bot_draw": 1., "bot_replace": .8}
 
 
