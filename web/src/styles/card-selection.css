@@ -64,7 +64,7 @@
   75% { opacity: .18; }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-selection-style="backing"] .golf-selection-indicator::after {
+  :where(:root:not([data-motion-override="true"])) [data-selection-style="backing"] .golf-selection-indicator::after {
     animation: none;
     opacity: 1;
   }

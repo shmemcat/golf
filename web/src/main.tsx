@@ -1,3 +1,4 @@
+import { syncMotionPreference } from "./lib/motionPreference";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -23,6 +24,9 @@ async function start() {
       window.clearTimeout(timeout);
     }
   }
+
+  syncMotionPreference();
+  window.addEventListener("storage", syncMotionPreference);
 
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

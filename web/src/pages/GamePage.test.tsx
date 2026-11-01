@@ -322,7 +322,7 @@ it("defaults invalid player counts to two seats", async () => {
   expect(await screen.findByRole("main", { name: "2-player Golf table" })).toBeInTheDocument();
 });
 
-it("returns through the progress prompt and restores a guest table after navigation and reload", async () => {
+it("resumes a guest table from its game card after navigation and reload", async () => {
   let view = render(<MemoryRouter initialEntries={["/game/single?players=5"]}><Providers><App /></Providers></MemoryRouter>);
   await screen.findByRole("main", { name: "5-player Golf table" });
   const saved = readLocalGame()!;
@@ -339,8 +339,9 @@ it("returns through the progress prompt and restores a guest table after navigat
   expect(readLocalGame()?.game.id).toBe(saved.game.id);
   fireEvent.click(screen.getByRole("link", { name: "Golf home" }));
   fireEvent.click(await screen.findByRole("link", { name: "Play", exact: true }));
-  expect(await screen.findByRole("dialog", { name: "Game In Progress" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Continue", exact: true }));
+  expect(await screen.findByRole("heading", { name: "Games in progress" })).toBeInTheDocument();
+  expect(screen.queryByRole("dialog", { name: "Game In Progress" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Resume", exact: true }));
   await screen.findByRole("main", { name: "5-player Golf table" });
   expect(readLocalGame()?.game.id).toBe(saved.game.id);
   view.unmount();
@@ -390,6 +391,37 @@ it.each([0, 1, 2, 3, 4, 5])("immediately enables only legal second flips after o
   }
 });
 
+it.each(["deck", "discard"] as const)("lets the player select a replacement while a %s pickup is still flying", async source => {
+  vi.useFakeTimers();
+  vi.spyOn(Math, "random").mockReturnValue(0);
+  const advance = (ms: number) => act(() => { vi.advanceTimersByTime(ms); });
+  const view = render(<MemoryRouter initialEntries={["/game/single?players=2"]}><Providers><GamePage /></Providers></MemoryRouter>);
+  await act(async () => {});
+  try {
+    advance(DEAL_MS);
+    fireEvent.click(screen.getByRole("button", { name: "Reveal top row, column 1, face down" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reveal bottom row, column 2, face down" }));
+    for (let i = 0; i < 30 && !screen.getByRole("button", { name: /Draw from deck/ }).matches(":enabled"); i++) advance(300);
+    const target = screen.getByRole("button", { name: "Replace top row, column 3, face down" });
+    fireEvent.click(screen.getByRole("button", { name: source === "deck" ? /Draw from deck/ : /from discard$/ }));
+    expect(target).toBeEnabled();
+    fireEvent.click(target);
+    expect(target).toBeDisabled();
+    expect(readLocalGame()?.motion?.kind).toBe("draw");
+    expect(readLocalGame()?.game.drawn).toBeNull();
+    advance(FLIGHT_MS);
+    expect(readLocalGame()?.motion).toMatchObject({ kind: "discard", index: 2 });
+    advance(FLIGHT_MS);
+    expect(readLocalGame()?.motion?.kind).toBe("place");
+    advance(FLIGHT_MS);
+    expect(readLocalGame()?.game.players[0].cards[2].faceUp).toBe(true);
+    expect(readLocalGame()?.game.turn).toBe(1);
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+  }
+});
+
 it("lets the drawn card itself discard a deck draw and keeps a discard draw reserved for replacement", async () => {
   vi.useFakeTimers();
   vi.spyOn(Math, "random").mockReturnValue(0);
@@ -403,10 +435,12 @@ it("lets the drawn card itself discard a deck draw and keeps a discard draw rese
     fireEvent.click(screen.getByRole("button", { name: "Reveal bottom row, column 2, face down" }));
     for (let i = 0; i < 30 && !screen.getByRole("button", { name: /Draw from deck/ }).matches(":enabled"); i++) advance(300);
     fireEvent.click(screen.getByRole("button", { name: /Draw from deck/ }));
-    advance(FLIGHT_MS);
     const drawn = screen.getByRole("button", { name: /^Discard drawn / });
     expect(drawn).toBeEnabled();
     fireEvent.click(drawn);
+    expect(readLocalGame()?.motion?.kind).toBe("draw");
+    advance(FLIGHT_MS);
+    expect(readLocalGame()?.motion?.kind).toBe("toss");
     advance(FLIGHT_MS);
     expect(screen.queryByRole("button", { name: /^Discard drawn / })).not.toBeInTheDocument();
     expect(view.container.querySelectorAll('.golf-seat-human .golf-tableau > .golf-card-slot [data-face-up="true"]')).toHaveLength(2);

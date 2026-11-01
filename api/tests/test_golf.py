@@ -557,8 +557,8 @@ def test_host_replay_still_needs_two_people_but_bot_games_do_not(app, clients):
     action(host, code, 'start'); complete(app, code)
     action(guest, code, 'leave')
     finished = state(host, code)
-    assert not finished['closed'] and finished['stage'] == 'lobby'
-    assert action(host, code, 'restart').json['code'] == 'INVALID_MOVE'
+    assert finished['closed'] and finished['stage'] == 'closed'
+    assert action(host, code, 'restart').json['code'] == 'LOBBY_CLOSED'
     assert action(host, code, 'start').status_code == 400
     assert state(host, code) == finished
     action(host, code, 'leave')

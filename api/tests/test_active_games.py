@@ -36,15 +36,15 @@ def test_active_rooms_are_private_and_survive_revisits(app, clients, uid):
     bot = create(player)
     lobby = create(player, "multiplayer")
     rooms = active(player)
-    assert [room["code"] for room in rooms] == [lobby["code"], bot["code"]]
-    assert rooms[0]["game"] is None
-    assert rooms[1]["game"]["id"] == bot["game"]["id"]
-    assert "deck" not in rooms[1]["game"]
-    assert all(set(cell["card"]) == {"id"} for p in rooms[1]["game"]["players"] for cell in p["cards"])
+    assert [room["code"] for room in rooms] == [bot["code"]]
+    assert rooms[0]["game"] is not None
+    assert rooms[0]["game"]["id"] == bot["game"]["id"]
+    assert "deck" not in rooms[0]["game"]
+    assert all(set(cell["card"]) == {"id"} for p in rooms[0]["game"]["players"] for cell in p["cards"])
     assert all("actor" not in seat and "userId" not in seat for room in rooms for seat in room["seats"])
     assert active(outsider) == []
     if uid:
-        assert {room["code"] for room in active(clients(uid))} == {bot["code"], lobby["code"]}
+        assert {room["code"] for room in active(clients(uid))} == {bot["code"]}
     else:
         assert active(clients()) == []
 
@@ -83,7 +83,7 @@ def test_every_game_phase_is_discoverable_except_completed_solo(app, clients, mo
         row.data = data
         db.session.commit()
     rooms = active(player)
-    if mode == "bot" and phase == "game-over":
+    if phase == "game-over":
         assert rooms == []
     else:
         assert len(rooms) == 1
@@ -92,10 +92,10 @@ def test_every_game_phase_is_discoverable_except_completed_solo(app, clients, mo
             assert active(friend)[0]["code"] == room["code"]
             assert command(player, room, "leave").status_code == 200
             assert active(player) == []
-            assert active(friend)[0]['code'] == room['code']
+            assert active(friend) == []
             remaining = friend.get("/api/golf/rooms/" + room["code"]).json["state"]
-            assert not remaining['closed'] and remaining['stage'] == 'lobby'
-            assert remaining['game'] is None
+            assert remaining['closed'] and remaining['stage'] == 'closed'
+            assert remaining['closedReason'] == 'one_player'
 
 
 def test_changing_accounts_never_discovers_the_previous_accounts_games(app, clients):

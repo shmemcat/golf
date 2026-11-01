@@ -25,9 +25,6 @@ export function ServerBotGame({ count, selection }: { count: number; selection: 
     let alive = true;
     setError("");
     void (async () => {
-      const { rooms } = await golfGet<{ rooms: RoomState[] }>("/active");
-      if (!alive) return;
-      if (rooms.length) { navigate("/play", { replace: true }); return; }
       const { state } = await golfPost<{ state: RoomState }>("/bots", { players: count, requestId: requestId.current });
       if (alive) {
         setCreatedRoom(state);
@@ -66,10 +63,9 @@ function ReadyTable({ room, selection }: { room: ReturnType<typeof useGolfRoom>;
     if (completed && !wasComplete.current) window.dispatchEvent(new Event("golf:results"));
     wasComplete.current = completed;
   }, [completed]);
-  const inactivityNotice = state.idleWarning ? <div className="golf-connection-status" role="alert">You’ll be removed for inactivity in 1 minute. Make a move to stay in the game.</div> : undefined;
   const connectionNotice = room.error || (!room.connected && wasConnected.current) ? <div className="golf-connection-status" role={room.error ? "alert" : "status"}>
     {room.error || "Reconnecting to your table… Your seat is saved."}{" "}<button className="link" type="button" onClick={room.retry}>Retry</button>
-  </div> : inactivityNotice;
+  </div> : undefined;
   return <GolfTableView count={state.seats.length} selection={selection} table={table} participants={participants}
     multiplayer={state.mode === "multiplayer"} isHost={state.isHost} disconnected={!room.connected} pending={room.pending}
     rematchWaiting={room.pending || !room.connected}

@@ -100,6 +100,59 @@ it.each(["bot", "multiplayer"] as const)("accepts rapid opening clicks in a %s g
   expect(screen.getAllByRole("button", { name: /^Reveal / }).every(button => button.matches(":disabled"))).toBe(true);
 });
 
+it.each(["deck", "discard"] as const)("queues a rapid replacement from %s until the server finishes the pickup", async source => {
+  let current = roomFixture();
+  current.game!.turn = current.mySeat;
+  current.game!.discard = [{ id: "upcard", rank: "2", suit: "H" }];
+  current.actionTokens = { draw: "choose-pile" };
+  transport.reply = current;
+  const picked = source === "deck" ? { id: "picked", rank: "A" as const, suit: "S" as const } : current.game!.discard[0];
+  const payloads: Record<string, unknown>[] = [];
+  let finishDraw!: (result: Response) => void;
+  vi.stubGlobal("fetch", vi.fn(async (path: string, init: RequestInit = {}) => {
+    if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
+    if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
+    if (path.endsWith("/actions")) {
+      const payload = JSON.parse(String(init.body));
+      payloads.push(payload);
+      if (payload.action === "draw") {
+        current = { ...current, revision: current.revision + 1, actionTokens: { replace: "still-moving" }, motion: {
+          kind: "draw", card: picked, from: source, to: `drawn-${current.mySeat}`, flip: source === "deck",
+          seat: current.mySeat, index: -1, source,
+        } };
+        return new Promise<Response>(resolve => { finishDraw = resolve; });
+      }
+      current = { ...current, revision: current.revision + 1, motion: {
+        kind: "discard", card: { ...current.game!.players[current.mySeat].cards[2].card, rank: "K", suit: "S" },
+        from: `card-${current.mySeat}-2`, to: "discard", flip: true, seat: current.mySeat, index: 2, source,
+      } };
+      return response({ state: current });
+    }
+    return response({ state: current });
+  }));
+  render(<MemoryRouter initialEntries={["/game/multiplayer/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  const pile = await screen.findByRole("button", { name: source === "deck" ? /Draw from deck/ : /from discard$/ });
+  await waitFor(() => expect(pile).toBeEnabled());
+  fireEvent.click(pile);
+  const target = screen.getByRole("button", { name: "Replace top row, column 3, face down" });
+  expect(target).toBeEnabled();
+  fireEvent.click(target);
+  expect(target).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Replace bottom row, column 1, face down" }));
+  await waitFor(() => expect(payloads).toHaveLength(1));
+  await act(async () => { finishDraw(response({ state: current })); });
+  expect(payloads).toHaveLength(1);
+  current = { ...current, revision: current.revision + 1, motion: null, actionTokens: { replace: "pickup-arrived" }, game: {
+    ...current.game!, phase: "replace", drawn: { card: picked, source },
+    deckCount: current.game!.deckCount - (source === "deck" ? 1 : 0),
+    discard: source === "discard" ? [] : current.game!.discard,
+  } };
+  act(() => transport.handlers["golf:state"](current));
+  await waitFor(() => expect(payloads).toHaveLength(2));
+  expect(payloads[0]).toMatchObject({ action: "draw", source, revision: 4, actionToken: "choose-pile" });
+  expect(payloads[1]).toMatchObject({ action: "replace", index: 2, revision: 6, actionToken: "pickup-arrived" });
+});
+
 it.each([false, true])("uses server host status for end-game replays and follows new games (host=%s)", async isHost => {
   Object.defineProperties(HTMLDialogElement.prototype, {
     showModal: { configurable: true, value: function (this: HTMLDialogElement) { this.open = true; } },
@@ -375,18 +428,21 @@ it("confirms a server bot concession and keeps a failed attempt available to ret
   expect(actions).toEqual(["leave", "leave"]);
 });
 
-it("sends a direct new-table link to Play when an unfinished room already exists", async () => {
+it("creates another bot game from a direct new-table link while retaining the previous game", async () => {
   const saved = { ...roomFixture(2, 0), mode: "bot" as const };
+  const created = { ...roomFixture(6, 0), mode: "bot" as const, code: "NEW234" };
+  transport.reply = created;
   const fetcher = vi.fn(async (path: string) => {
     if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
     if (path === "/api/golf/active") return response({ rooms: [saved] });
+    if (path === "/api/golf/bots" || path === "/api/golf/rooms/NEW234") return response({ state: created });
     return response({ user: account, csrf_token: "golf" });
   });
   vi.stubGlobal("fetch", fetcher);
   render(<MemoryRouter initialEntries={["/game/single?players=6"]}><Providers><App /></Providers></MemoryRouter>);
-  expect(await screen.findByRole("dialog", { name: "Game In Progress" })).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "PLAY" })).toBeInTheDocument();
-  expect(fetcher.mock.calls.some(([path]) => path === "/api/golf/bots")).toBe(false);
+  await waitFor(() => expect(fetcher.mock.calls.some(([path]) => path === "/api/golf/bots")).toBe(true));
+  expect(screen.queryByRole("dialog", { name: "Game In Progress" })).not.toBeInTheDocument();
+  expect(fetcher.mock.calls.some(([path]) => path.includes(saved.code) && path.endsWith("/actions"))).toBe(false);
 });
 
 function lobbyProbe(capacity = 6, host = true) {
@@ -490,7 +546,7 @@ it.each(["The host closed this lobby.", "This lobby has already started or is fu
   expect(attempts).toBe(2);
 });
 
-it("shows and clears the inactivity warning, then explains removal", async () => {
+it("ignores obsolete inactivity warnings while explaining an earlier seat removal", async () => {
   const room = { ...roomFixture(3, 0), idleWarning: true };
   transport.reply = room;
   vi.stubGlobal("fetch", vi.fn(async (path: string) => {
@@ -499,7 +555,8 @@ it("shows and clears the inactivity warning, then explains removal", async () =>
     return response({ state: room });
   }));
   render(<MemoryRouter initialEntries={["/game/lobby/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
-  expect(await screen.findByRole("alert")).toHaveTextContent("removed for inactivity in 1 minute");
+  await screen.findByRole("main", { name: "3-player Golf table" });
+  expect(screen.queryByText(/removed for inactivity in 1 minute/)).not.toBeInTheDocument();
   act(() => transport.handlers["golf:state"]({ ...room, revision: room.revision + 1, idleWarning: false }));
   expect(screen.queryByText(/removed for inactivity/)).not.toBeInTheDocument();
   act(() => transport.handlers["golf:removed"]({ code: room.code, reason: "idle" }));
@@ -509,32 +566,26 @@ it("shows and clears the inactivity warning, then explains removal", async () =>
   expect(screen.getByRole("link", { name: "Back to Play" })).toBeInTheDocument();
 });
 
-it.each([false, true])("returns to the open lobby when the other player leaves (reload=%s)", async reload => {
+it.each([false, true])("shows the closed game after everyone else concedes (reload=%s)", async reload => {
   const room = roomFixture(2, 0);
-  const lobby = { ...room, revision: room.revision + 1, lobbyReason: "not_enough_players",
-    stage: "lobby", mySeat: 0, seats: room.seats.slice(0, 1), game: null, motion: null };
-  transport.reply = reload ? lobby : room;
+  const closed = { ...room, revision: room.revision + 1, closed: true, closedReason: "one_player",
+    stage: "closed", mySeat: 0, seats: room.seats.slice(0, 1), motion: null };
+  transport.reply = reload ? closed : room;
   vi.stubGlobal("fetch", vi.fn(async (path: string) => {
     if (path === "/api/account/session") return response({ user: account, csrf_token: "shared" });
     if (path === "/api/golf/session") return response({ user: account, csrf_token: "golf" });
-    if (path === "/api/golf/active") return response({ rooms: [] });
-    return response({ state: reload ? lobby : room });
+    return response({ state: reload ? closed : room });
   }));
   render(<MemoryRouter initialEntries={["/game/multiplayer/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
   if (!reload) {
-    expect(await screen.findByRole("main", { name: "2-player Golf table" })).toBeInTheDocument();
-    act(() => transport.handlers["golf:state"](lobby));
+    await screen.findByRole("main", { name: "2-player Golf table" });
+    act(() => transport.handlers["golf:state"](closed));
   }
-  await waitFor(() => {
-    expect(screen.getByText("GAME LOBBY")).toBeInTheDocument();
-    expect(screen.getByText(/Your lobby is still open/)).toHaveAttribute("role", "status");
-    expect(screen.getByRole("textbox", { name: "Code", exact: true })).toHaveValue(room.code);
-    expect(screen.getByRole("button", { name: "Start Game" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Close Lobby" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Draw from deck/ })).not.toBeInTheDocument();
-  });
-  act(() => transport.handlers["golf:state"]({ ...lobby, revision: lobby.revision + 1, seats: room.seats }));
-  expect(screen.getByRole("button", { name: "Start Game" })).toBeEnabled();
+  await screen.findByText("LOBBY CLOSED");
+  expect(screen.getByRole("status")).toHaveTextContent("Everyone else conceded");
+  expect(screen.getByRole("link", { name: "Back to Play" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Start Game" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("textbox", { name: "Code", exact: true })).not.toBeInTheDocument();
 });
 
 it("reduces the visible table when a player leaves a three-player game", async () => {

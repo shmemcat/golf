@@ -34,4 +34,4 @@
   .badgeGrid { max-width: 100%; gap: 14px 12px; }
   .achievement { width: 64px; }
 }
-@media (prefers-reduced-motion: reduce) { .sparkle { animation: none; } }
+@media (prefers-reduced-motion: reduce) { :where(:global(:root:not([data-motion-override="true"]))) .sparkle { animation: none; } }

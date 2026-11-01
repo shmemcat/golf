@@ -1,3 +1,4 @@
+import { useReducedMotion } from "./lib/motionPreference";
 import { Suspense, lazy, useEffect, type ReactNode } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { MotionConfig } from "framer-motion";
@@ -29,9 +30,10 @@ const EndPreview = lazy(() => import("@/pages/EndPreview"));
 const HoleRecordPreview = lazy(() => import("@/pages/HoleRecordPreview"));
 
 export function Providers({ children }: { children: ReactNode }) {
+  const reduced = useReducedMotion();
   return (
     <HelmetProvider>
-      <MotionConfig reducedMotion="user">
+      <MotionConfig reducedMotion={reduced ? "always" : "never"}>
         <ThemeProvider>
           <AuthProvider>
             <CardBackProvider>

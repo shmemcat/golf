@@ -19,6 +19,7 @@ export interface TableMotion {
   index: number;
   source: DrawSource;
 }
+export type QueuedTurnAction = { kind: "replace"; index: number } | { kind: "toss" };
 export const FLIGHT_MS = 600;
 export const FLIP_MS = 560;
 export const DEAL_MS = 900;
@@ -40,13 +41,18 @@ function tossing(game: Game): TableMotion {
     flip: false, seat: game.turn, index: -1, source: "deck" };
 }
 
-export function useGolfTable(playerCount: number, persist = false) {
-  const [saved] = useState(() => persist ? readLocalGame() : null);
+export function useGolfTable(playerCount: number, persist = false, resumeId?: string, fresh = false) {
+  const [saved] = useState(() => persist && !fresh ? readLocalGame(resumeId) : null);
   const [game, setGame] = useState(() => saved?.game ?? createGame(playerCount));
   const [stage, setStage] = useState<Stage>(saved?.stage ?? "dealing");
   const [motion, setMotion] = useState<TableMotion | null>(saved?.motion ?? null);
   const [openingBusy, setOpeningBusy] = useState(saved?.openingBusy ?? false);
   const [pickerTick, setPickerTick] = useState(saved?.pickerTick ?? 0);
+  const [queuedAction, setQueuedAction] = useState<QueuedTurnAction | null>(saved?.queuedAction ?? null);
+  const queued = useRef(queuedAction);
+  const inputMotion = useRef(motion);
+  inputMotion.current = motion;
+  const queueAction = (action: QueuedTurnAction | null) => { queued.current = action; setQueuedAction(action); };
   const { play } = useSound();
   const sound = useRef(play);
   sound.current = play;
@@ -57,8 +63,8 @@ export function useGolfTable(playerCount: number, persist = false) {
   }, []);
 
   useEffect(() => {
-    if (persist) saveLocalGame({ game, stage, motion, openingBusy, pickerTick });
-  }, [persist, game, stage, motion, openingBusy, pickerTick]);
+    if (persist) saveLocalGame({ game, stage, motion, openingBusy, pickerTick, queuedAction });
+  }, [persist, game, stage, motion, openingBusy, pickerTick, queuedAction]);
 
   useEffect(() => {
     if (stage !== "dealing") return;
@@ -123,7 +129,18 @@ export function useGolfTable(playerCount: number, persist = false) {
         sound.current("slide");
         return;
       }
-      if (motion.kind === "draw") setGame(current => drawCard(current, motion.source));
+      if (motion.kind === "draw") {
+        const drawn = drawCard(game, motion.source);
+        setGame(drawn);
+        const action = queued.current;
+        if (motion.seat === 0 && action) {
+          queueAction(null);
+          setMotion(action.kind === "toss" ? tossing(drawn) : discarding(drawn, action.index));
+          sound.current("select");
+          sound.current("slide");
+          return;
+        }
+      }
       if (motion.kind === "place") setGame(current => replaceCard(current, motion.index));
       if (motion.kind === "toss") setGame(discardDraw);
       if (motion.kind === "upcard") {
@@ -156,12 +173,13 @@ export function useGolfTable(playerCount: number, persist = false) {
     if (game.phase === "game-over") sound.current("win");
   }, [game.phase]);
 
-  const humanTurn = stage === "playing" && game.turn === 0 && !motion;
+  const humanTurn = stage === "playing" && game.turn === 0;
+  const pickingUp = motion?.kind === "draw" && motion.seat === 0;
   return {
     game, stage, motion, pickerSeat: pickerTick % game.players.length,
     canReveal: (index: number) => stage === "opening" && canOpen(game, index),
-    canDraw: humanTurn && game.phase === "draw",
-    canReplace: humanTurn && game.phase === "replace",
+    canDraw: humanTurn && !motion && game.phase === "draw",
+    canReplace: humanTurn && !queuedAction && (pickingUp || !motion && game.phase === "replace"),
     reveal(index: number) {
       if (stage !== "opening" || !canOpen(game, index)) return;
       setGame(current => openCard(current, index));
@@ -169,25 +187,41 @@ export function useGolfTable(playerCount: number, persist = false) {
       sound.current("flip");
     },
     draw(source: DrawSource) {
-      if (!humanTurn || game.phase !== "draw" || !game[source].length) return;
-      setMotion(drawing(game, source));
+      if (!humanTurn || inputMotion.current || game.phase !== "draw" || !game[source].length) return;
+      inputMotion.current = drawing(game, source);
+      setMotion(inputMotion.current);
       sound.current("slide");
     },
     replace(index: number) {
-      if (!humanTurn || game.phase !== "replace") return;
-      setMotion(discarding(game, index));
+      if (!humanTurn || queued.current || !Number.isInteger(index) || index < 0 || index >= 6) return;
+      if (inputMotion.current?.kind === "draw" && inputMotion.current.seat === 0) {
+        queueAction({ kind: "replace", index });
+        return;
+      }
+      if (inputMotion.current || game.phase !== "replace") return;
+      inputMotion.current = discarding(game, index);
+      setMotion(inputMotion.current);
       sound.current("slide");
     },
     toss() {
-      if (!humanTurn || game.phase !== "replace" || game.drawn?.source !== "deck") return;
-      setMotion(tossing(game));
+      if (!humanTurn || queued.current) return;
+      if (inputMotion.current?.kind === "draw" && inputMotion.current.seat === 0 && inputMotion.current.source === "deck") {
+        queueAction({ kind: "toss" });
+        return;
+      }
+      if (inputMotion.current || game.phase !== "replace" || game.drawn?.source !== "deck") return;
+      inputMotion.current = tossing(game);
+      setMotion(inputMotion.current);
       sound.current("slide");
     },
     advance() {
       if (game.phase !== "round-over") return;
+      queueAction(null);
       setGame(nextHole(game)); setStage("dealing"); setPickerTick(0);
     },
     restart() {
+      queueAction(null);
+      inputMotion.current = null;
       setGame(createGame(playerCount)); setStage("dealing"); setPickerTick(0); setMotion(null);
     },
   };

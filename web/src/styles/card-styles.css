@@ -59,4 +59,4 @@
 @media (max-width: 1120px) { .golf-style-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; } }
 @media (max-width: 680px) { .golf-style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 16px; } }
 @media (max-width: 460px) { .golf-style-grid { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { .golf-style-card { transition: none; } }
+@media (prefers-reduced-motion: reduce) { :where(:root:not([data-motion-override="true"])) .golf-style-card { transition: none; } }

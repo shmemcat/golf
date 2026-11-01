@@ -59,7 +59,7 @@ def test_sign_in_transfers_the_browser_guest_seat_without_a_duplicate(app, lobby
     if entry == 'session':
         assert guest.get('/api/golf/session').status_code == 200
     elif entry == 'active':
-        assert guest.get('/api/golf/active').json['rooms'][0]['mySeat'] == 1
+        assert guest.get('/api/golf/active').json['rooms'] == []
     elif entry == 'room':
         assert guest.get('/api/golf/rooms/' + code).status_code == 200
     elif entry == 'join':
@@ -233,7 +233,7 @@ def test_another_departure_does_not_remove_a_sleeping_member(lobby):
 
 
 @pytest.mark.parametrize('started', [False, True])
-def test_connected_survivor_keeps_lobby_open_indefinitely_and_can_invite_again(app, lobby, started):
+def test_last_survivor_keeps_waiting_lobby_but_a_started_game_closes(app, lobby, started):
     people, sockets, connect, code, runtime, advance, clock = lobby
     if started:
         assert action(people[0], code, 'start').status_code == 200
@@ -241,6 +241,10 @@ def test_connected_survivor_keeps_lobby_open_indefinitely_and_can_invite_again(a
         assert action(person, code, 'leave').status_code == 200
     advance(120 if started else 60)
     value = state(people[0], code)
+    if started:
+        assert value['closed'] and value['closedReason'] == 'one_player'
+        assert post(people[1], '/lobbies/join', {'code': code}).json['code'] == 'LOBBY_CLOSED'
+        return
     assert not value['closed'] and value['stage'] == 'lobby'
     assert value['game'] is None and len(value['seats']) == 1
     assert value['capacity'] == 4
@@ -286,7 +290,7 @@ def test_restart_clears_legacy_disconnect_deadlines_and_preserves_members(app, l
         assert db.session.get(Room, code).data['lobbyDisconnectAt'] is None
 
 
-def test_starting_with_a_sleeping_member_gives_them_a_full_decision_deadline(lobby):
+def test_starting_with_a_sleeping_member_keeps_their_seat_until_they_return(lobby):
     people, sockets, connect, code, runtime, advance, clock = lobby
     sockets[1].disconnect(namespace='/golf')
     advance(86400)
@@ -297,6 +301,6 @@ def test_starting_with_a_sleeping_member_gives_them_a_full_decision_deadline(lob
             assert action(person, code, 'reveal', index=index).status_code == 200
     advance(540)
     assert len(state(people[0], code)['seats']) == 3
-    assert state(people[1], code)['idleWarning']
+    assert not state(people[1], code)['idleWarning']
     advance(60)
-    assert len(state(people[0], code)['seats']) == 2
+    assert len(state(people[0], code)['seats']) == 3

@@ -86,7 +86,7 @@ it("animates a draw to the dock, discards the old card first, then places the ne
   const original = view.result.current.game.players[0].cards[2].card;
   act(() => view.result.current.draw("deck"));
   expect(view.result.current.motion?.to).toBe("drawn-0");
-  expect(view.result.current.canReplace).toBe(false);
+  expect(view.result.current.canReplace).toBe(true);
   tick(FLIGHT_MS);
   const drawn = view.result.current.game.drawn!.card;
   expect(view.result.current.canReplace).toBe(true);
@@ -105,6 +105,77 @@ it("animates a draw to the dock, discards the old card first, then places the ne
   tick(BOT_DRAW_MS);
   expect(view.result.current.motion?.kind).toBe("draw");
   expect(view.result.current.motion?.to).toBe("drawn-1");
+});
+
+it.each(["deck", "discard"] as const)("queues one replacement during a %s pickup and finishes each animation in order", source => {
+  const view = playTable();
+  const before = view.result.current.game;
+  const picked = before[source].at(-1)!;
+  act(() => { view.result.current.draw(source); view.result.current.draw("deck"); });
+  expect(view.result.current.canReplace).toBe(true);
+  tick(200);
+  act(() => {
+    view.result.current.replace(2);
+    view.result.current.replace(3);
+    view.result.current.toss();
+  });
+  expect(view.result.current.canReplace).toBe(false);
+  tick(FLIGHT_MS - 201);
+  expect(view.result.current.motion?.kind).toBe("draw");
+  expect(view.result.current.game.drawn).toBeNull();
+  expect(view.result.current.game.players[0].cards).toEqual(before.players[0].cards);
+  tick(1);
+  expect(view.result.current.motion).toMatchObject({ kind: "discard", index: 2, card: before.players[0].cards[2].card });
+  expect(view.result.current.game.drawn).toEqual({ card: picked, source });
+  expect(view.result.current.game.turn).toBe(0);
+  tick(FLIGHT_MS);
+  expect(view.result.current.motion).toMatchObject({ kind: "place", index: 2, card: picked });
+  expect(view.result.current.game.players[0].cards[2]).toEqual(before.players[0].cards[2]);
+  tick(FLIGHT_MS);
+  expect(view.result.current.motion).toBeNull();
+  expect(view.result.current.game.players[0].cards[2]).toEqual({ card: picked, faceUp: true });
+  expect(view.result.current.game.players[0].cards[3]).toEqual(before.players[0].cards[3]);
+  expect(view.result.current.game.turn).toBe(1);
+  view.unmount();
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it("queues a deck toss immediately after the draw click without exposing or replacing another card", () => {
+  const view = playTable();
+  const before = view.result.current.game;
+  act(() => {
+    view.result.current.draw("deck");
+    view.result.current.toss();
+    view.result.current.replace(2);
+  });
+  expect(view.result.current.motion?.kind).toBe("draw");
+  expect(view.result.current.canReplace).toBe(false);
+  tick(FLIGHT_MS);
+  expect(view.result.current.motion).toMatchObject({ kind: "toss", card: before.deck.at(-1) });
+  tick(FLIGHT_MS);
+  expect(view.result.current.game.players[0].cards).toEqual(before.players[0].cards);
+  expect(view.result.current.game.discard.at(-1)).toEqual(before.deck.at(-1));
+  expect(view.result.current.game.turn).toBe(1);
+});
+
+it("rejects a queued toss from the discard pile and invalid replacements, then clears a queued move on restart", () => {
+  const view = playTable();
+  act(() => view.result.current.draw("discard"));
+  act(() => {
+    view.result.current.toss();
+    view.result.current.replace(-1);
+    view.result.current.replace(6);
+    view.result.current.replace(1.5);
+  });
+  expect(view.result.current.canReplace).toBe(true);
+  act(() => view.result.current.replace(2));
+  expect(view.result.current.canReplace).toBe(false);
+  act(() => view.result.current.restart());
+  tick(DEAL_MS);
+  expect(view.result.current.stage).toBe("opening");
+  expect(view.result.current.motion).toBeNull();
+  expect(view.result.current.game.drawn).toBeNull();
+  expect(view.result.current.game.players.every(player => player.cards.every(cell => !cell.faceUp))).toBe(true);
 });
 
 it("discards an unwanted deck draw without exposing a tableau card and cleans up pending timers on leave", () => {

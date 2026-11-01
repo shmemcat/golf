@@ -60,5 +60,5 @@
   .golf-going-out-flag { gap: 3px; font-size: 9px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .golf-going-out-notice { animation: none; }
+  :where(:root:not([data-motion-override="true"])) .golf-going-out-notice { animation: none; }
 }

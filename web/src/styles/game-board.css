@@ -96,6 +96,14 @@
   font-size: 14px;
 }
 .golf-match-panel h2 { font-size: 20px; margin: 0 0 8px; }
+.golf-match-heading { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.golf-popup-close { display: grid; place-items: center; flex: none; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text); cursor: pointer; }
+.golf-popup-close:hover { background: var(--infopillbg); }
+.golf-popup-close:focus-visible { outline: 2px solid var(--header); outline-offset: 2px; }
+.golf-popup-close svg { width: 18px; height: 18px; }
+@media (pointer: coarse) {
+  .golf-popup-close { width: 44px; height: 44px; margin: -9px -9px 0 0; }
+}
 .golf-match-panel p { font-size: 12px; opacity: .75; }
 .golf-match-panel ol { margin: 12px 0 0; padding: 0; list-style: none; }
 .golf-match-panel li { display: flex; justify-content: space-between; padding: 5px 0; }
@@ -340,8 +348,8 @@ html[data-theme="dark"] .golf-round-scores > div[data-current="true"] {
   .golf-game { margin-top: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .golf-turn-indicator, .golf-card-rotator, .golf-grid-card, .golf-pile-button, .golf-drawn-button { transition: none; }
-  .golf-table[data-stage="dealing"] .golf-card-slot { animation: none; }
-  .golf-hole-score { animation: none; }
-  .golf-card-slot[data-revealed-at-end="true"] .golf-card-front::after { animation: none; }
+  :where(:root:not([data-motion-override="true"])) .golf-turn-indicator, :where(:root:not([data-motion-override="true"])) .golf-card-rotator, :where(:root:not([data-motion-override="true"])) .golf-grid-card, :where(:root:not([data-motion-override="true"])) .golf-pile-button, :where(:root:not([data-motion-override="true"])) .golf-drawn-button { transition: none; }
+  :where(:root:not([data-motion-override="true"])) .golf-table[data-stage="dealing"] .golf-card-slot { animation: none; }
+  :where(:root:not([data-motion-override="true"])) .golf-hole-score { animation: none; }
+  :where(:root:not([data-motion-override="true"])) .golf-card-slot[data-revealed-at-end="true"] .golf-card-front::after { animation: none; }
 }

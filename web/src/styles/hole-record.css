@@ -20,8 +20,9 @@
   outline: none;
 }
 .golf-hole-record::backdrop { background: #0006; backdrop-filter: blur(4px); }
-.golf-record-content { display: flex; flex-direction: column; max-height: calc(100dvh - 34px); box-sizing: border-box; padding: 24px 8px 20px; }
-.golf-record-header { flex-shrink: 0; margin: 0 24px 20px; }
+.golf-record-content { display: flex; flex-direction: column; max-height: calc(100dvh - 34px); box-sizing: border-box; padding: 36px 16px 28px; }
+.golf-record-dismiss { position: absolute; top: 20px; right: 20px; }
+.golf-record-header { flex-shrink: 0; margin: 0 24px 20px; padding: 0 24px; }
 .golf-record-eyebrow { margin: 0 0 7px; color: var(--link); font-size: 12px; font-weight: 650; letter-spacing: 1.4px; }
 .golf-record-header h2 { margin: 0 0 8px; font-size: 28px; font-weight: 650; letter-spacing: -.6px; }
 .golf-record-header h2 > span { font-size: 23px; opacity: .45; font-weight: 450; }
@@ -50,7 +51,7 @@
 @media (max-width: 700px) {
   .golf-hole-record-trigger { font-size: 12px; }
   .golf-hole-record { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 16px; }
-  .golf-record-content { max-height: calc(100dvh - 26px); padding: 20px 4px 18px; }
+  .golf-record-content { max-height: calc(100dvh - 26px); padding: 32px 8px 24px; }
   .golf-record-header { margin: 0 18px 18px; }
   .golf-record-header h2 { font-size: 27px; }
   .golf-record-header h2 > span { font-size: 20px; }
@@ -67,4 +68,4 @@
   .golf-record-navigation .golf-tableau-pages button { width: 30px; }
   .golf-record-close { margin-top: 14px; }
 }
-@media (prefers-reduced-motion: reduce) { .golf-record-boards { animation: none; } }
+@media (prefers-reduced-motion: reduce) { :where(:root:not([data-motion-override="true"])) .golf-record-boards { animation: none; } }

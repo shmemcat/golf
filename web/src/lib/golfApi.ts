@@ -6,7 +6,7 @@ export interface Participant { name: string; profileIcon: string; isBot: boolean
 export interface RoomState {
   code: string; mode: GolfMode; capacity: number; revision: number; mySeat: number; isHost: boolean;
   actionTokens?: Record<string, string>;
-  seats: Participant[]; stage: Stage | "lobby" | "closed"; closed?: boolean; closedReason?: "not_enough_players" | null;
+  seats: Participant[]; stage: Stage | "lobby" | "closed"; closed?: boolean; closedReason?: "not_enough_players" | "one_player" | "empty" | "completed" | null;
   lobbyReason?: "not_enough_players" | null;
   holeRecords?: CompletedHole[];
   game: (Omit<Game, "deck" | "players" | "holeRecords"> & { deckCount: number; players: { score: number; cards: { faceUp: boolean; revealedAtEnd?: boolean; card: Pick<GolfCard, "id"> & Partial<GolfCard> }[] }[] }) | null;

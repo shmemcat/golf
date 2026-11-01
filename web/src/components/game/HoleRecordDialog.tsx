@@ -61,6 +61,9 @@ export function HoleRecordDialog({ records, onClose }: {
       else move(event.key === "ArrowRight" ? 1 : -1);
     }}>
     <div className="golf-record-content">
+      <button type="button" className="golf-popup-close golf-record-dismiss" aria-label="Close hole record" onClick={onClose}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+      </button>
       <header className="golf-record-header">
         <p className="golf-record-eyebrow">Hole record</p>
         <h2 id="golf-record-title" aria-live="polite" aria-atomic="true">{record ? <>Hole {record.hole} <span>/ 9</span></> : "Your round starts here"}</h2>

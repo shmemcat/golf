@@ -13,4 +13,4 @@
 .miniCard :global(.playing-card) { --card-width: 34px; border-radius: 3px; }
 .choices:disabled .choice { cursor: wait; }
 @media (max-width: 350px) { .choices { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { .choice { transition: none; } .choice:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { :where(:global(:root:not([data-motion-override="true"]))) .choice { transition: none; } :where(:global(:root:not([data-motion-override="true"]))) .choice:hover { transform: none; } }

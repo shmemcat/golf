@@ -11,6 +11,104 @@ vi.mock("@/context/SoundContext", () => ({ useSound: () => sound }));
 beforeEach(() => sound.play.mockClear());
 const command = vi.fn(async () => true);
 
+function turnFixture() {
+  const state = roomFixture();
+  state.game!.turn = state.mySeat;
+  state.game!.discard = [{ id: "discard-top", rank: "2", suit: "H" }];
+  return state;
+}
+
+function pickup(state: RoomState, source: "deck" | "discard"): RoomState {
+  return { ...state, revision: state.revision + 1, motion: {
+    kind: "draw", card: source === "deck" ? { id: "deck-top", rank: "A", suit: "S" } : state.game!.discard.at(-1)!,
+    from: source, to: `drawn-${state.mySeat}`, flip: source === "deck", seat: state.mySeat, index: -1, source,
+  } };
+}
+
+function pickupArrived(state: RoomState): RoomState {
+  const { source, card } = state.motion!;
+  return { ...state, revision: state.revision + 1, motion: null, game: {
+    ...state.game!, phase: "replace", drawn: { card, source },
+    deckCount: state.game!.deckCount - (source === "deck" ? 1 : 0),
+    discard: source === "discard" ? state.game!.discard.slice(0, -1) : state.game!.discard,
+  } };
+}
+
+it.each(["deck", "discard"] as const)("queues a replacement before the %s draw response and waits for its arrival", async source => {
+  const initial = turnFixture();
+  let finishDraw!: (ok: boolean) => void;
+  const send = vi.fn((action: string, _detail?: Record<string, unknown>) => action === "draw"
+    ? new Promise<boolean>(resolve => { finishDraw = resolve; }) : Promise.resolve(true));
+  const view = renderHook(({ state, pending }) => useServerGolfTable(state, send, false, pending), {
+    initialProps: { state: initial, pending: false }, wrapper: StrictMode,
+  });
+  act(() => {
+    view.result.current.table.draw(source);
+    view.result.current.table.replace(2);
+    view.result.current.table.replace(3);
+    view.result.current.table.toss();
+    view.result.current.table.draw("deck");
+  });
+  expect(send.mock.calls).toEqual([["draw", { source }]]);
+  expect(view.result.current.table.canReplace).toBe(false);
+  const moving = pickup(initial, source);
+  view.rerender({ state: moving, pending: true });
+  await act(async () => { finishDraw(true); });
+  view.rerender({ state: moving, pending: false });
+  expect(send).toHaveBeenCalledTimes(1);
+  const arrived = pickupArrived(moving);
+  await act(async () => { view.rerender({ state: arrived, pending: false }); });
+  expect(send.mock.calls).toEqual([["draw", { source }], ["replace", { index: 2 }]]);
+  await act(async () => { view.rerender({ state: httpOrder({ ...arrived, revision: arrived.revision + 1 }), pending: false }); });
+  expect(send).toHaveBeenCalledTimes(2);
+});
+
+it("queues a deck toss during a restored pickup while keeping a discard pickup reserved for replacement", async () => {
+  const initial = turnFixture();
+  const moving = pickup(initial, "deck");
+  const send = vi.fn(async (_action: string, _detail?: Record<string, unknown>) => true);
+  const view = renderHook(({ state }) => useServerGolfTable(state, send, false), { initialProps: { state: moving } });
+  act(() => view.result.current.table.toss());
+  expect(send).not.toHaveBeenCalled();
+  await act(async () => { view.rerender({ state: pickupArrived(moving) }); });
+  expect(send).toHaveBeenCalledExactlyOnceWith("toss", undefined);
+  const discard = pickup(initial, "discard");
+  view.rerender({ state: { ...discard, game: { ...discard.game!, hole: 2 } } });
+  act(() => view.result.current.table.toss());
+  expect(view.result.current.table.canReplace).toBe(true);
+  expect(send).toHaveBeenCalledTimes(1);
+});
+
+it("drops a queued replacement after a failed draw and lets the player retry", async () => {
+  const initial = turnFixture();
+  let finish!: (ok: boolean) => void;
+  const send = vi.fn((_action: string, _detail?: Record<string, unknown>) => new Promise<boolean>(resolve => { finish = resolve; }));
+  const view = renderHook(() => useServerGolfTable(initial, send, false));
+  act(() => { view.result.current.table.draw("deck"); view.result.current.table.replace(2); });
+  await act(async () => { finish(false); });
+  expect(send).toHaveBeenCalledTimes(1);
+  expect(view.result.current.table.canDraw).toBe(true);
+  expect(view.result.current.table.canReplace).toBe(false);
+});
+
+it.each(["disconnect", "turn", "hole", "card"])("cancels a queued move when its pickup is invalidated by %s", async reason => {
+  const moving = pickup(turnFixture(), "deck");
+  const send = vi.fn(async (_action: string, _detail?: Record<string, unknown>) => true);
+  const view = renderHook(({ state, disabled }) => useServerGolfTable(state, send, disabled), {
+    initialProps: { state: moving, disabled: false },
+  });
+  act(() => view.result.current.table.replace(2));
+  const arrived = pickupArrived(moving);
+  const changed = structuredClone(arrived);
+  if (reason === "turn") changed.game!.turn = (changed.mySeat + 1) % changed.seats.length;
+  if (reason === "hole") changed.game!.hole++;
+  if (reason === "card") changed.game!.drawn!.card.id = "another-draw";
+  await act(async () => { view.rerender({ state: changed, disabled: reason === "disconnect" }); });
+  await act(async () => { view.rerender({ state: arrived, disabled: false }); });
+  expect(send).not.toHaveBeenCalled();
+  expect(view.result.current.table.canReplace).toBe(true);
+});
+
 it("clears both rapid selections when the first request fails so the player can retry", async () => {
   const initial = roomFixture();
   initial.stage = "opening";

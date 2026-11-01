@@ -60,6 +60,7 @@ def create_app(config=None, *, accounts=None):
                         manage_session=False, max_http_buffer_size=16384, logger=False, engineio_logger=False)
     runtime = GolfRuntime(app, socketio)
     app.extensions["golf_runtime"] = runtime
+    app.extensions["cleanup_storage"] = runtime.cleanup_storage
     app.extensions["socketio"] = socketio
     socket_limits = defaultdict(deque)
 
@@ -306,4 +307,6 @@ def create_app(config=None, *, accounts=None):
 
     if app.config["START_GOLF_WORKER"]:
         runtime.start()
+    from .game_limits import register_limits
+    register_limits(app)
     return app

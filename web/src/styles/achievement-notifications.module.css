@@ -48,5 +48,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .toast { animation: none; }
+  :where(:global(:root:not([data-motion-override="true"]))) .toast { animation: none; }
 }

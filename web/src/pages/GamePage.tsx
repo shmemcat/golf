@@ -12,7 +12,8 @@ import { faFlag } from "@fortawesome/pro-solid-svg-icons/faFlag";
 import { faEye } from "@fortawesome/pro-solid-svg-icons/faEye";
 import { faEyeSlash } from "@fortawesome/pro-solid-svg-icons/faEyeSlash";
 import { Navbar } from "@/components/Navbar";
-import { Button } from "@/components/Buttons";
+import { Button, MenuLink } from "@/components/Buttons";
+import { PageLayout } from "@/components/ui/PageLayout";
 import { ActiveGameModal } from "@/components/ActiveGameModal";
 import { Card } from "@/components/Card";
 import { ProfileIcon } from "@/components/ProfileIcon";
@@ -181,7 +182,8 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   if (stage === "picking") hint = "Choosing who goes first…";
   if (stage === "announcing") hint = game.starter === 0 ? "You go first!" : `${name(game.starter)} goes first!`;
   if (stage === "playing") {
-    if (motion) hint = `${motion.seat ? `${name(motion.seat)} is` : "You are"} ${motion.kind === "draw" ? "drawing a card" : motion.kind === "toss" ? "discarding the draw" : "swapping cards"}…`;
+    if (table.canReplace && !game.drawn) hint = "Choose a card on your board to replace.";
+    else if (motion) hint = `${motion.seat ? `${name(motion.seat)} is` : "You are"} ${motion.kind === "draw" ? "drawing a card" : motion.kind === "toss" ? "discarding the draw" : "swapping cards"}…`;
     else if (complete) hint = "All cards revealed. Pink outlines mark the last hidden cards.";
     else if (game.turn !== 0) hint = `${name(game.turn)} is ${game.phase === "draw" ? "drawing" : "choosing a card"}…`;
     else hint = game.phase === "draw" ? mobile ? "Your turn. Draw from either pile." : "Your turn. Draw from the deck or discard pile."
@@ -206,21 +208,23 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
   };
 
   const drawnDock = (seat: number, shared = false) => {
+    const arriving = motion?.kind === "draw" && motion.seat === seat;
+    const drawn = game.turn === seat ? game.drawn ?? (arriving && seat === 0 ? { card: motion.card, source: motion.source } : null) : null;
     const showScore = mobile && showHoleScores && !shared && holeScores?.[seat] !== undefined;
     const visible = showScore || shared || (game.turn === seat && !!game.drawn) || (motion?.kind === "draw" && motion.seat === seat);
     return <div className={`golf-drawn-dock ${shared ? "golf-shared-draw" : ""}`} data-visible={visible} data-score={showScore} aria-hidden={!visible}>
-      <div className="golf-drawn-card" data-anchor={`drawn-${seat}`} data-hidden={["place", "toss"].includes(motion?.kind ?? "")}>
-        {showScore ? holeScore(seat) : game.turn === seat && game.drawn ? seat === 0 ? (
+      <div className="golf-drawn-card" data-anchor={`drawn-${seat}`} data-hidden={arriving || ["place", "toss"].includes(motion?.kind ?? "")}>
+        {showScore ? holeScore(seat) : drawn ? seat === 0 ? (
           <button type="button" className="golf-drawn-button golf-selection"
-            disabled={!table.canReplace || game.drawn.source !== "deck"}
-            data-valid={table.canReplace && game.drawn.source === "deck"}
-            aria-label={game.drawn.source === "deck" ? `Discard drawn ${describeCard(game.drawn.card)}`
-              : `Drawn ${describeCard(game.drawn.card)}, choose a board card to replace`}
+            disabled={!table.canReplace || drawn.source !== "deck"}
+            data-valid={table.canReplace && drawn.source === "deck"}
+            aria-label={drawn.source === "deck" ? `Discard drawn ${describeCard(drawn.card)}`
+              : `Drawn ${describeCard(drawn.card)}, choose a board card to replace`}
             onClick={table.toss}>
-            <FlipCard key={game.drawn.card.id} card={game.drawn.card} faceUp ownerBack={cardBackFor(seat)} />
-            <FadingIndicator active={table.canReplace && game.drawn.source === "deck"} className="golf-selection-indicator" />
+            <FlipCard key={drawn.card.id} card={drawn.card} faceUp ownerBack={cardBackFor(seat)} />
+            <FadingIndicator active={table.canReplace && drawn.source === "deck"} className="golf-selection-indicator" />
           </button>
-        ) : <div role="img" aria-label={`Drawn card: ${describeCard(game.drawn.card)}`}><FlipCard key={game.drawn.card.id} card={game.drawn.card} faceUp ownerBack={cardBackFor(seat)} /></div>
+        ) : <div role="img" aria-label={`Drawn card: ${describeCard(drawn.card)}`}><FlipCard key={drawn.card.id} card={drawn.card} faceUp ownerBack={cardBackFor(seat)} /></div>
           : shared && <span className="golf-empty-pile" />}
       </div>
       <span>Drawn card</span>
@@ -280,7 +284,16 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
           <details className="golf-match-info" ref={matchInfo}>
             <summary aria-label="Game information and scorecard"><FontAwesomeIcon icon={faListUl} /></summary>
             <div className="golf-match-panel">
-              <h2>Scorecard</h2>
+              <div className="golf-match-heading">
+                <h2>Scorecard</h2>
+                <button type="button" className="golf-popup-close" aria-label="Close scorecard" onClick={() => {
+                  if (!matchInfo.current) return;
+                  matchInfo.current.open = false;
+                  matchInfo.current.querySelector("summary")?.focus();
+                }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+                </button>
+              </div>
               <ol>{game.players.map((player, seat) => <li key={seat}><span>{name(seat)}</span><strong>{player.score}</strong></li>)}</ol>
               <hr />
               <Button name={canConcede ? "Concede" : "Leave table"} size="compact" className="golf-leave-table" onClick={() => {
@@ -418,7 +431,8 @@ export function GolfTableView({ count, selection, table, drawLayout = "beside", 
 }
 
 function GolfTable({ count, selection }: { count: number; selection: SelectionStyle }) {
-  const table = useGolfTable(count, true);
+  const [params] = useSearchParams();
+  const table = useGolfTable(count, true, params.get("game") ?? undefined, params.has("new"));
   const result = useGameResults(table.game);
   return <GolfTableView count={count} selection={selection} table={table}
     resultNotice={result.error && <p role="alert" className="inline-error">{result.error}{" "}<button type="button" className="link" onClick={result.retry}>Try again</button></p>} />;
@@ -428,10 +442,11 @@ export default function GamePage() {
   const { user, loading } = useAuth();
   const [params] = useSearchParams();
   const requested = Number(params.get("players") ?? readStorage("golf.players.v1", 2));
-  const saved = !user && !params.get("room") ? readLocalGame() : null;
+  const saved = !user && !params.get("room") && !params.has("new") ? readLocalGame(params.get("game") ?? undefined) : null;
   const count = saved?.game.players.length ?? (Number.isInteger(requested) && requested >= 2 && requested <= 6 ? requested : 2);
   const selection = selectionStyle(params.get("selection"));
   if (loading) return <main className="loading-page" role="status">Loading your table…</main>;
+  if (!user && params.get("game") && !saved) return <PageLayout title="SAVED GAME"><p>This game has finished or is no longer available.</p><MenuLink to="/play" name="Back to Play" /></PageLayout>;
   return <><Helmet><title>{`Play Golf · ${count} Players`}</title></Helmet>{user || params.get("room")
-    ? <ServerBotGame count={count} selection={selection} /> : <GolfTable key={count} count={count} selection={selection} />}</>;
+    ? <ServerBotGame count={count} selection={selection} /> : <GolfTable key={params.get("game") ?? count} count={count} selection={selection} />}</>;
 }

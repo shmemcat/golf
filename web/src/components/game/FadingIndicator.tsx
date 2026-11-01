@@ -1,5 +1,6 @@
+import { useReducedMotion } from "../../lib/motionPreference";
 import type { ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 export function FadingIndicator({ active, className, children }: {
   active: boolean;

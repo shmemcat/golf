@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { canOpen, openCard, type Game, type GolfCard } from "@/game/engine";
-import type { Stage, TableMotion, useGolfTable } from "./useGolfTable";
+import { canOpen, openCard, type DrawSource, type Game, type GolfCard } from "@/game/engine";
+import type { QueuedTurnAction, Stage, TableMotion, useGolfTable } from "./useGolfTable";
 import type { RoomState } from "@/lib/golfApi";
 import { useSound } from "@/context/SoundContext";
 
@@ -10,6 +10,18 @@ function motionKey(motion: TableMotion | null) {
     motion.kind, motion.card.id, motion.from, motion.to, motion.flip,
     motion.seat, motion.index, motion.source,
   ]);
+}
+
+interface TurnInput {
+  id: number;
+  key: string;
+  source: DrawSource;
+  deckCount: number;
+  discardCount: number;
+  cardId: string | null;
+  observed: boolean;
+  next: QueuedTurnAction | null;
+  sent: boolean;
 }
 
 export function projectTable(state: RoomState) {
@@ -42,6 +54,20 @@ export function useServerGolfTable(state: RoomState, command: (action: string, d
   const updateChoices = (next: typeof choices) => { latestChoices.current = next; setChoices(next); };
   const openingGame = () => latestChoices.current.key === openingKey
     ? latestChoices.current.indices.reduce(openCard, game) : game;
+  const turnKey = JSON.stringify([openingKey, game.players[0].cards.map(cell => [cell.card.id, cell.faceUp])]);
+  const [turnInput, setTurnInput] = useState<TurnInput | null>(null);
+  const latestInput = useRef(turnInput);
+  const inputSerial = useRef(0);
+  const updateInput = (next: TurnInput | null) => { latestInput.current = next; setTurnInput(next); };
+  const currentInput = () => latestInput.current?.key === turnKey ? latestInput.current : null;
+  const newInput = (source: DrawSource, arrived = false): TurnInput => ({
+    id: ++inputSerial.current, key: turnKey, source,
+    deckCount: game.deck.length - (!arrived && source === "deck" ? 1 : 0),
+    discardCount: game.discard.length - (!arrived && source === "discard" ? 1 : 0),
+    cardId: arrived ? game.drawn!.card.id : motion?.kind === "draw" ? motion.card.id
+      : source === "discard" ? game.discard.at(-1)!.id : null,
+    observed: motion?.kind === "draw", next: null, sent: false,
+  });
   useEffect(() => {
     const before = previous.current;
     if (state.game && before?.game?.id === state.game.id) {
@@ -67,14 +93,55 @@ export function useServerGolfTable(state: RoomState, command: (action: string, d
       updateChoices(!ok && current.key === openingKey ? { key: openingKey, indices: [], sent: 0 } : { ...current });
     });
   }, [choices, state, command, disabled, pending, openingKey]);
+  useEffect(() => {
+    const input = latestInput.current;
+    if (!input) return;
+    if (disabled || input.key !== turnKey || state.stage !== "playing" || game.turn !== 0 ||
+      !["draw", "replace"].includes(game.phase)) {
+      updateInput(null);
+      return;
+    }
+    if (motion) {
+      if (motion.kind !== "draw" || motion.seat !== 0 || motion.source !== input.source ||
+        input.cardId && input.cardId !== motion.card.id) updateInput(null);
+      else if (!input.observed) updateInput({ ...input, observed: true, cardId: motion.card.id });
+      return;
+    }
+    if (game.phase !== "replace" || !game.drawn) {
+      if (input.observed) updateInput(null);
+      return;
+    }
+    if (game.drawn.source !== input.source || game.deck.length !== input.deckCount ||
+      game.discard.length !== input.discardCount || input.cardId && input.cardId !== game.drawn.card.id) {
+      updateInput(null);
+      return;
+    }
+    if (!input.next || input.sent || pending) return;
+    // The pickup has arrived. Send the queued move with this board's fresh token.
+    updateInput({ ...input, sent: true });
+    const action = input.next;
+    void command(action.kind, action.kind === "replace" ? { index: action.index } : undefined).then(ok => {
+      if (!ok && latestInput.current?.id === input.id) updateInput(null);
+    });
+  }, [turnInput, state, command, disabled, pending, turnKey]);
   const stage = state.stage as Stage;
   const available = !disabled && !pending && !motion;
   const canReveal = (index: number) => !disabled && !motion && stage === "opening" && canOpen(openingGame(), index);
+  const canReplace = () => !disabled && stage === "playing" && game.turn === 0 && !currentInput()?.next &&
+    (motion?.kind === "draw" && motion.seat === 0 || !motion && (
+      game.phase === "replace" && !pending || game.phase === "draw" && !!currentInput()
+    ));
+  const queueTurn = (action: QueuedTurnAction) => {
+    if (!canReplace()) return;
+    const input = currentInput() ?? newInput(motion?.kind === "draw" ? motion.source : game.drawn!.source, !motion);
+    if (action.kind === "toss" && input.source !== "deck") return;
+    updateInput({ ...input, next: action });
+  };
   const table: ReturnType<typeof useGolfTable> = {
     game, stage, motion, pickerSeat: game.starter,
     canReveal,
-    canDraw: available && stage === "playing" && game.turn === 0 && game.phase === "draw",
-    canReplace: available && stage === "playing" && game.turn === 0 && game.phase === "replace",
+    canDraw: available && !currentInput() && stage === "playing" && game.turn === 0 && game.phase === "draw",
+    canReplace: canReplace(),
     reveal: index => {
       if (!canReveal(index)) return;
       const indices = latestChoices.current.key === openingKey ? latestChoices.current.indices : [];
@@ -82,9 +149,19 @@ export function useServerGolfTable(state: RoomState, command: (action: string, d
       updateChoices({ key: openingKey, indices: [...indices, index], sent });
       play("flip");
     },
-    draw: source => { void command("draw", { source }); },
-    replace: index => { void command("replace", { index }); },
-    toss: () => { void command("toss"); }, advance: () => { void command("advance"); }, restart: () => { void command("restart"); },
+    draw: source => {
+      if (!available || currentInput() || stage !== "playing" || game.turn !== 0 || game.phase !== "draw" || !game[source].length) return;
+      const input = newInput(source);
+      updateInput(input);
+      void command("draw", { source }).then(ok => {
+        if (!ok && latestInput.current?.id === input.id) updateInput(null);
+      });
+    },
+    replace: index => {
+      if (Number.isInteger(index) && index >= 0 && index < 6) queueTurn({ kind: "replace", index });
+    },
+    toss: () => queueTurn({ kind: "toss" }),
+    advance: () => { void command("advance"); }, restart: () => { void command("restart"); },
   };
   return { table, participants };
 }

@@ -42,7 +42,8 @@ def test_last_human_closes_room_with_bots_and_keeps_results(app, online, departu
             after = [(r.user_id, r.status, r.won, r.score, r.detail) for r in Result.query.order_by(Result.user_id)]
             assert after == before
         else:
-            assert all(r.status == 'abandoned' for r in Result.query)
+            assert {r.status for r in Result.query} == {'abandoned', 'cancelled'}
+            assert not any(r.won for r in Result.query)
     assert people[0].get('/api/golf/active').json['rooms'] == []
     assert post(people[0], '/lobbies/join', {'code': code}).json['code'] == 'LOBBY_CLOSED'
 

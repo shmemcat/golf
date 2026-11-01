@@ -736,9 +736,9 @@ figcaption {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  :where(:root:not([data-motion-override="true"])) *,
+  :where(:root:not([data-motion-override="true"])) *::before,
+  :where(:root:not([data-motion-override="true"])) *::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;

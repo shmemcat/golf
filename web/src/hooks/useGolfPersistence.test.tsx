@@ -96,6 +96,26 @@ it("restores a drawn discard reserved for replacement", () => {
   expect(view.result.current.motion).toBeNull();
 });
 
+it.each(["replace", "toss"] as const)("restores a queued %s after refreshing during the pickup and consumes it once", kind => {
+  save(started());
+  const first = renderHook(() => useGolfTable(4, true));
+  act(() => first.result.current.draw("deck"));
+  act(() => kind === "replace" ? first.result.current.replace(2) : first.result.current.toss());
+  expect(readLocalGame()?.queuedAction).toEqual(kind === "replace" ? { kind, index: 2 } : { kind });
+  first.unmount();
+  const resumed = renderHook(() => useGolfTable(4, true));
+  expect(resumed.result.current.canReplace).toBe(false);
+  tick(FLIGHT_MS);
+  expect(resumed.result.current.motion?.kind).toBe(kind === "replace" ? "discard" : "toss");
+  expect(readLocalGame()?.queuedAction).toBeNull();
+  tick(FLIGHT_MS);
+  if (kind === "replace") tick(FLIGHT_MS);
+  expect(resumed.result.current.game.turn).toBe(1);
+  const all = cards(resumed.result.current.game);
+  expect(all).toHaveLength(104);
+  expect(new Set(all.map(card => card.id)).size).toBe(104);
+});
+
 it("restores a hole summary with its accumulated scores and advances to the next hole", () => {
   const game: Game = { ...started(), phase: "round-over", history: [[4, 5, 6, 7]] };
   game.players = game.players.map((player, seat) => ({ ...player, score: game.history[0][seat] }));

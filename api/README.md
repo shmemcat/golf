@@ -89,33 +89,21 @@ When a guest signs in, the signed Golf browser session transfers their waiting
 multiplayer lobby seats to the account, including hosting. An existing seat for
 that account is merged rather than duplicated. Guest sockets are disconnected
 and must reconnect with the account cookies; started games are not transferred.
-Lobby membership is kept on the server until explicitly leaving or closing the
-lobby. Locking a phone, closing the browser, or losing the network does not remove
-a member. The last human explicitly leaving closes a waiting lobby. Hosting passes
-to the next member when the host explicitly leaves, including an offline member.
-Every departure removes the seat rather than replacing the player with a bot,
-including during a game. Boards, scores, turns, final-turn queues, animations,
-and readiness follow the remaining players. Lobbies stay open indefinitely while
-at least one human remains a member. If only one player remains in a game, they
-return to the waiting lobby with the same invite code and the original lobby
-capacity. An unfinished game is cancelled for the remaining player without
-recording a loss or abandonment. New players can join and start a fresh game.
-The lobby closes automatically only when no humans remain; the host can also
-close a waiting lobby explicitly.
-Finished multiplayer rooms retain their members while offline. Completed results
-remain saved, and room cleanup never changes a completed result to abandonment.
+Waiting-lobby membership allows two minutes to reconnect before removal.
+Host controls pass to the next member if the host leaves or expires. The lobby
+closes after its last person has been disconnected for two minutes.
+Every concession removes a seat without bot replacement. Boards, scores, turns,
+final-turn queues, animations, and readiness follow the remaining players. When
+only one human remains in a started game, the game and lobby close. The
+unfinished match is cancelled for the remaining player without recording a win
+or loss. Earlier completed results remain unchanged.
 
-Single-player games have no time limits: starting-card choices, every draw and
-replacement, and Next Hole all wait for the player, including after reconnecting.
-Multiplayer matches Hearts: a sound and shake after 15 seconds of an available
-decision, a warning after 9 minutes, and seat removal after 10 minutes.
-This applies to starting cards, draws, replacements, and Next Hole while waiting
-for that player, whether connected or offline. Disconnects and reconnects neither
-shorten nor restart this decision deadline. Moves cancel the
-warning; time spent waiting for other players or animations does not count.
-Removal records an abandonment, as does explicitly leaving. A removed seat cannot
-be reclaimed during that game. Single-player games remain untimed. Rematches require all remaining humans to agree,
-and at least two humans for multiplayer. Shared lowest scores count as wins.
+Single-player and multiplayer games have no inactivity or disconnect deadline:
+starting-card choices, every draw and replacement, and Next Hole all wait for
+the player. A sound and shake can still remind the player after 15 seconds.
+Legacy saved deadlines are discarded on recovery. Rematches require all
+remaining humans to agree, and at least two humans for multiplayer.
+Shared lowest scores count as wins.
 
 Results are unique per game and registered player. The service records the
 mode, dates, completion/abandonment, placement, total and hole scores, opponents,
@@ -194,3 +182,32 @@ backup, migrate with the schema owner, and grant CRUD on the new table only to
 `golf_runtime`. Resume and verify the compatible image before promoting the final
 `golf_002` release. Runtime credentials never migrate, and rollback preserves
 the additive schema and earned unlocks.
+
+## Storage retention
+
+The existing game worker runs storage cleanup at startup and hourly. Completed
+and closed room snapshots are compacted after 24 hours (up to 200 per sweep),
+removing cards, past boards, animation state, and action receipts. Final scores,
+hole scores, result records, statistics, leaderboard history, and achievements
+remain. Small room-ID/create-request receipts prevent stale tabs from starting
+the same game again. Connected results groups retain their rematch controls.
+
+Move logs are diagnostic only: up to 10,000 eligible events are deleted per
+sweep, after a full day without another event for that match. Events belonging
+to an unfinished game or a recently closed room are protected even if individual
+moves are older. A room awaiting its final result archive retains its source.
+There is no age limit on unfinished games. This uses the existing schema and
+runtime grants; `app.extensions['cleanup_storage']()` runs the same maintenance
+sweep manually in an application context.
+
+## Game creation limits
+
+Each account can have 20 unfinished games per app, counting bot and multiplayer
+games together. Finished, conceded, and closed games stop counting immediately.
+New game/lobby creation allows five per minute per player. Joining and starting
+check available space again; rematches also respect the allowance. Resume, moves,
+result saves, and concessions remain available at the limit. Waiting lobbies do
+not count as unfinished games. `MAX_IN_PROGRESS_GAMES` and
+`GAME_CREATIONS_PER_MINUTE` configure these defaults for this single worker.
+Guest browser identities apply where games are server-owned; Euchre guest bot
+saves stay in the browser and have their own browser allowance.

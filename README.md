@@ -135,25 +135,21 @@ least two remaining human players.
 
 ### Rejoining and Timeouts
 
-Play offers Continue or Rejoin for unfinished games and waiting lobbies,
-including groups between games. Concede and Leave require confirmation before
-creating or joining another game. Signed-in bot games have no turn limits,
-including starting-card choices and Next Hole.
+Play shows cards for unfinished games, with Resume and Concede actions.
+Starting or joining another game preserves those saves. Conceding requires
+confirmation and affects only the selected game. Waiting lobbies are not listed.
 
-Signing in from the same browser keeps your waiting-lobby seat and updates it
-to your account name and profile icon. Disconnected lobby seats are held for
-60 seconds, then freed; returning players can join again if space remains.
-If the host's seat expires, hosting passes to the next player. Empty abandoned
-lobbies close without recording game results.
+Signing in from the same browser keeps a waiting-lobby seat and updates its
+account name and profile icon. Disconnected lobby members have two minutes to
+return before removal. Hosting passes to the next member if the host leaves or
+expires, and the lobby closes after its last person has been away two minutes.
 
-In multiplayer, an available decision triggers a sound and shake after
-15 seconds, a warning after 9 minutes, and seat removal after
-10 minutes. Starting-card choices, draws, replacements, and Next Hole count;
-waiting for others or animations does not. Making a move clears the warning.
-
-During a game, disconnected players have two minutes to return. Leaving an active game or
-being removed records an abandonment, and a removed seat cannot be reclaimed
-during that game. Persistent rooms and clocks survive service restarts.
+A sound and shake remind players after 15 seconds when input is available.
+Started games have no inactivity or disconnect deadline, including starting-card
+choices, draws, replacements, and Next Hole. Conceding removes the seat without
+bot replacement. When only one human remains, the game and lobby close; the
+remaining player's unfinished game is cancelled without a win or loss.
+Saved games and completed results survive service restarts.
 
 ## Local Development
 

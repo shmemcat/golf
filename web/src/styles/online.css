@@ -3,4 +3,4 @@ dialog .golf-connection-status { position: static; transform: none; width: auto;
 
 .inactivity-shake :is(.golf-phase-hint, .golf-mobile-hint) { animation: inactivity-nudge .4s ease-in-out 5; }
 @keyframes inactivity-nudge { 0%, 100% { translate: 0; } 25%, 75% { translate: -4px; } 50% { translate: 4px; } }
-@media (prefers-reduced-motion: reduce) { .inactivity-shake :is(.golf-phase-hint, .golf-mobile-hint) { animation: none; } }
+@media (prefers-reduced-motion: reduce) { :where(:root:not([data-motion-override="true"])) .inactivity-shake :is(.golf-phase-hint, .golf-mobile-hint) { animation: none; } }

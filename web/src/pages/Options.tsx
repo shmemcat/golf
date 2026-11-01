@@ -1,3 +1,4 @@
+import { AnimationOption } from "../components/AnimationOption";
 import { TurnSoundOption } from "@/context/TurnSoundContext";
 import { Helmet } from "react-helmet-async";
 import { Navigate } from "react-router-dom";
@@ -27,6 +28,7 @@ export function OptionsContent() {
         <CardBackOption />
         <CardBackDisplayOption />
         <TurnSoundOption />
+        <AnimationOption />
         <div className="button-stack">
           <MenuLink to="/user" name="Back" />
           <MenuLink to="/" name="Home" />

@@ -76,5 +76,5 @@ html[data-theme="dark"] .golf-final-score-table tr[data-current="true"] {
 .golf-game-over .golf-game-over-actions button { width: 100%; }
 @keyframes golf-game-over-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .golf-game-over, .golf-game-over::backdrop { animation: none; }
+  :where(:root:not([data-motion-override="true"])) .golf-game-over, :where(:root:not([data-motion-override="true"])) .golf-game-over::backdrop { animation: none; }
 }

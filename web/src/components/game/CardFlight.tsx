@@ -1,5 +1,6 @@
+import { useReducedMotion } from "../../lib/motionPreference";
 import { useLayoutEffect, useState, type RefObject } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { FlipCard } from "./FlipCard";
 import { FLIGHT_MS, type TableMotion } from "@/hooks/useGolfTable";
 

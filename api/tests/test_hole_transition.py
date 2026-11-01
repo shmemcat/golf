@@ -79,17 +79,20 @@ def test_next_hole_is_individual_and_waits_only_for_starting_cards(app, clients,
 
 
 def test_leaving_the_previous_hole_does_not_hold_up_starting_cards(app, clients):
-    person, friend = clients(1), clients(2)
-    code = create(person, 3, 'multiplayer')['code']
+    person, friend, third = clients(1), clients(2), clients(3)
+    code = create(person, 4, 'multiplayer')['code']
     assert post(friend, '/lobbies/join', {'code': code}).status_code == 200
+    assert post(third, '/lobbies/join', {'code': code}).status_code == 200
     assert action(person, code, 'start', fillBots=True).status_code == 200
     finish_hole(app, code)
     assert action(person, code, 'advance').status_code == 200
+    assert action(third, code, 'advance').status_code == 200
     tick(app)
     for index in (0, 4):
         assert action(person, code, 'reveal', index=index).status_code == 200
+        assert action(third, code, 'reveal', index=index).status_code == 200
     assert state(person, code)['stage'] == 'opening'
     assert action(friend, code, 'leave').status_code == 200
     value = playing(app, person, code)
     assert value['game']['hole'] == 2
-    assert value['seats'][1]['isBot']
+    assert len(value['seats']) == 3 and value['seats'][2]['isBot']
