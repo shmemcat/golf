@@ -488,6 +488,8 @@ input.lobby-code {
   font-size: inherit;
 }
 .playing-card {
+  -webkit-user-select: none;
+  user-select: none;
   --card-width: 80px;
   width: var(--card-width);
   height: calc(var(--card-width) * 1.4);
