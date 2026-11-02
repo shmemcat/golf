@@ -369,6 +369,49 @@ it("shows rejected credentials, preserves them for retry, and offers shared acco
   expect(screen.getByLabelText("Password", { exact: true })).toHaveValue("");
 });
 
+it.each(["/profile", "/options"])(
+  "redirects signed-out users opening %s to sign in",
+  async (path) => {
+    open(path);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Username or Email")).toBeVisible()
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Profile Icon" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "OPTIONS", exact: true })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Settings menu" })
+    ).not.toBeInTheDocument();
+  }
+);
+
+it.each([
+  ["/profile", "Profile Icon"],
+  ["/options", "OPTIONS"],
+])(
+  "redirects from %s when the account signs out on another site",
+  async (path, heading) => {
+    current = account;
+    open(path);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: heading, exact: true })
+      ).toBeVisible()
+    );
+    current = null;
+    fireEvent(window, new Event("focus"));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Username or Email")).toBeVisible()
+    );
+    expect(
+      screen.queryByRole("heading", { name: heading, exact: true })
+    ).not.toBeInTheDocument();
+  }
+);
+
 it("picks up sign-ins and sign-outs from a sister site on focus", async () => {
   open("/user");
   await waitFor(() =>
