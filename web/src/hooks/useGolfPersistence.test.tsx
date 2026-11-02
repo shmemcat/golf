@@ -96,24 +96,44 @@ it("restores a drawn discard reserved for replacement", () => {
   expect(view.result.current.motion).toBeNull();
 });
 
-it.each(["replace", "toss"] as const)("restores a queued %s after refreshing during the pickup and consumes it once", kind => {
+it("restores a queued replacement after refreshing during the pickup and consumes it once", () => {
   save(started());
   const first = renderHook(() => useGolfTable(4, true));
   act(() => first.result.current.draw("deck"));
-  act(() => kind === "replace" ? first.result.current.replace(2) : first.result.current.toss());
-  expect(readLocalGame()?.queuedAction).toEqual(kind === "replace" ? { kind, index: 2 } : { kind });
+  act(() => first.result.current.replace(2));
+  expect(readLocalGame()?.queuedAction).toEqual({ kind: "replace", index: 2 });
   first.unmount();
   const resumed = renderHook(() => useGolfTable(4, true));
   expect(resumed.result.current.canReplace).toBe(false);
   tick(FLIGHT_MS);
-  expect(resumed.result.current.motion?.kind).toBe(kind === "replace" ? "discard" : "toss");
+  expect(resumed.result.current.motion?.kind).toBe("discard");
   expect(readLocalGame()?.queuedAction).toBeNull();
   tick(FLIGHT_MS);
-  if (kind === "replace") tick(FLIGHT_MS);
+  tick(FLIGHT_MS);
   expect(resumed.result.current.game.turn).toBe(1);
   const all = cards(resumed.result.current.game);
   expect(all).toHaveLength(104);
   expect(new Set(all.map(card => card.id)).size).toBe(104);
+});
+
+it("preserves an older saved game while clearing a deck toss queued before arrival", () => {
+  save(started());
+  const first = renderHook(() => useGolfTable(4, true));
+  act(() => first.result.current.draw("deck"));
+  const snapshot = readLocalGame()!;
+  first.unmount();
+  saveLocalGame({ ...snapshot, queuedAction: { kind: "toss" } });
+  expect(readLocalGame()?.queuedAction).toBeNull();
+  const resumed = renderHook(() => useGolfTable(4, true));
+  expect(resumed.result.current.game.id).toBe(snapshot.game.id);
+  expect(resumed.result.current.canReplace).toBe(true);
+  tick(FLIGHT_MS);
+  expect(resumed.result.current.motion).toBeNull();
+  expect(resumed.result.current.game.phase).toBe("replace");
+  expect(resumed.result.current.game.turn).toBe(0);
+  expect(resumed.result.current.game.drawn).not.toBeNull();
+  act(() => resumed.result.current.toss());
+  expect(resumed.result.current.motion?.kind).toBe("toss");
 });
 
 it("restores a hole summary with its accumulated scores and advances to the next hole", () => {

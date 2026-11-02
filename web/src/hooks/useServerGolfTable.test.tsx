@@ -44,6 +44,7 @@ it.each(["deck", "discard"] as const)("queues a replacement before the %s draw r
   });
   act(() => {
     view.result.current.table.draw(source);
+    view.result.current.table.toss();
     view.result.current.table.replace(2);
     view.result.current.table.replace(3);
     view.result.current.table.toss();
@@ -63,14 +64,17 @@ it.each(["deck", "discard"] as const)("queues a replacement before the %s draw r
   expect(send).toHaveBeenCalledTimes(2);
 });
 
-it("queues a deck toss during a restored pickup while keeping a discard pickup reserved for replacement", async () => {
+it("ignores early deck tosses until a new click after arrival and keeps discard pickups reserved for replacement", async () => {
   const initial = turnFixture();
   const moving = pickup(initial, "deck");
   const send = vi.fn(async (_action: string, _detail?: Record<string, unknown>) => true);
   const view = renderHook(({ state }) => useServerGolfTable(state, send, false), { initialProps: { state: moving } });
   act(() => view.result.current.table.toss());
   expect(send).not.toHaveBeenCalled();
+  expect(view.result.current.table.canReplace).toBe(true);
   await act(async () => { view.rerender({ state: pickupArrived(moving) }); });
+  expect(send).not.toHaveBeenCalled();
+  await act(async () => { view.result.current.table.toss(); });
   expect(send).toHaveBeenCalledExactlyOnceWith("toss", undefined);
   const discard = pickup(initial, "discard");
   view.rerender({ state: { ...discard, game: { ...discard.game!, hole: 2 } } });

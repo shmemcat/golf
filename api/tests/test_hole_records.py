@@ -112,13 +112,15 @@ def test_ninth_hole_is_recorded_and_rematching_starts_a_fresh_record(app, client
 
 
 @pytest.mark.parametrize('left_first', [False, True])
-def test_account_deletion_anonymizes_archived_players_even_after_departure(app, clients, left_first):
+@pytest.mark.parametrize('completed_hole', [False, True])
+def test_account_deletion_anonymizes_archived_players_even_after_departure(app, clients, left_first, completed_hole):
     people = [clients(uid) for uid in (1, 2, 3)]
     code = create(people[0], 3, 'multiplayer')['code']
     for person in people[1:]:
         assert post(person, '/lobbies/join', {'code': code}).status_code == 200
     assert action(people[0], code, 'start').status_code == 200
-    finish_hole(app, code)
+    if completed_hole:
+        finish_hole(app, code)
     if left_first:
         assert action(people[1], code, 'leave').status_code == 200
     headers = {'Authorization': 'Bearer ' + 'deletion-token-' * 4, 'X-Cards-Service': 'accounts'}
@@ -126,7 +128,10 @@ def test_account_deletion_anonymizes_archived_players_even_after_departure(app, 
                               json={'user_id': 2, 'request_id': 'delete-archived-player'}, headers=headers)
     assert response.status_code == 200
     records = state(people[0], code)['holeRecords']
-    assert 'Deleted player' in [player['name'] for player in records[0]['players']]
+    if completed_hole:
+        assert 'Deleted player' in [player['name'] for player in records[0]['players']]
+    else:
+        assert records == []
     with app.app_context():
         saved = db.session.get(Room, code).data
         assert 'account:2' not in str(saved)

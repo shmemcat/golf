@@ -145,7 +145,8 @@ export function readLocalGame(id?: string): LocalGame | null {
     motion?.kind !== "draw" || motion.seat !== 0 ||
     (queued.kind === "replace" ? !Number.isInteger(queued.index) || queued.index < 0 || queued.index >= 6
       : queued.kind !== "toss" || motion.source !== "deck"))) return null;
-  return saved;
+  // Older saves may contain a toss queued before the drawn card arrived.
+  return queued?.kind === "toss" ? { ...saved, queuedAction: null } : saved;
 }
 
 export function clearLocalGame(id: string) {

@@ -66,6 +66,18 @@ export async function verifyGolfOnline(stack) {
     const reply = await a.emit('golf:action', { code, revision: a.latest.revision, actionId: randomUUID(), action: 'start', fillBots: true });
     assert(reply.ok);
     await until(() => a.latest?.stage === 'opening' && b.latest?.stage === 'opening', 'Starting cards did not arrive');
+    const spectator = browser(web, true);
+    const watched = (await spectator.request('/api/golf/rooms/' + code)).state;
+    assert.equal(watched.mySeat, null);
+    assert(watched.spectating && !watched.isHost);
+    assert.deepEqual(watched.actionTokens, {});
+    assert.deepEqual((await spectator.request('/api/golf/active')).rooms, []);
+    const watcher = await spectator.connect();
+    const subscription = await watcher.emit('golf:subscribe', { code });
+    assert(subscription.ok && subscription.state.spectating);
+    const denied = await watcher.emit('golf:action', { code, revision: watched.revision, actionId: randomUUID(), action: 'reveal', index: 0 });
+    assert.equal(denied.ok, false);
+    assert.equal(denied.code, 'NOT_SEATED');
     for (const view of [a, b]) {
       for (const index of [0, 4]) {
         const answer = await view.emit('golf:action', { code, revision: view.latest.revision, actionId: randomUUID(), action: 'reveal', index });
@@ -76,9 +88,13 @@ export async function verifyGolfOnline(stack) {
     await until(() => a.latest?.stage === 'playing' && b.latest?.stage === 'playing', 'Multiplayer did not start');
     assert(a.latest.game.players.every(p => p.cards.filter(c => c.faceUp).length === 2));
     assert(a.latest.game.players.flatMap(p => p.cards).filter(c => !c.faceUp).every(c => Object.keys(c.card).join(',') === 'id'));
+    await until(() => watcher.latest?.stage === 'playing', 'Spectator did not receive live updates');
+    assert.equal(watcher.latest.mySeat, null);
+    assert.equal(watcher.latest.seats.length, a.latest.seats.length);
+    assert(watcher.latest.game.players.flatMap(p => p.cards).filter(c => !c.faceUp).every(c => Object.keys(c.card).join(',') === 'id'));
     await until(() => a.socket.io.engine.transport.name === 'websocket' && b.socket.io.engine.transport.name === 'websocket', 'Golf did not upgrade to WebSockets');
     const before = Object.fromEntries(await Promise.all(['accounts', 'hearts', 'euchre'].map(async role => [role, await stack.identity(role)])));
-    a.socket.disconnect(); b.socket.disconnect();
+    a.socket.disconnect(); b.socket.disconnect(); watcher.socket.disconnect();
     const id = a.latest.game.id;
     await stack.restart('golf');
     for (const [role, pid] of Object.entries(before)) assert.equal(await stack.identity(role), pid, `Golf restarted ${role}`);
@@ -86,6 +102,11 @@ export async function verifyGolfOnline(stack) {
     const returned = await people[0].connect();
     assert((await returned.emit('golf:subscribe', { code })).ok);
     assert.equal(returned.latest.game.id, id);
+    const returnedWatcher = await spectator.connect();
+    const resumedWatch = await returnedWatcher.emit('golf:subscribe', { code });
+    assert(resumedWatch.ok && resumedWatch.state.spectating);
+    assert.equal(resumedWatch.state.mySeat, null);
+    assert.equal(resumedWatch.state.game.id, id);
     assert.equal((await people[0].request('/api/golf/stats')).statistics.multiplayer.games_started, 1);
     assert.equal((await people[0].request('/api/golf/stats')).statistics.bot.games_started, 0);
     for (const mode of ['bot', 'multiplayer']) assert.deepEqual(await people[0].request('/api/golf/leaderboard?mode=' + mode), { monthly: [], all_time: [] });

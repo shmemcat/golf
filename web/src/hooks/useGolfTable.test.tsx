@@ -115,6 +115,7 @@ it.each(["deck", "discard"] as const)("queues one replacement during a %s pickup
   expect(view.result.current.canReplace).toBe(true);
   tick(200);
   act(() => {
+    view.result.current.toss();
     view.result.current.replace(2);
     view.result.current.replace(3);
     view.result.current.toss();
@@ -140,17 +141,24 @@ it.each(["deck", "discard"] as const)("queues one replacement during a %s pickup
   expect(vi.getTimerCount()).toBe(0);
 });
 
-it("queues a deck toss immediately after the draw click without exposing or replacing another card", () => {
+it("ignores early deck toss clicks and requires a new click after the pickup finishes", () => {
   const view = playTable();
   const before = view.result.current.game;
   act(() => {
     view.result.current.draw("deck");
     view.result.current.toss();
-    view.result.current.replace(2);
   });
   expect(view.result.current.motion?.kind).toBe("draw");
-  expect(view.result.current.canReplace).toBe(false);
-  tick(FLIGHT_MS);
+  expect(view.result.current.canReplace).toBe(true);
+  tick(FLIGHT_MS - 1);
+  act(() => view.result.current.toss());
+  tick(1);
+  expect(view.result.current.motion).toBeNull();
+  expect(view.result.current.game.drawn?.card).toEqual(before.deck.at(-1));
+  act(() => {
+    view.result.current.toss();
+    view.result.current.replace(2);
+  });
   expect(view.result.current.motion).toMatchObject({ kind: "toss", card: before.deck.at(-1) });
   tick(FLIGHT_MS);
   expect(view.result.current.game.players[0].cards).toEqual(before.players[0].cards);

@@ -67,11 +67,11 @@ function ReadyTable({ room, selection }: { room: ReturnType<typeof useGolfRoom>;
     {room.error || "Reconnecting to your table… Your seat is saved."}{" "}<button className="link" type="button" onClick={room.retry}>Retry</button>
   </div> : undefined;
   return <GolfTableView count={state.seats.length} selection={selection} table={table} participants={participants}
-    multiplayer={state.mode === "multiplayer"} isHost={state.isHost} disconnected={!room.connected} pending={room.pending}
+    multiplayer={state.mode === "multiplayer"} spectating={state.mySeat === null} isHost={state.isHost} disconnected={!room.connected} pending={room.pending}
     rematchWaiting={room.pending || !room.connected}
     onLeave={() => { void room.command("leave").then(left => { if (left) navigate("/play"); }); }}
     leaveError={room.error}
-    connectionNotice={connectionNotice} resultNotice={connectionNotice || (user && <p className="quiet-text">Your results have been saved.</p>)} />;
+    connectionNotice={connectionNotice} resultNotice={connectionNotice || (user && state.mySeat !== null && <p className="quiet-text">Your results have been saved.</p>)} />;
 }
 
 function ConnectedGame({ code, selection = selectionStyle(null), initialState = null, botGame = false }: {

@@ -144,7 +144,12 @@ def test_sign_in_does_not_claim_started_games_or_retroactively_award_results(app
         assert action(guest, code, 'start').status_code == 200
     guest.set_cookie('test_account', '1')
     assert guest.get('/api/golf/active').json['rooms'] == []
-    assert guest.get('/api/golf/rooms/' + code).json['code'] == 'NOT_SEATED'
+    if mode == 'multiplayer':
+        view = state(guest, code)
+        assert view['mySeat'] is None and view['spectating']
+        assert view['actionTokens'] == {}
+    else:
+        assert guest.get('/api/golf/rooms/' + code).json['code'] == 'NOT_SEATED'
     guest.delete_cookie('test_account')
     assert state(guest, code)['mySeat'] == 0
     with app.app_context():

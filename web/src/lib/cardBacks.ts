@@ -1,237 +1,178 @@
-import { readStorage } from "@/lib/storage";
 
 export const CARD_BACKS = [
   {
     "id": "argyle",
     "name": "Argyle",
     "group": "Patterns",
-    "number": 0,
-    "collection": "original",
-    "galleryId": ""
+    "number": 0
   },
   {
     "id": "compass",
     "name": "Compass",
     "group": "Emblems",
-    "number": 18,
-    "collection": "original",
-    "galleryId": "18-compass"
+    "number": 18
   },
   {
     "id": "leaf-pair",
     "name": "Leaf pair",
     "group": "Botanicals",
-    "number": 31,
-    "collection": "large",
-    "galleryId": "31-leaf-pair"
+    "number": 31
   },
   {
     "id": "fern-sprig",
     "name": "Fern sprig",
     "group": "Botanicals",
-    "number": 33,
-    "collection": "large",
-    "galleryId": "33-fern-sprig"
+    "number": 33
   },
   {
     "id": "ginkgo",
     "name": "Ginkgo",
     "group": "Botanicals",
-    "number": 34,
-    "collection": "large",
-    "galleryId": "34-ginkgo"
+    "number": 34
   },
   {
     "id": "four-leaf",
     "name": "Four leaf",
     "group": "Botanicals",
-    "number": 35,
-    "collection": "large",
-    "galleryId": "35-four-leaf"
+    "number": 35
   },
   {
     "id": "solitaire-bold",
     "name": "Solitaire bold",
     "group": "Emblems",
-    "number": 37,
-    "collection": "large",
-    "galleryId": "37-solitaire-bold"
+    "number": 37
   },
   {
     "id": "north-star",
     "name": "North star",
     "group": "Emblems",
-    "number": 40,
-    "collection": "large",
-    "galleryId": "40-north-star"
+    "number": 40
   },
   {
     "id": "laurel-seal",
     "name": "Laurel seal",
     "group": "Botanicals",
-    "number": 43,
-    "collection": "refined",
-    "galleryId": "43-laurel-seal"
+    "number": 43
   },
   {
     "id": "acorn",
     "name": "Acorn",
     "group": "Botanicals",
-    "number": 46,
-    "collection": "refined",
-    "galleryId": "46-acorn"
+    "number": 46
   },
   {
     "id": "jasmine",
     "name": "Jasmine",
     "group": "Botanicals",
-    "number": 47,
-    "collection": "refined",
-    "galleryId": "47-jasmine"
+    "number": 47
   },
   {
     "id": "lotus",
     "name": "Lotus",
     "group": "Botanicals",
-    "number": 49,
-    "collection": "refined",
-    "galleryId": "49-lotus"
+    "number": 49
   },
   {
     "id": "celestial-seal",
     "name": "Celestial seal",
     "group": "Emblems",
-    "number": 52,
-    "collection": "refined",
-    "galleryId": "52-celestial-seal"
+    "number": 52
   },
   {
     "id": "diamond-linen",
     "name": "Diamond linen",
     "group": "Patterns",
-    "number": 56,
-    "collection": "refined",
-    "galleryId": "56-diamond-linen"
+    "number": 56
   },
   {
     "id": "crossed-irons",
     "name": "Crossed irons",
     "group": "Golf",
-    "number": 60,
-    "collection": "refined",
-    "galleryId": "60-crossed-irons"
+    "number": 60
   },
   {
     "id": "heritage-gingham",
     "name": "Heritage gingham",
     "group": "Patterns",
-    "number": 61,
-    "collection": "textiles",
-    "galleryId": "61-heritage-gingham"
+    "number": 61
   },
   {
     "id": "glen-plaid",
     "name": "Glen plaid",
     "group": "Patterns",
-    "number": 63,
-    "collection": "textiles",
-    "galleryId": "63-glen-plaid"
+    "number": 63
   },
   {
     "id": "tattersall",
     "name": "Tattersall",
     "group": "Patterns",
-    "number": 64,
-    "collection": "textiles",
-    "galleryId": "64-tattersall"
+    "number": 64
   },
   {
     "id": "country-tartan",
     "name": "Country tartan",
     "group": "Patterns",
-    "number": 65,
-    "collection": "textiles",
-    "galleryId": "65-country-tartan"
+    "number": 65
   },
   {
     "id": "harlequin",
     "name": "Harlequin",
     "group": "Patterns",
-    "number": 75,
-    "collection": "textiles",
-    "galleryId": "75-harlequin"
+    "number": 75
   },
   {
     "id": "madras-plaid",
     "name": "Madras plaid",
     "group": "Patterns",
-    "number": 76,
-    "collection": "textiles",
-    "galleryId": "76-madras-plaid"
+    "number": 76
   },
   {
     "id": "diamond-lattice",
     "name": "Diamond lattice",
     "group": "Patterns",
-    "number": 81,
-    "collection": "patterns",
-    "galleryId": "61-diamond-lattice"
+    "number": 81
   },
   {
     "id": "scallop",
     "name": "Scallop",
     "group": "Patterns",
-    "number": 85,
-    "collection": "patterns",
-    "galleryId": "65-scallop"
+    "number": 85
   },
   {
     "id": "fern",
     "name": "Fern",
     "group": "Botanicals",
-    "number": 91,
-    "collection": "patterns",
-    "galleryId": "71-fern"
+    "number": 91
   },
   {
     "id": "wildflower",
     "name": "Wildflower",
     "group": "Botanicals",
-    "number": 93,
-    "collection": "patterns",
-    "galleryId": "73-wildflower"
+    "number": 93
   },
   {
     "id": "garden-trellis",
     "name": "Garden trellis",
     "group": "Botanicals",
-    "number": 94,
-    "collection": "patterns",
-    "galleryId": "74-garden-trellis"
+    "number": 94
   },
   {
     "id": "petal-tile",
     "name": "Petal tile",
     "group": "Botanicals",
-    "number": 95,
-    "collection": "patterns",
-    "galleryId": "75-petal-tile"
+    "number": 95
   },
   {
     "id": "leaf-stripe",
     "name": "Leaf stripe",
     "group": "Botanicals",
-    "number": 98,
-    "collection": "patterns",
-    "galleryId": "78-leaf-stripe"
+    "number": 98
   },
   {
     "id": "layered-fan",
     "name": "Layered fan",
     "group": "Patterns",
-    "number": 100,
-    "collection": "patterns",
-    "galleryId": "80-layered-fan"
+    "number": 100
   }
 ] as const;
 export type CardBackDefinition = (typeof CARD_BACKS)[number];
@@ -239,65 +180,11 @@ export type CardBackId = CardBackDefinition["id"];
 export type CardBackGroup = CardBackDefinition["group"];
 export const CARD_BACK_STORAGE_KEY = "golf.card-back.v1";
 export const CARD_BACK_GROUPS = ["Botanicals", "Patterns", "Emblems", "Golf"] as const;
-const shortlistDefaults: Record<string, string[]> = {
-  "original": [
-    "18-compass"
-  ],
-  "large": [
-    "31-leaf-pair",
-    "33-fern-sprig",
-    "34-ginkgo",
-    "35-four-leaf",
-    "37-solitaire-bold",
-    "40-north-star"
-  ],
-  "refined": [
-    "43-laurel-seal",
-    "46-acorn",
-    "47-jasmine",
-    "49-lotus",
-    "52-celestial-seal",
-    "60-crossed-irons"
-  ],
-  "textiles": [
-    "61-heritage-gingham",
-    "63-glen-plaid",
-    "64-tattersall",
-    "65-country-tartan",
-    "75-harlequin",
-    "76-madras-plaid"
-  ],
-  "patterns": [
-    "61-diamond-lattice",
-    "65-scallop",
-    "71-fern",
-    "73-wildflower",
-    "74-garden-trellis",
-    "75-petal-tile",
-    "78-leaf-stripe",
-    "80-layered-fan"
-  ]
-};
-const shortlistKeys: Record<string, string> = {
-  original: "golf.card-back-concepts.shortlist.v1",
-  large: "golf.card-back-concepts.shortlist.large.v1",
-  refined: "golf.card-back-concepts.shortlist.refined.v1",
-  textiles: "golf.card-back-concepts.shortlist.textiles.v1",
-  patterns: "golf.card-back-concepts.shortlist.patterns.v1",
-};
-
 export function normalizeCardBack(value: unknown): CardBackId {
   return CARD_BACKS.find(back => back.id === value)?.id ?? "argyle";
 }
-export const SELECTABLE_CARD_BACKS = CARD_BACKS.filter(back => back.id === "argyle" || shortlistDefaults[back.collection].includes(back.galleryId));
+const selectableIds: ReadonlySet<CardBackId> = new Set(["argyle","compass","leaf-pair","fern-sprig","ginkgo","four-leaf","solitaire-bold","north-star","laurel-seal","acorn","jasmine","lotus","celestial-seal","crossed-irons","heritage-gingham","glen-plaid","tattersall","country-tartan","harlequin","madras-plaid","diamond-lattice","scallop","fern","wildflower","garden-trellis","petal-tile","leaf-stripe","layered-fan"]);
+export const SELECTABLE_CARD_BACKS = CARD_BACKS.filter(back => selectableIds.has(back.id));
 export function cardBackAsset(id: CardBackId, theme: "light" | "dark") {
   return id === "argyle" ? `cards/back${theme === "light" ? "-light" : ""}.svg` : `cards/backs/${id}-${theme}.svg`;
-}
-export function readShortlistedCardBacks(): CardBackDefinition[] {
-  const selected: Record<string, unknown[]> = {};
-  for (const [collection, key] of Object.entries(shortlistKeys)) {
-    const saved = readStorage<unknown>(key, shortlistDefaults[collection]);
-    selected[collection] = Array.isArray(saved) ? saved : shortlistDefaults[collection];
-  }
-  return CARD_BACKS.filter(back => back.id === "argyle" || selected[back.collection].includes(back.galleryId));
 }

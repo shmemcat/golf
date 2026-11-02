@@ -14,7 +14,7 @@ export interface FinalPlayer {
   isBot?: boolean;
 }
 
-export function GameOverBlock({ players, onPlayAgain, onLeaveLobby, leavePending = false, mySeatIndex = 0, notice, penaltyNotice, waiting = false, waitingForHost = false, visibilityToggle }: {
+export function GameOverBlock({ players, onPlayAgain, onLeaveLobby, leavePending = false, mySeatIndex = 0, notice, penaltyNotice, waiting = false, waitingForHost = false, spectating = false, visibilityToggle }: {
   players: FinalPlayer[];
   onPlayAgain: () => void;
   onLeaveLobby?: () => void;
@@ -24,6 +24,7 @@ export function GameOverBlock({ players, onPlayAgain, onLeaveLobby, leavePending
   penaltyNotice?: ReactNode;
   waiting?: boolean;
   waitingForHost?: boolean;
+  spectating?: boolean;
   visibilityToggle?: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -60,14 +61,14 @@ export function GameOverBlock({ players, onPlayAgain, onLeaveLobby, leavePending
     </table>
     {notice && <div className="golf-game-over-notice">{notice}</div>}
     <div className="golf-game-over-actions">
-      {waitingForHost ? <Tooltip content="Only the host can start a new game." portal={false}
+      {spectating ? <p role="status">Watching · Waiting for the host…</p> : waitingForHost ? <Tooltip content="Only the host can start a new game." portal={false}
         open={hostHintOpen} onOpenChange={setHostHintOpen}>
         <span className="golf-host-waiting" tabIndex={0}
           onClick={event => { event.preventDefault(); setHostHintOpen(true); }}>
           <Button name="Waiting for host…" disabled />
         </span>
       </Tooltip> : <Button name={waiting ? "Starting game…" : "Play Again"} disabled={waiting} onClick={onPlayAgain} />}
-      {onLeaveLobby && <Button name="Leave Lobby" variant="secondary" disabled={leavePending} onClick={onLeaveLobby} />}
+      {onLeaveLobby && <Button name={spectating ? "Stop Watching" : "Leave Lobby"} variant="secondary" disabled={leavePending} onClick={onLeaveLobby} />}
       {!onLeaveLobby && !waitingForHost && <Button name="Home" onClick={() => navigate("/")} />}
     </div>
     {visibilityToggle}

@@ -27,8 +27,9 @@ interface TurnInput {
 export function projectTable(state: RoomState) {
   const source = state.game!;
   const count = source.players.length;
-  const seat = (absolute: number) => (absolute - state.mySeat + count) % count;
-  const order = Array.from({ length: count }, (_, i) => (i + state.mySeat) % count);
+  const mine = state.mySeat ?? 0;
+  const seat = (absolute: number) => (absolute - mine + count) % count;
+  const order = Array.from({ length: count }, (_, i) => (i + mine) % count);
   const game: Game = { ...source,
     // Record rosters are already oriented to this viewer by the server and may
     // include people who have since left the current table.
@@ -44,6 +45,7 @@ export function projectTable(state: RoomState) {
 }
 
 export function useServerGolfTable(state: RoomState, command: (action: string, detail?: Record<string, unknown>) => Promise<boolean>, disabled: boolean, pending = false) {
+  disabled = disabled || state.mySeat === null;
   const { game, motion, participants } = projectTable(state);
   const { play } = useSound();
   const previous = useRef<RoomState | null>(null);
@@ -133,6 +135,7 @@ export function useServerGolfTable(state: RoomState, command: (action: string, d
     ));
   const queueTurn = (action: QueuedTurnAction) => {
     if (!canReplace()) return;
+    if (action.kind === "toss" && (!available || game.phase !== "replace" || game.drawn?.source !== "deck")) return;
     const input = currentInput() ?? newInput(motion?.kind === "draw" ? motion.source : game.drawn!.source, !motion);
     if (action.kind === "toss" && input.source !== "deck") return;
     updateInput({ ...input, next: action });

@@ -33,6 +33,24 @@ beforeEach(() => {
   transport.deferSubscribe = false; transport.subscribe = null;
 });
 
+it("opens started lobby links as spectators and follows live updates without player actions", async () => {
+  const room = { ...roomFixture(3, 0), mySeat: null, spectating: true, isHost: false, actionTokens: {} };
+  transport.reply = room;
+  const fetcher = vi.fn(async (path: string) => {
+    if (path === "/api/account/session" || path === "/api/golf/session") return response({ user: null, csrf_token: "token" });
+    return response({ state: room });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<MemoryRouter initialEntries={["/game/lobby/ABC234"]}><Providers><App /></Providers></MemoryRouter>);
+  await screen.findByRole("main", { name: "3-player Golf table" });
+  expect(screen.getByText(/Watching ·/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Draw from deck/ })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Next Hole" })).not.toBeInTheDocument();
+  await act(async () => transport.handlers["golf:state"]({ ...room, revision: room.revision + 1, game: { ...room.game!, turn: 2 } }));
+  expect(screen.getByText(/Watching · Friend 2/)).toBeInTheDocument();
+  expect(fetcher.mock.calls.some(([path]) => /join|actions/.test(path))).toBe(false);
+});
+
 it("keeps the local player at seat zero and rotates turns, scores and animation anchors consistently", () => {
   const state = roomFixture(4, 2);
   state.game!.turn = 3; state.game!.starter = 1; state.game!.finalTurns = [3, 0]; state.game!.history = [[10, 20, 30, 40]];

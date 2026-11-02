@@ -74,6 +74,7 @@ export function useGolfRoom(code: string, initialState: RoomState | null = null,
   }, [code, accept, attempt, user?.id, autoJoin, loading]);
   const command = async (action: string, detail: Record<string, unknown> = {}) => {
     if (!state || busy.current) return false;
+    if (state.mySeat === null) return action === "leave";
     busy.current = true;
     setPending(true);
     setError("");

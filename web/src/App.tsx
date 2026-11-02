@@ -17,17 +17,9 @@ import User from "@/pages/User";
 import { About, NotFound } from "@/pages/Info";
 const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
 const Options = lazy(() => import("@/pages/Options"));
-const CardBacks = lazy(() => import("@/pages/CardBacks"));
-const CardBackPickerPreview = lazy(() => import("@/pages/CardBackPickerPreview"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const GamePage = lazy(() => import("@/pages/GamePage"));
 const OnlineGame = lazy(() => import("@/pages/OnlineGame"));
-const CardStyles = lazy(() => import("@/pages/CardStyles"));
-const TableLayouts = lazy(() => import("@/pages/TableLayouts"));
-const MobileLayouts = lazy(() => import("@/pages/MobileLayouts"));
-const MobileTablePreview = lazy(() => import("@/pages/MobileTablePreview"));
-const EndPreview = lazy(() => import("@/pages/EndPreview"));
-const HoleRecordPreview = lazy(() => import("@/pages/HoleRecordPreview"));
 
 export function Providers({ children }: { children: ReactNode }) {
   const reduced = useReducedMotion();
@@ -72,14 +64,6 @@ export function App() {
           <Route path="/game/single" element={<GamePage />} />
           <Route path="/game/multiplayer/:code" element={<OnlineGame />} />
           <Route path="/game/lobby/:code" element={<OnlineGame />} />
-          <Route path="/game/card-styles" element={<CardStyles />} />
-          <Route path="/game/card-backs" element={<CardBacks />} />
-          <Route path="/game/card-back-picker" element={<CardBackPickerPreview />} />
-          <Route path="/game/table-layouts" element={<TableLayouts />} />
-          <Route path="/game/mobile-layouts" element={<MobileLayouts />} />
-          <Route path="/game/mobile-preview" element={<MobileTablePreview />} />
-          <Route path="/game/end-preview" element={<EndPreview />} />
-          <Route path="/game/hole-record-preview" element={<HoleRecordPreview />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="/about" element={<About />} />
           <Route path="/leaderboard" element={<Leaderboard />} />

@@ -218,7 +218,7 @@ Golf's service. The User dashboard shows combined All Time statistics or
 Separate views for Against Bots and Multiplayer, including wins, scores, holes,
 win streaks, and matching pairs. Global leaderboards rank completed wins in Bot
 and Multiplayer, with monthly UTC and all-time top tens. Guest solo saves remain
-in the browser; guest games and layout previews earn no account results.
+in the browser; guest games earn no account results.
 
 The account dashboard displays 33 achievement badges. Six of a Kind requires all
 six board cards to share a rank at the end of a hole; Deuce Almighty requires a
@@ -288,16 +288,13 @@ procedures, [the service README](api/README.md) for runtime requirements, and
 [scripts/rehearse-release.mjs](scripts/rehearse-release.mjs) for production-image
 checks in a disposable stack.
 
-## Design Previews
+## Design
 
 Golf uses Fraunces, the Sage & Blush Peach palette, standard rank-and-suit faces,
 a custom thin flag logo, and an Argyle card back. On mobile, two or three
 players share a compact table; four to six use swipeable boards. Following the
 turn starts enabled, pauses while browsing, and resumes with the bottom checkmark.
 
-`/game/mobile-layouts` compares 2–6-player layouts in an adjustable phone frame,
-with draw-placement studies and a live-game toggle. Card, table, and end-game
-previews are also available under `/game/`. These studies do not record results.
 The [sister-site investigation](docs/sister-site-investigation.md) preserves the
 original design brief and comparisons.
 

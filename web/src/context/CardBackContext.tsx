@@ -62,15 +62,3 @@ export function CardBackProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCardBack() { return useContext(Context); }
-
-// The review route can demonstrate choices without writing guest preferences.
-export function CardBackPreviewProvider({ children }: { children: ReactNode }) {
-  const account = useCardBack();
-  const [cardBack, setCardBack] = useState<CardBackId>("argyle");
-  const [displayMode, setDisplayMode] = useState<CardBackDisplayMode>("uniform");
-  if (account.available) return <>{children}</>;
-  return <Context.Provider value={{ cardBack, displayMode, available: true, saving: false, displaySaving: false, error: "", displayError: "",
-    choose: async id => { setCardBack(normalizeCardBack(id)); }, chooseDisplay: async mode => { setDisplayMode(normalizeCardBackDisplay(mode)); } }}>
-    {children}
-  </Context.Provider>;
-}

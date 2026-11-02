@@ -32,6 +32,7 @@ class GolfRuntime:
         self.app, self.socketio = app, socketio
         self.lock = threading.RLock()
         self.connections = {}  # sid -> (room code, actor key)
+        self.spectators = {}  # read-only subscriptions, excluded from player presence
         self.worker = None
         self.recovered = False
         self.started_at = time.time()
@@ -80,7 +81,8 @@ class GolfRuntime:
             if data.get("_storage_pruned"):
                 self.seat(data, actor["key"])
                 return self.view(data, actor["key"])
-            if self.refresh_appearance(data, actor):
+            mine = self.viewer_seat(data, actor["key"])
+            if mine is not None and self.refresh_appearance(data, actor):
                 self.save(row, data, "appearance")
             return self.view(data, actor["key"])
 
@@ -98,6 +100,17 @@ class GolfRuntime:
 
     def reviewing_hole(self, data, seat):
         return bool(data.get("previousHole")) and seat not in data["ready"]
+
+    def viewer_seat(self, data, actor):
+        try:
+            return self.seat(data, actor)
+        except Rejected:
+            if (data["mode"] == "multiplayer" and data.get("game")
+                    and not data.get("_storage_pruned")
+                    and actor not in data.get("removed", {})
+                    and not any(p["actor"] == actor for p in data["seats"])):
+                return None
+            raise
 
     def action_token(self, data, seat, action):
         """Bind a command to its decision, independent of other players' updates."""
@@ -124,9 +137,9 @@ class GolfRuntime:
         return hashlib.sha256(json.dumps(context, sort_keys=True).encode()).hexdigest()
 
     def view(self, data, actor):
-        mine = self.seat(data, actor)
+        mine = self.viewer_seat(data, actor)
         self.record_completed_holes(data)
-        reviewing = self.reviewing_hole(data, mine)
+        reviewing = mine is not None and self.reviewing_hole(data, mine)
         seats = [{"name": p["name"], "profileIcon": p["profileIcon"], "isBot": p["isBot"] or p.get("left", False),
                   "cardBack": p.get("cardBack", "argyle"),
                   "connected": any(code == data["code"] and key == p["actor"] for code, key in self.connections.values())}
@@ -157,18 +170,18 @@ class GolfRuntime:
                     if not cell["faceUp"] and not outgoing:
                         cell["card"] = {"id": cell["card"]["id"]}
         return {"code": data["code"], "mode": data["mode"], "capacity": data["capacity"], "revision": data["revision"],
-                "actionTokens": {action: self.action_token(data, mine, action) for action in ACTIONS},
+                "actionTokens": {action: self.action_token(data, mine, action) for action in ACTIONS} if mine is not None else {},
                 "closed": data.get("closed", False),
                 "closedReason": data.get("closedReason"),
                 "lobbyReason": data.get("lobbyReason"),
-                "mySeat": mine, "isHost": data["host"] == actor, "seats": seats,
+                "mySeat": mine, "spectating": mine is None, "isHost": mine is not None and data["host"] == actor, "seats": seats,
                 "stage": "playing" if reviewing else data.get("stage", "lobby"), "game": game, "motion": motion,
                 "holeRecords": hole_records,
                 "ready": data.get("ready", []), "rematchReady": data.get("rematchReady", []),
                 "idleWarning": False}
 
     def publish(self, data):
-        for sid, (code, actor) in list(self.connections.items()):
+        for sid, (code, actor) in [*self.connections.items(), *self.spectators.items()]:
             if code != data["code"]:
                 continue
             try:
@@ -185,6 +198,7 @@ class GolfRuntime:
                 if data.get("closed") or not data.get("game") or data["game"]["phase"] == "game-over":
                     continue
                 try:
+                    self.seat(data, actor["key"])
                     rooms.append(self.state(actor, data["code"]))
                 except Rejected as error:
                     if error.code != "NOT_SEATED":
@@ -330,7 +344,9 @@ class GolfRuntime:
                 return self.state(actor, code)
             except Rejected:
                 pass
-            if data["game"] or len(data["seats"]) >= data["capacity"]:
+            if data["game"]:
+                return self.view(data, actor["key"])
+            if len(data["seats"]) >= data["capacity"]:
                 raise Rejected("This lobby has already started or is full.")
             ensure_capacity(open_games(actor["key"]))
             if not data["seats"]:
@@ -342,7 +358,12 @@ class GolfRuntime:
     def subscribe(self, sid, actor, code):
         with self.lock:
             row = self.get(code)
-            self.seat(row.data, actor["key"])
+            mine = self.viewer_seat(row.data, actor["key"])
+            if mine is None:
+                self.disconnect(sid)
+                self.spectators[sid] = (row.code, actor["key"])
+                return self.view(copy.deepcopy(row.data), actor["key"])
+            self.spectators.pop(sid, None)
             if sid in self.connections and self.connections[sid][0] != row.code:
                 self.disconnect(sid)
             self.connections[sid] = (row.code, actor["key"])
@@ -355,6 +376,7 @@ class GolfRuntime:
 
     def disconnect(self, sid):
         with self.lock:
+            self.spectators.pop(sid, None)
             previous = self.connections.pop(sid, None)
             if previous:
                 row = db.session.get(Room, previous[0])
@@ -681,8 +703,9 @@ class GolfRuntime:
             save_results(data, terminal=True)
         person["left"] = True
         save_results(data)
-        if reason:
-            data.setdefault("removed", {})[person["actor"]] = reason
+        # Departed players keep the existing removal flow rather than silently
+        # turning their old playing connection into a spectator connection.
+        data.setdefault("removed", {})[person["actor"]] = reason
         data["seats"].pop(seat)
         data["receipts"].pop(person["actor"], None)
         if data.get("createRequest", [None])[0] == person["actor"]:

@@ -234,6 +234,9 @@ def create_app(config=None, *, accounts=None):
                 runtime.record_completed_holes(data)
                 changed = False
                 old_key = f"account:{uid}"
+                if old_key in data.get("removed", {}):
+                    data["removed"].pop(old_key)
+                    changed = True
                 for person in data["seats"]:
                     if person.get("userId") == uid:
                         person.update(userId=None, name="Deleted player", profileIcon="user", cardBack="argyle", left=True, actor="deleted:" + secrets.token_hex(8))

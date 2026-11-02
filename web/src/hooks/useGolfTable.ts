@@ -205,10 +205,6 @@ export function useGolfTable(playerCount: number, persist = false, resumeId?: st
     },
     toss() {
       if (!humanTurn || queued.current) return;
-      if (inputMotion.current?.kind === "draw" && inputMotion.current.seat === 0 && inputMotion.current.source === "deck") {
-        queueAction({ kind: "toss" });
-        return;
-      }
       if (inputMotion.current || game.phase !== "replace" || game.drawn?.source !== "deck") return;
       inputMotion.current = tossing(game);
       setMotion(inputMotion.current);

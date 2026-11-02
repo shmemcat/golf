@@ -4,8 +4,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { App, Providers } from "@/App";
 import { createGame } from "@/game/engine";
 import { FLIGHT_MS, FLIP_MS, type useGolfTable } from "@/hooks/useGolfTable";
-import GamePage, { GolfTableView, type DrawLayout } from "./GamePage";
-import MobileTablePreview from "./MobileTablePreview";
+import GamePage, { GolfTableView } from "./GamePage";
 
 type Table = ReturnType<typeof useGolfTable>;
 const noop = () => {};
@@ -16,7 +15,7 @@ function sample(count = 4, turn = 1): Table {
     reveal: noop, draw: vi.fn(), replace: noop, toss: noop, advance: noop, restart: noop,
   };
 }
-const view = (table: Table, drawLayout?: DrawLayout) => <MemoryRouter><Providers><GolfTableView count={table.game.players.length} selection="backing" table={table} drawLayout={drawLayout} /></Providers></MemoryRouter>;
+const view = (table: Table) => <MemoryRouter><Providers><GolfTableView count={table.game.players.length} selection="backing" table={table} /></Providers></MemoryRouter>;
 
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn(async (path: string) => new Response(JSON.stringify(path === "/api/golf/active" ? { rooms: [] } : { user: null, csrf_token: "test" }))));
@@ -106,27 +105,11 @@ it("keeps draw and discard flights mounted while viewing another player's board"
   expect(screen.getByRole("region", { name: "Birdie’s board" })).toBeInTheDocument();
 });
 
-it.each(["below", "piles"] as const)("keeps the %s shared draw usable with a single animation anchor", placement => {
-  const table = sample(3, 0);
-  table.game = { ...table.game, phase: "replace", drawn: { card: table.game.deck[0], source: "deck" } };
-  table.canDraw = false;
-  table.canReplace = true;
-  table.toss = vi.fn();
-  const result = render(view(table, placement));
-  expect(result.container.querySelectorAll('[data-anchor="drawn-0"]')).toHaveLength(1);
-  expect(result.container.querySelectorAll('.golf-seat .golf-drawn-dock')).toHaveLength(0);
-  const draw = screen.getByRole("button", { name: /^Discard drawn / });
-  expect(draw.closest(placement === "piles" ? ".golf-piles" : ".golf-overview-draw-shelf")).not.toBeNull();
-  fireEvent.click(draw);
-  expect(table.toss).toHaveBeenCalledOnce();
-  expect(within(screen.getByRole("region", { name: "Your board" })).getAllByRole("button")).toHaveLength(6);
-});
-
-it.each(["beside", "below", "piles"] as const)("pops each player's hole score in their own dock with the %s mobile layout", async placement => {
+it("pops each player's hole score in their own dock", async () => {
   vi.useFakeTimers();
   const table = sample(3);
   table.game = { ...table.game, phase: "round-over", history: [[3, 0, -1]] };
-  const result = render(view(table, placement));
+  const result = render(view(table));
   await act(async () => {});
   try {
     act(() => { vi.advanceTimersByTime(FLIP_MS + 250); });
@@ -148,23 +131,4 @@ it("keeps the scorecard focused on player scores and leaving the table", () => {
   expect(panel).not.toHaveTextContent("Nine holes");
   expect(panel.querySelectorAll("a")).toHaveLength(0);
   expect(panel.querySelector("ol + hr + button")).toHaveTextContent("Concede");
-});
-
-it("replays a draw into the selected opponent's board and reveals it only on arrival", () => {
-  vi.useFakeTimers();
-  const result = render(<MemoryRouter initialEntries={["/game/mobile-preview?players=3&drawn=1&actor=2&replay=1"]}><Providers><MobileTablePreview /></Providers></MemoryRouter>);
-  try {
-    expect(screen.getByRole("status", { name: "Turn" })).toHaveTextContent("Birdie is drawing a card");
-    expect(result.container.querySelector(".golf-card-flight")).toHaveAttribute("data-offscreen-flight", "false");
-    expect(screen.queryByRole("img", { name: "Drawn card: Q of spades" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Draw from deck, 85 cards" })).toBeInTheDocument();
-    act(() => { vi.advanceTimersByTime(FLIGHT_MS); });
-    const opponent = screen.getByRole("region", { name: "Birdie’s board" });
-    expect(within(opponent).getByRole("img", { name: "Drawn card: Q of spades" })).toBeInTheDocument();
-    expect(result.container.querySelector(".golf-card-flight")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Draw from deck, 84 cards" })).toBeInTheDocument();
-  } finally {
-    result.unmount();
-    vi.useRealTimers();
-  }
 });
