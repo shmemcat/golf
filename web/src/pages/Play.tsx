@@ -58,7 +58,6 @@ export function Play() {
           </Link>
         </div>
         <InProgressGames
-          loading={checking}
           error={active.leaveError || active.lookupError}
           onRetry={active.retry}
           games={active.sessions.map((item) => {
