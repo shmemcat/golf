@@ -4,7 +4,7 @@ import {
   faGolfBallTee, faDove, faFeatherPointed, faGolfFlagHole, faArrowsUpDown, faTree,
   faFlagCheckered, faSunBright, faChampagneGlasses, faCalendarHeart, faClover,
   faEgg, faSparkles, faGhost, faTurkey, faGift, faOwl, faVolumeXmark, faUserGroup,
-  faFire, faCalendarDays, faDiceSix, faBolt, faBriefcase,
+  faFire, faCalendarDays, faDiceSix, faBolt, faBriefcase, faMedal,
 } from "@fortawesome/pro-solid-svg-icons";
 import { golfPost, type Statistics } from "./golfApi";
 
@@ -53,7 +53,7 @@ const BADGES = [
   { id: "up_and_down", name: "Up and Down", desc: "Follow a positive hole with a negative one in the same game.", icon: faArrowsUpDown },
   { id: "out_of_the_rough", name: "Out of the Rough", desc: "Win after starting the final hole in last place.", icon: faTree },
   { id: "photo_finish", name: "Photo Finish", desc: "Win outright by exactly one point.", icon: faFlagCheckered, secret: true },
-  { id: "sunday_best", name: "Sunday Best", desc: "Finish a nine-hole game at −18 or better.", icon: faSunBright },
+  { id: "sunday_best", name: "Sunday Best", desc: "Finish a nine-hole game at −18 or better.", icon: faMedal },
   { id: "better_with_friends", name: "Better with Friends", desc: "Finish a multiplayer game with at least two human players.", icon: faUserGroup, secret: true },
   { id: "hot_streak", name: "Hot Streak", desc: "Win five games in a row. Shared wins count, too.", icon: faFire, secret: true },
   { id: "night_owl", name: "Night Owl", desc: "Finish a game that began between midnight and 5 a.m.", icon: faOwl, secret: true },
